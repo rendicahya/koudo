@@ -3,13 +3,27 @@
   import FlowchartCanvas from './components/Flowchart/FlowchartCanvas.svelte';
   import JavaCodeEditor from './components/CodeEditor/JavaCodeEditor.svelte';
   import LoopIterationPanel from './components/LoopTracer/LoopIterationPanel.svelte';
+  import OutputPanel from './components/LoopTracer/OutputPanel.svelte';
   import { loadLayoutPrefs, saveLayoutPrefs } from './lib/storage/layoutPrefs';
   import { isFlowchartDirty } from './stores/flowchart';
+  import { toggleTheme } from './stores/theme';
+  import { footerTab } from './stores/run';
 
   function handleBeforeUnload(event: BeforeUnloadEvent) {
     if (!$isFlowchartDirty) return;
     event.preventDefault();
     event.returnValue = '';
+  }
+
+  // Alt+Shift+T toggles dark/light mode from anywhere, including while the
+  // Monaco editor has focus. Deliberately not a Ctrl/Cmd combo — Monaco
+  // claims most of those by default (e.g. Ctrl+Shift+L is "select all
+  // occurrences"), and Ctrl+letter often collides with browser shortcuts.
+  function handleGlobalKeydown(event: KeyboardEvent) {
+    if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === 't') {
+      event.preventDefault();
+      toggleTheme();
+    }
   }
 
   const MIN_FLOWCHART_PERCENT = 20;
@@ -76,7 +90,7 @@
   }
 </script>
 
-<svelte:window onbeforeunload={handleBeforeUnload} />
+<svelte:window onbeforeunload={handleBeforeUnload} onkeydown={handleGlobalKeydown} />
 
 <div class="flex h-screen flex-col">
   <TopNavbar />
@@ -97,25 +111,58 @@
       onpointerdown={beginColumnResize}
     ></div>
 
-    <section class="code-panel h-1/2 md:h-full" style="background: var(--color-editor-bg);">
-      <JavaCodeEditor />
+    <section class="code-column flex h-1/2 flex-1 flex-col overflow-hidden md:h-full">
+      <div class="min-h-0 flex-1" style="background: var(--color-editor-bg);">
+        <JavaCodeEditor />
+      </div>
+
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize output panel"
+        class="resizer resizer-horizontal shrink-0"
+        onpointerdown={beginRowResize}
+      ></div>
+
+      <footer
+        class="flex shrink-0 flex-col overflow-hidden border-t"
+        style="height: {outputHeight}px; border-color: var(--color-border); background: var(--color-panel);"
+      >
+        <div class="flex shrink-0 border-b" style="border-color: var(--color-border);">
+          <button
+            type="button"
+            class="px-3 py-1.5 text-sm"
+            style="color: {$footerTab === 'output' ? 'var(--color-accent)' : 'var(--color-text-secondary)'}; border-bottom: 2px solid {$footerTab ===
+            'output'
+              ? 'var(--color-accent)'
+              : 'transparent'};"
+            onclick={() => footerTab.set('output')}
+          >
+            Output
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 text-sm"
+            style="color: {$footerTab === 'tracer' ? 'var(--color-accent)' : 'var(--color-text-secondary)'}; border-bottom: 2px solid {$footerTab ===
+            'tracer'
+              ? 'var(--color-accent)'
+              : 'transparent'};"
+            onclick={() => footerTab.set('tracer')}
+          >
+            Loop Tracer
+          </button>
+        </div>
+
+        <div class="min-h-0 flex-1">
+          {#if $footerTab === 'output'}
+            <OutputPanel />
+          {:else}
+            <LoopIterationPanel />
+          {/if}
+        </div>
+      </footer>
     </section>
   </main>
-
-  <div
-    role="separator"
-    aria-orientation="horizontal"
-    aria-label="Resize output panel"
-    class="resizer resizer-horizontal shrink-0"
-    onpointerdown={beginRowResize}
-  ></div>
-
-  <footer
-    class="overflow-hidden border-t"
-    style="height: {outputHeight}px; border-color: var(--color-border); background: var(--color-panel);"
-  >
-    <LoopIterationPanel />
-  </footer>
 </div>
 
 <style>
@@ -129,7 +176,7 @@
          past a point no matter what width we ask for. */
       min-width: 0;
     }
-    .code-panel {
+    .code-column {
       flex: 1 1 auto;
       min-width: 0;
     }

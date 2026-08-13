@@ -7,7 +7,8 @@
   onclick={toggleTheme}
   class="rounded-md border px-3 py-1.5 text-sm"
   style="border-color: var(--color-border); color: var(--color-text);"
-  aria-label="Toggle dark/light mode"
+  aria-label="Toggle dark/light mode (Alt+Shift+T)"
+  title="Toggle dark/light mode (Alt+Shift+T)"
 >
   {$theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
 </button>

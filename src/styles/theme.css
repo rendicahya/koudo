@@ -9,10 +9,21 @@
   --color-accent-light: #0080ff;
   --color-border: #d9dce1;
   --color-node-bg: #ffffff;
-  --color-node-border: #0066ff;
+  /* Matches xyflow's own default edge stroke color (--xy-edge-stroke-default
+     in its stylesheet) so block outlines and the connecting lines between
+     them read as the same gray, not two different colors. */
+  --color-node-border: #b1b1b7;
   --color-error: #c41e3a;
   --color-success: #008000;
   --color-warning: #ff8c00;
+
+  /* Start/End and the coming-soon blocks (For Loop/Decision/While Loop) are
+     xyflow's own built-in node types, which default to xyflow's own gray
+     border (--xy-node-border-default) instead of this theme's node color.
+     Overriding the variable xyflow actually checks first keeps every
+     block's outline the same, without touching the custom Declare/Process
+     components (which already reference --color-node-border directly). */
+  --xy-node-border: 1px solid var(--color-node-border);
 }
 
 :root[data-theme='dark'] {
@@ -26,8 +37,12 @@
   --color-accent-light: #00e5ff;
   --color-border: #2a3050;
   --color-node-bg: #1a1f3a;
-  --color-node-border: #00d9ff;
+  /* Matches xyflow's dark-mode edge stroke color (.svelte-flow.dark's
+     --xy-edge-stroke-default). */
+  --color-node-border: #3e3e3e;
   --color-error: #ff6b6b;
   --color-success: #51cf66;
   --color-warning: #ffd93d;
+
+  --xy-node-border: 1px solid var(--color-node-border);
 }

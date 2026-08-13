@@ -13,3 +13,14 @@ body {
   color: var(--color-text);
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* Tailwind's preflight resets clickable elements to the platform default
+   (arrow) cursor; every button in this app should show the pointer/hand
+   instead, since they're all discrete actions, not native form controls. */
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}

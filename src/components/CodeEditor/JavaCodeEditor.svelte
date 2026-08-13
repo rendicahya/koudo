@@ -37,21 +37,31 @@
 
   $effect(() => {
     const value = $codeContent;
-    if (editor && editor.getValue() !== value) {
-      syncingFromStore = true;
-      editor.setValue(value);
-      syncingFromStore = false;
-    }
+    if (!editor || editor.getValue() === value) return;
+
+    // While the user has focus here, they're the one driving codeContent
+    // (onDidChangeModelContent sets it synchronously on every keystroke) —
+    // never overwrite their live buffer out from under them. Creating a
+    // new node (e.g. right after typing a statement's `;`) kicks off async
+    // work in the flowchart (SvelteFlow measuring/mounting the new node),
+    // which can echo a regenerated codeContent back to this effect *after*
+    // the user has already typed further. Applying that stale value with
+    // setValue() would both revert their newer keystrokes and reset the
+    // cursor to the start of the document. Skipping is safe: the moment
+    // they type again, their own onDidChangeModelContent call re-syncs
+    // codeContent from the live buffer anyway.
+    if (editor.hasTextFocus()) return;
+
+    const position = editor.getPosition();
+    const scrollTop = editor.getScrollTop();
+    syncingFromStore = true;
+    editor.setValue(value);
+    if (position) editor.setPosition(position);
+    editor.setScrollTop(scrollTop);
+    syncingFromStore = false;
   });
 </script>
 
 <div class="flex h-full w-full flex-col">
-  <div
-    class="border-b px-3 py-1 text-xs"
-    style="border-color: var(--color-border); color: var(--color-text-secondary); background: var(--color-panel);"
-  >
-    Synced with the flowchart — variable declarations (<code>int x = 5;</code> etc.) go both ways, other blocks are
-    flowchart → code only for now.
-  </div>
   <div bind:this={container} class="min-h-0 flex-1"></div>
 </div>

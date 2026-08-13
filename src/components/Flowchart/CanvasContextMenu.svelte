@@ -1,4 +1,7 @@
 <script lang="ts">
+  // Shared by both node and edge right-clicks in FlowchartBoard.svelte —
+  // Duplicate only makes sense for nodes, so it's omitted whenever an edge
+  // is the target.
   let {
     x,
     y,
@@ -8,7 +11,7 @@
   }: {
     x: number;
     y: number;
-    onDuplicate: () => void;
+    onDuplicate?: () => void;
     onDelete: () => void;
     onClose: () => void;
   } = $props();
@@ -32,9 +35,11 @@
   class="absolute z-20 flex flex-col overflow-hidden rounded-md border text-sm shadow-md"
   style="left: {x}px; top: {y}px; border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
 >
-  <button type="button" role="menuitem" class="px-3 py-1.5 text-left hover:opacity-80" onclick={onDuplicate}>
-    Duplicate
-  </button>
+  {#if onDuplicate}
+    <button type="button" role="menuitem" class="px-3 py-1.5 text-left hover:opacity-80" onclick={onDuplicate}>
+      Duplicate
+    </button>
+  {/if}
   <button
     type="button"
     role="menuitem"

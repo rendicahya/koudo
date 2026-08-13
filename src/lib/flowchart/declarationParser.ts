@@ -6,6 +6,24 @@ export interface ParsedDeclaration {
 
 const DECLARATION_TYPES = ['int', 'double', 'float', 'boolean', 'String'];
 
+// Reserved words a beginner might plausibly type as a variable name — not
+// the full Java keyword list, just the ones likely to show up here.
+const JAVA_RESERVED_WORDS = new Set([
+  'int', 'double', 'float', 'boolean', 'String', 'char', 'long', 'short', 'byte', 'void',
+  'class', 'interface', 'enum', 'extends', 'implements', 'public', 'private', 'protected',
+  'static', 'final', 'abstract', 'new', 'return', 'if', 'else', 'for', 'while', 'do', 'switch',
+  'case', 'default', 'break', 'continue', 'try', 'catch', 'finally', 'throw', 'throws', 'import',
+  'package', 'this', 'super', 'null', 'true', 'false', 'instanceof', 'synchronized', 'volatile',
+  'transient', 'native', 'strictfp', 'assert', 'const', 'goto', 'System',
+]);
+
+const IDENTIFIER_PATTERN = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+
+export function isValidJavaIdentifier(name: string): boolean {
+  const trimmed = name.trim();
+  return trimmed.length > 0 && IDENTIFIER_PATTERN.test(trimmed) && !JAVA_RESERVED_WORDS.has(trimmed);
+}
+
 // One statement per line, no semicolons inside the value (e.g. inside a
 // string literal) — a narrow, reliable subset rather than a real Java
 // tokenizer. See CLAUDE.md > Execution Engine Decision for the same
