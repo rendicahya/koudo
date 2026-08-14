@@ -8,6 +8,7 @@
     type DeclareNodeData,
   } from '../../stores/flowchart';
   import { isValidJavaIdentifier } from '../../lib/flowchart/declarationParser';
+  import { stepCurrentRow } from '../../stores/stepRunner';
 
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as DeclareNodeData);
@@ -37,7 +38,12 @@
 
   {#each entries as entry, index (index)}
     {@const nameIsValid = isValidJavaIdentifier(entry.varName ?? '')}
+    {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
     <div class="flex items-center gap-1">
+      <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
+           stepCurrentRow) — reserved width so other rows don't shift when
+           one of them lights up. -->
+      <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
       <select
         value={entry.varType}
         onchange={(event) => handleInput(index, 'varType', event)}

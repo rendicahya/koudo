@@ -10,6 +10,7 @@
     type AssignNodeData,
     type AssignmentEntry,
   } from '../../stores/flowchart';
+  import { stepCurrentRow } from '../../stores/stepRunner';
 
   const OPERATORS: AssignmentEntry['operator'][] = ['=', '+=', '-=', '*=', '/='];
 
@@ -64,7 +65,12 @@
 
   {#each entries as entry, index (index)}
     {@const kind = valueKind(entry.value, variables)}
+    {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
     <div class="flex flex-wrap items-center gap-1">
+      <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
+           stepCurrentRow) — reserved width so other rows don't shift when
+           one of them lights up. -->
+      <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
       <select
         value={entry.varName}
         onchange={(event) => handleField(index, 'varName', event)}

@@ -185,6 +185,25 @@ function nextDefaultVarName(): string {
   return `var${varNameCounter}`;
 }
 
+// After Open Project loads a saved flow, these counters must resume above
+// whatever's already in it — otherwise the next block dropped in could mint
+// an id (`${type}-${n}`, see createBlockNode) or default variable name
+// (`varN`, see nextDefaultVarName) that collides with one the loaded file
+// already uses. Best-effort for var names: only catches the `varN` pattern
+// nextDefaultVarName itself generates, not names the user typed by hand.
+function resyncCountersAfterLoad(nodeList: Node[]) {
+  for (const node of nodeList) {
+    const idMatch = /-(\d+)$/.exec(node.id);
+    if (idMatch) nodeCounter = Math.max(nodeCounter, Number(idMatch[1]));
+
+    const entries = (node.data as { entries?: { varName?: string }[] } | undefined)?.entries;
+    for (const entry of entries ?? []) {
+      const varMatch = /^var(\d+)$/.exec(entry.varName ?? '');
+      if (varMatch) varNameCounter = Math.max(varNameCounter, Number(varMatch[1]));
+    }
+  }
+}
+
 export function createBlockNode(type: BlockType, position: { x: number; y: number }): Node {
   const definition = BLOCK_DEFINITIONS.find((block) => block.type === type);
   if (!definition) throw new Error(`Unknown block type: ${type}`);
@@ -473,6 +492,14 @@ export const edges = writable<Edge[]>([]);
 export function resetFlowchart() {
   nodes.set(createDefaultNodes());
   edges.set([]);
+}
+
+// Powers Open Project — replaces the canvas with a previously Saved one
+// (see lib/storage/flowchartFile.ts for the file's shape/parsing).
+export function loadFlowchart(nodeList: Node[], edgeList: Edge[]) {
+  resyncCountersAfterLoad(nodeList);
+  nodes.set(nodeList);
+  edges.set(edgeList);
 }
 
 // True once the canvas differs from the default "just a Start block" state —

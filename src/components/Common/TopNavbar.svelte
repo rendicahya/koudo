@@ -2,9 +2,9 @@
   import ThemeToggle from './ThemeToggle.svelte';
   import { codeContent } from '../../stores/code';
   import { runCode } from '../../stores/run';
-  import { hasConnectedEndBlock, resetFlowchart, nodes, edges } from '../../stores/flowchart';
+  import { hasConnectedEndBlock, resetFlowchart, loadFlowchart, nodes, edges } from '../../stores/flowchart';
   import { downloadTextFile } from '../../lib/download';
-  import { serializeFlowchart } from '../../lib/storage/flowchartFile';
+  import { serializeFlowchart, parseFlowchartFile } from '../../lib/storage/flowchartFile';
   import { wrapAsJavaFile } from '../../lib/flowchart/exportJava';
   import { blockTypeOf } from '../../lib/flowchart/graphWalk';
   import { isStepping, isStepFinished, startStepRun, stepOnce, stopStepRun } from '../../stores/stepRunner';
@@ -16,6 +16,7 @@
 
   let projectMenuOpen = $state(false);
   let projectMenuEl: HTMLDivElement;
+  let fileInputEl: HTMLInputElement;
 
   let hasStart = $derived($nodes.some((node) => blockTypeOf(node) === 'start'));
 
@@ -39,11 +40,32 @@
     downloadTextFile('Main.java', wrapAsJavaFile($codeContent), 'text/x-java-source');
   }
 
-  // Open Project (loading a saved .koudo.json back onto the canvas) isn't
-  // wired up yet — this only routes the two actions that are.
+  function handleOpen() {
+    if (!confirm('Clear the canvas and open a different flowchart? This cannot be undone.')) return;
+    fileInputEl.click();
+  }
+
+  // The file input's own onchange — separate from handleOpen since it can
+  // also fire from a file picked after handleOpen's confirm, asynchronously.
+  async function handleFileSelected(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = ''; // otherwise re-picking the same file wouldn't fire another change event
+
+    if (!file) return;
+    try {
+      const project = parseFlowchartFile(await file.text());
+      stopStepRun();
+      loadFlowchart(project.nodes, project.edges);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   function handleProjectAction(action: (typeof projectActions)[number]) {
     projectMenuOpen = false;
     if (action === 'New') return handleNew();
+    if (action === 'Open Project') return handleOpen();
     if (action === 'Save Project') return handleSave();
   }
 
@@ -132,15 +154,20 @@
       >
         ⏭ Next Step
       </button>
-      <button
-        type="button"
-        class="rounded-md border px-3 py-1.5 text-sm font-medium"
-        style="border-color: var(--color-border); color: var(--color-text);"
-        onclick={stopStepRun}
-      >
-        ⏹ Stop
-      </button>
     {/if}
+
+    <!-- Always shown (not just once stepping starts), just disabled until
+         then — so its place in the toolbar is predictable instead of
+         buttons shifting around it as a step run starts/stops. -->
+    <button
+      type="button"
+      class="rounded-md border px-3 py-1.5 text-sm font-medium"
+      style="border-color: var(--color-border); color: var(--color-text); opacity: {$isStepping ? 1 : 0.5};"
+      disabled={!$isStepping}
+      onclick={stopStepRun}
+    >
+      ⏹ Stop
+    </button>
 
     <nav class="flex items-center gap-2">
       <div class="relative" bind:this={projectMenuEl}>
@@ -165,9 +192,6 @@
                 type="button"
                 role="menuitem"
                 class="px-3 py-1.5 text-left hover:opacity-80"
-                style="opacity: {action === 'Open Project' ? 0.5 : 1};"
-                disabled={action === 'Open Project'}
-                title={action === 'Open Project' ? 'Coming soon' : undefined}
                 onclick={() => handleProjectAction(action)}
               >
                 {action}
@@ -187,6 +211,14 @@
         Export Java
       </button>
     </nav>
+
+    <input
+      bind:this={fileInputEl}
+      type="file"
+      accept=".json,application/json"
+      class="hidden"
+      onchange={handleFileSelected}
+    />
   </div>
 
   <ThemeToggle />

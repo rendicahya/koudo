@@ -11,6 +11,7 @@
     PARALLELOGRAM_CLIP_PATH,
     type InputNodeData,
   } from '../../stores/flowchart';
+  import { stepCurrentRow } from '../../stores/stepRunner';
 
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as InputNodeData);
@@ -45,7 +46,12 @@
          against it. -->
     <div class="flex flex-col gap-1 py-1.5 pr-4 pl-6 text-xs" style="color: var(--color-text);">
       {#each entries as entry, index (index)}
+        {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
         <div class="flex flex-wrap items-center gap-1">
+          <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
+               stepCurrentRow) — reserved width so other rows don't shift
+               when one of them lights up. -->
+          <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
           <span style="color: var(--color-text-secondary);">input</span>
           <select
             value={entry.varName}

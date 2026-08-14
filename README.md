@@ -36,11 +36,11 @@ A small hand-written interpreter (`src/lib/execution/interpreter.ts`) actually r
 
 ### Step-by-step execution and the Variable Watcher
 
-**Step Through** (or `Alt+Shift+S`) runs the program one line at a time instead of all at once, highlighting whichever block is currently executing on the canvas — a Declare/Assign/Output/Input block with several lines steps through them one by one before moving to the next block, and a Decision evaluates its condition and follows whichever branch is actually taken. A live **Variable Watcher** table sits next to the Output panel throughout, showing every variable currently in scope and its value, updated after every single step.
+**Step Through** (or `Alt+Shift+S`) runs the program one line at a time instead of all at once, highlighting whichever block is currently executing on the canvas. Each line gets its own click and stays on that block — a print's output, or a newly declared/assigned variable, shows up *while its block is still highlighted*, not only after the playhead has already moved on. A Declare/Assign/Output/Input block holding several lines gets a small **▶** arrow next to whichever of its rows is currently running, plus a floating badge on the canvas and a line indicator in the Output panel (`Line 2/3: ...`); a Decision evaluates its condition and follows whichever branch is actually taken. **⏹ Stop** sits next to Step Through at all times (disabled until a run is active), and a live **Variable Watcher** table sits next to the Output panel throughout, showing every variable currently in scope and its value, updated after every single step.
 
 ### Everything else
 
-- **Project** menu (New / Open Project / Save Project — Open isn't wired up yet) and **Export Java**, which downloads the generated code as a real, compilable `Main.java`
+- **Project** menu (New / Open Project / Save Project) and **Export Java**, which downloads the generated code as a real, compilable `Main.java`. Save Project downloads the flowchart as `.koudo.json`; Open Project loads one back onto the canvas, behind the same confirmation as New
 - Download the flowchart itself as a PNG image
 - Hide/show the code panel from a toggle on the divider between it and the canvas, to give the flowchart more room
 - Minimizable block palette
@@ -50,7 +50,6 @@ A small hand-written interpreter (`src/lib/execution/interpreter.ts`) actually r
 
 ### Not built yet
 
-- Open Project — loading a saved `.koudo.json` back onto the canvas
 - A functional For Loop / While Loop *block* — the interpreter and code generator already support `for` loops (just hand-type one into the editor and Run/Step Through it fine), but there's no dedicated flowchart block for it yet
 - Onboarding/tutorial
 - Arrays, functions/methods, classes — anything past this single-method, beginner-first subset
@@ -123,7 +122,7 @@ src/
     │   └── interpreter.ts         the real (small) Java interpreter, run-all and step-by-step
     ├── storage/
     │   ├── layoutPrefs.ts         persisted panel sizes
-    │   └── flowchartFile.ts       flowchart -> Save Project JSON
+    │   └── flowchartFile.ts       flowchart <-> Save/Open Project JSON
     └── download.ts                 shared "download this as a file" helper
 ```
 

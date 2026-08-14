@@ -26,11 +26,23 @@ function scannerMethodFor(varType: string): string {
   }
 }
 
-// Exported for the step-by-step runner (stores/stepRunner.ts), which walks
-// the flow the same way this file's own walk() does but one node at a
-// time — reusing this keeps a stepped run's per-node Java text identical to
-// what a normal Run/Export would generate for that node.
-export function statementFor(node: Node, nodesById: Map<string, Node>, edges: Edge[]): string | null {
+// One block's generated Java text, one entry per line, each still carrying
+// the index of the entries/statements row (as rendered by
+// DeclareNode/AssignNode/ProcessNode/InputNode) it came from. An Input
+// entry can produce two lines (an optional prompt-print, then the read)
+// that both belong to the same row — everything else is one row, one line.
+// rowIndex is -1 for a line with no corresponding UI row (only the
+// forLoop/whileLoop placeholder, which isn't a real entries list).
+//
+// Exported for the step-by-step runner (stores/stepRunner.ts) — it's how
+// Step Through points its per-line arrow (see stepCurrentRow) at the right
+// row inside a multi-line block, not just the block as a whole.
+export interface StatementLine {
+  text: string;
+  rowIndex: number;
+}
+
+export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edges: Edge[]): StatementLine[] {
   const blockType = blockTypeOf(node);
   const label = (node.data?.label as string | undefined) ?? '';
 
@@ -38,27 +50,33 @@ export function statementFor(node: Node, nodesById: Map<string, Node>, edges: Ed
     case 'start':
     case 'end':
     case 'decision': // handled separately in walk() — branches, not a single statement
-      return null;
+      return [];
     case 'process': {
       // One block can hold several print statements (see
       // ProcessNode.svelte's "+ Add variable"), each becoming its own line.
       const statements = (node.data?.statements as string[] | undefined) ?? [];
-      const lines = statements.map((s) => s.trim()).filter(Boolean).map((s) => `${s};`);
-      return lines.length > 0 ? lines.join('\n') : null;
+      return statements
+        .map((statement, rowIndex) => ({ text: statement.trim(), rowIndex }))
+        .filter((line) => line.text)
+        .map((line) => ({ text: `${line.text};`, rowIndex: line.rowIndex }));
     }
     case 'declare': {
       // One block can hold several variables (merged via drag — see
       // FlowchartBoard's handleDrop), each becoming its own line.
       const entries = (node.data?.entries as { varType: string; varName: string; varValue: string }[] | undefined) ?? [];
-      const lines = entries.filter((e) => e.varName.trim()).map((e) => `${e.varType} ${e.varName} = ${e.varValue};`);
-      return lines.length > 0 ? lines.join('\n') : null;
+      return entries
+        .map((entry, rowIndex) => ({ entry, rowIndex }))
+        .filter(({ entry }) => entry.varName.trim())
+        .map(({ entry, rowIndex }) => ({ text: `${entry.varType} ${entry.varName} = ${entry.varValue};`, rowIndex }));
     }
     case 'assign': {
       // One block can hold several assignments (the "+ Add assignment"
       // control), each becoming its own line.
       const entries = (node.data?.entries as { varName: string; operator: string; value: string }[] | undefined) ?? [];
-      const lines = entries.filter((e) => e.varName.trim()).map((e) => `${e.varName} ${e.operator} ${e.value};`);
-      return lines.length > 0 ? lines.join('\n') : null;
+      return entries
+        .map((entry, rowIndex) => ({ entry, rowIndex }))
+        .filter(({ entry }) => entry.varName.trim())
+        .map(({ entry, rowIndex }) => ({ text: `${entry.varName} ${entry.operator} ${entry.value};`, rowIndex }));
     }
     case 'input': {
       // One block can hold several reads (the "+ Add input" control), each
@@ -68,24 +86,31 @@ export function statementFor(node: Node, nodesById: Map<string, Node>, edges: Ed
       const entries = (node.data?.entries as { varName: string; prompt: string }[] | undefined) ?? [];
       const nodeList = [...nodesById.values()];
       const declarations = declaredVariableEntriesUpstreamOf(node.id, nodeList, edges);
-      const lines: string[] = [];
-      for (const entry of entries) {
-        if (!entry.varName.trim()) continue;
+      const lines: StatementLine[] = [];
+      entries.forEach((entry, rowIndex) => {
+        if (!entry.varName.trim()) return;
         const varType = declarations.find((d) => d.varName === entry.varName)?.varType ?? 'int';
         // Trimmed only to test for "is there a prompt at all" — the actual
         // text keeps any trailing space the user typed on purpose (e.g.
         // "Enter x: " reads better before the input than "Enter x:").
-        if (entry.prompt.trim()) lines.push(`System.out.print("${escapeJavaString(entry.prompt)}");`);
-        lines.push(`${entry.varName} = scanner.${scannerMethodFor(varType)}();`);
-      }
-      return lines.length > 0 ? lines.join('\n') : null;
+        if (entry.prompt.trim()) lines.push({ text: `System.out.print("${escapeJavaString(entry.prompt)}");`, rowIndex });
+        lines.push({ text: `${entry.varName} = scanner.${scannerMethodFor(varType)}();`, rowIndex });
+      });
+      return lines;
     }
     case 'forLoop':
     case 'whileLoop':
-      return `// TODO: ${label} — not generated yet`;
+      return [{ text: `// TODO: ${label} — not generated yet`, rowIndex: -1 }];
     default:
-      return null;
+      return [];
   }
+}
+
+// Codegen's own view of the above — just the text, joined into the one
+// multi-line statement walk() splices into the generated program.
+function statementFor(node: Node, nodesById: Map<string, Node>, edges: Edge[]): string | null {
+  const lines = statementLinesFor(node, nodesById, edges);
+  return lines.length > 0 ? lines.map((line) => line.text).join('\n') : null;
 }
 
 function indent(lines: string[]): string[] {
