@@ -1,19 +1,36 @@
 import type { Edge, Node } from '@xyflow/svelte';
+import { blockTypeOf, outgoing, findMergePoint, declaredVariableEntriesUpstreamOf } from './graphWalk';
 
-function blockTypeOf(node: Node): string | undefined {
-  return node.data?.blockType as string | undefined;
+// Free-typed text (an Input block's prompt) embedded into a generated Java
+// string literal needs its own quotes/backslashes escaped, or a `"` typed
+// into the prompt field would break the generated code's syntax.
+function escapeJavaString(text: string): string {
+  return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-// Everything except Decision has at most one outgoing edge (enforced in
-// stores/flowchart.ts's pruneOutgoingEdge); Decision has up to two, one per
-// handle (pruneOutgoingEdgeForHandle). "no handle" (null/undefined
-// sourceHandle) covers every non-Decision source.
-function outgoing(edges: Edge[], sourceId: string, sourceHandle: string | null): string | null {
-  const edge = edges.find((e) => e.source === sourceId && (e.sourceHandle ?? null) === sourceHandle);
-  return edge?.target ?? null;
+// Scanner method for a variable's declared type — read a whole word
+// (`.next()`) for anything not otherwise recognized (including String,
+// since `.nextLine()` would swallow the rest of the current input line
+// instead of just one token, a common beginner gotcha this sidesteps).
+function scannerMethodFor(varType: string): string {
+  switch (varType) {
+    case 'int':
+      return 'nextInt';
+    case 'double':
+    case 'float':
+      return 'nextDouble';
+    case 'boolean':
+      return 'nextBoolean';
+    default:
+      return 'next';
+  }
 }
 
-function statementFor(node: Node): string | null {
+// Exported for the step-by-step runner (stores/stepRunner.ts), which walks
+// the flow the same way this file's own walk() does but one node at a
+// time — reusing this keeps a stepped run's per-node Java text identical to
+// what a normal Run/Export would generate for that node.
+export function statementFor(node: Node, nodesById: Map<string, Node>, edges: Edge[]): string | null {
   const blockType = blockTypeOf(node);
   const label = (node.data?.label as string | undefined) ?? '';
 
@@ -36,69 +53,39 @@ function statementFor(node: Node): string | null {
       const lines = entries.filter((e) => e.varName.trim()).map((e) => `${e.varType} ${e.varName} = ${e.varValue};`);
       return lines.length > 0 ? lines.join('\n') : null;
     }
+    case 'assign': {
+      // One block can hold several assignments (the "+ Add assignment"
+      // control), each becoming its own line.
+      const entries = (node.data?.entries as { varName: string; operator: string; value: string }[] | undefined) ?? [];
+      const lines = entries.filter((e) => e.varName.trim()).map((e) => `${e.varName} ${e.operator} ${e.value};`);
+      return lines.length > 0 ? lines.join('\n') : null;
+    }
+    case 'input': {
+      // One block can hold several reads (the "+ Add input" control), each
+      // becoming a prompt-print (if a prompt was given) plus a read line —
+      // the Scanner method is picked from the target variable's own
+      // declared type, wherever upstream that was declared.
+      const entries = (node.data?.entries as { varName: string; prompt: string }[] | undefined) ?? [];
+      const nodeList = [...nodesById.values()];
+      const declarations = declaredVariableEntriesUpstreamOf(node.id, nodeList, edges);
+      const lines: string[] = [];
+      for (const entry of entries) {
+        if (!entry.varName.trim()) continue;
+        const varType = declarations.find((d) => d.varName === entry.varName)?.varType ?? 'int';
+        // Trimmed only to test for "is there a prompt at all" — the actual
+        // text keeps any trailing space the user typed on purpose (e.g.
+        // "Enter x: " reads better before the input than "Enter x:").
+        if (entry.prompt.trim()) lines.push(`System.out.print("${escapeJavaString(entry.prompt)}");`);
+        lines.push(`${entry.varName} = scanner.${scannerMethodFor(varType)}();`);
+      }
+      return lines.length > 0 ? lines.join('\n') : null;
+    }
     case 'forLoop':
     case 'whileLoop':
       return `// TODO: ${label} — not generated yet`;
     default:
       return null;
   }
-}
-
-// All node ids reachable by following outgoing edges from startId — for a
-// Decision node this means both its "true" and "false" branches, recursively.
-// Used only to find where two branches of an *outer* if/else reconverge, so
-// walk() knows where to stop each branch and continue once, rather than
-// generating the shared tail twice.
-function reachableFrom(startId: string | null, nodesById: Map<string, Node>, edges: Edge[]): Set<string> {
-  const visited = new Set<string>();
-  const stack = startId ? [startId] : [];
-  while (stack.length > 0) {
-    const id = stack.pop()!;
-    if (visited.has(id)) continue;
-    visited.add(id);
-    const node = nodesById.get(id);
-    if (blockTypeOf(node) === 'decision') {
-      const trueId = outgoing(edges, id, 'true');
-      const falseId = outgoing(edges, id, 'false');
-      if (trueId) stack.push(trueId);
-      if (falseId) stack.push(falseId);
-    } else {
-      const nextId = outgoing(edges, id, null);
-      if (nextId) stack.push(nextId);
-    }
-  }
-  return visited;
-}
-
-// The first node (breadth-first from falseId) that's also reachable from
-// trueId — a reasonable "where do these two branches reconverge" heuristic
-// for the straight-line-with-branches graphs this app's canvas produces.
-// Returns null if they never reconverge (each branch runs to its own End,
-// for instance).
-function findMergePoint(trueId: string | null, falseId: string | null, nodesById: Map<string, Node>, edges: Edge[]): string | null {
-  if (!trueId || !falseId) return null;
-  const trueReachable = reachableFrom(trueId, nodesById, edges);
-
-  const queue: string[] = [falseId];
-  const seen = new Set<string>();
-  while (queue.length > 0) {
-    const id = queue.shift()!;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    if (trueReachable.has(id)) return id;
-
-    const node = nodesById.get(id);
-    if (blockTypeOf(node) === 'decision') {
-      const t = outgoing(edges, id, 'true');
-      const f = outgoing(edges, id, 'false');
-      if (t) queue.push(t);
-      if (f) queue.push(f);
-    } else {
-      const nextId = outgoing(edges, id, null);
-      if (nextId) queue.push(nextId);
-    }
-  }
-  return null;
 }
 
 function indent(lines: string[]): string[] {
@@ -139,13 +126,15 @@ function walk(nodeId: string | null, stopId: string | null, nodesById: Map<strin
       continue;
     }
 
-    const statement = statementFor(node);
+    const statement = statementFor(node, nodesById, edges);
     if (statement) lines.push(...statement.split('\n'));
     currentId = outgoing(edges, currentId, null);
   }
 
   return lines;
 }
+
+const SCANNER_CALL_PATTERN = /\.\s*(nextInt|nextDouble|nextBoolean|nextLine|next)\s*\(\s*\)/;
 
 export function generateJavaCode(nodes: Node[], edges: Edge[]): string {
   if (nodes.length === 0) {
@@ -161,6 +150,14 @@ export function generateJavaCode(nodes: Node[], edges: Edge[]): string {
   const lines = walk(startNode.id, null, nodesById, edges, new Set());
 
   if (lines.length === 0) return '';
+
+  // Only reachable Input blocks actually produce a `.nextX()` call, so
+  // check the generated output itself rather than raw node data — an Input
+  // block that's on the canvas but disconnected from the flow shouldn't
+  // get a Scanner declared for it.
+  if (lines.some((line) => SCANNER_CALL_PATTERN.test(line))) {
+    lines.unshift('Scanner scanner = new Scanner(System.in);');
+  }
 
   return `${lines.join('\n')}\n`;
 }

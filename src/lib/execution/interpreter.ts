@@ -36,10 +36,21 @@ const KEYWORDS = new Set([
   'else',
   'System',
   'out',
+  'in',
+  'print',
   'println',
   'true',
   'false',
+  'Scanner',
+  'new',
 ]);
+
+// Recognized as `<anyIdentifier>.<methodName>()` inside an expression (see
+// parsePrimary) — the identifier itself is never checked against a real
+// Scanner binding, since this interpreter doesn't model objects/methods in
+// general. Only these specific method names, called with no arguments,
+// trigger a (synchronous, via window.prompt) read from the user.
+const SCANNER_METHODS = new Set(['nextInt', 'nextDouble', 'nextBoolean', 'nextLine', 'next']);
 
 // Longest-first so e.g. `<=` isn't tokenized as `<` then `=`.
 const PUNCTUATORS = [
@@ -143,16 +154,22 @@ type Expr =
   | { kind: 'boolean'; value: boolean; line: number }
   | { kind: 'identifier'; name: string; line: number }
   | { kind: 'unary'; op: '-' | '!'; operand: Expr; line: number }
-  | { kind: 'binary'; op: string; left: Expr; right: Expr; line: number };
+  | { kind: 'binary'; op: string; left: Expr; right: Expr; line: number }
+  | { kind: 'scannerRead'; method: string; line: number };
 
 type Stmt =
   | { kind: 'varDecl'; varType: VarKind; name: string; init: Expr; line: number }
   | { kind: 'assign'; name: string; op: '=' | '+=' | '-=' | '*=' | '/='; value: Expr; line: number }
   | { kind: 'update'; name: string; op: '++' | '--'; line: number }
-  | { kind: 'print'; arg: Expr | null; line: number }
+  | { kind: 'print'; arg: Expr | null; newline: boolean; line: number }
   | { kind: 'for'; init: Stmt | null; test: Expr | null; update: Stmt | null; body: Stmt[]; line: number }
   | { kind: 'if'; test: Expr; then: Stmt; else: Stmt | null; line: number }
-  | { kind: 'block'; body: Stmt[]; line: number };
+  | { kind: 'block'; body: Stmt[]; line: number }
+  // A `Scanner sc = new Scanner(System.in);` declaration — this interpreter
+  // doesn't model a real Scanner object, so it's parsed just to accept the
+  // idiomatic Java and then does nothing; the actual reads happen at each
+  // `<ident>.nextInt()`-shaped expression (see scannerRead).
+  | { kind: 'noop'; line: number };
 
 class ParseError extends Error {}
 
@@ -191,6 +208,16 @@ class Parser {
     return statements;
   }
 
+  // A Decision block's condition (e.g. "a > 5") isn't a statement — none of
+  // parseStatement's shapes (var decl, assignment, print, ...) accept a bare
+  // expression — so the step runner (see createStepInterpreter) parses it
+  // through here instead of parseProgram.
+  parseStandaloneExpression(): Expr {
+    const expr = this.parseExpression();
+    this.expect('eof');
+    return expr;
+  }
+
   private parseStatement(): Stmt {
     const t = this.peek();
 
@@ -203,6 +230,11 @@ class Parser {
     if (t.type === 'keyword' && t.value === 'if') return this.parseIf();
     if (t.type === 'keyword' && t.value === 'System') {
       const stmt = this.parsePrint();
+      this.expect('punct', ';');
+      return stmt;
+    }
+    if (t.type === 'keyword' && t.value === 'Scanner') {
+      const stmt = this.parseScannerDecl();
       this.expect('punct', ';');
       return stmt;
     }
@@ -246,11 +278,32 @@ class Parser {
     this.expect('punct', '.');
     this.expect('keyword', 'out');
     this.expect('punct', '.');
-    this.expect('keyword', 'println');
+    const methodTok = this.peek();
+    if (!(methodTok.type === 'keyword' && (methodTok.value === 'println' || methodTok.value === 'print'))) {
+      throw new ParseError(`Expected 'print' or 'println' but found '${methodTok.value || 'end of code'}' on line ${methodTok.line}`);
+    }
+    this.next();
     this.expect('punct', '(');
     const arg = this.check('punct', ')') ? null : this.parseExpression();
     this.expect('punct', ')');
-    return { kind: 'print', arg, line: startTok.line };
+    return { kind: 'print', arg, newline: methodTok.value === 'println', line: startTok.line };
+  }
+
+  // `Scanner sc = new Scanner(System.in);` — parsed and discarded (see the
+  // `noop` Stmt kind's comment for why). The variable name isn't even kept;
+  // reads are recognized purely by method name at the call site.
+  private parseScannerDecl(): Stmt {
+    const startTok = this.next(); // Scanner
+    this.expect('identifier');
+    this.expect('punct', '=');
+    this.expect('keyword', 'new');
+    this.expect('keyword', 'Scanner');
+    this.expect('punct', '(');
+    this.expect('keyword', 'System');
+    this.expect('punct', '.');
+    this.expect('keyword', 'in');
+    this.expect('punct', ')');
+    return { kind: 'noop', line: startTok.line };
   }
 
   private parseFor(): Stmt {
@@ -387,6 +440,16 @@ class Parser {
     }
     if (t.type === 'identifier') {
       this.next();
+      // `<anyIdentifier>.nextInt()` etc. — the identifier isn't checked
+      // against any real Scanner binding (see SCANNER_METHODS' comment);
+      // only the method name and empty-argument-list matter.
+      if (this.check('punct', '.') && this.peek(1).type === 'identifier' && SCANNER_METHODS.has(this.peek(1).value)) {
+        this.next(); // '.'
+        const methodTok = this.next(); // method name
+        this.expect('punct', '(');
+        this.expect('punct', ')');
+        return { kind: 'scannerRead', method: methodTok.value, line: t.line };
+      }
       return { kind: 'identifier', name: t.value, line: t.line };
     }
     if (t.type === 'punct' && t.value === '(') {
@@ -418,20 +481,72 @@ class RuntimeError extends Error {}
 const MAX_STEPS = 200_000;
 const MAX_OUTPUT_LINES = 5_000;
 
+// Requests one line of input from the user. Backed by window.prompt() by
+// default — it's synchronous/blocking, which is exactly what this
+// synchronous tree-walking interpreter needs, with no async rewrite.
+// Injectable so the interpreter itself stays testable outside a browser.
+export type PromptFn = (message: string) => string | null;
+
+function defaultPrompt(message: string): string | null {
+  return typeof window !== 'undefined' && typeof window.prompt === 'function' ? window.prompt(message) : null;
+}
+
 class Interpreter {
   private scopes: Map<string, VarSlot>[] = [new Map()];
   private output: string[] = [];
+  // Accumulates System.out.print() text (no newline) until the next
+  // println, program end, or error flushes it into `output` as a line —
+  // print() on its own doesn't start a new output line the way println()
+  // does.
+  private pendingLine = '';
   private steps = 0;
+
+  constructor(private promptFn: PromptFn) {}
 
   run(program: Stmt[]): string[] {
     this.execBlock(program);
+    this.flushPending();
     return this.output;
   }
 
   // Whatever printed before a runtime error hit, so a mistake partway
   // through a loop doesn't erase everything that ran successfully.
   getOutput(): string[] {
+    this.flushPending();
     return this.output;
+  }
+
+  // Runs a handful of top-level statements (one flowchart node's worth —
+  // see createStepInterpreter) against this interpreter's *existing* scope,
+  // instead of run()'s fresh one — so a Declare block's step and an Assign
+  // block's step later on see the same variables.
+  runMore(statements: Stmt[]) {
+    this.execBlock(statements);
+  }
+
+  // Evaluates a Decision block's condition against this interpreter's live
+  // scope, same as an `if (...)` test would mid-program.
+  evalCondition(expr: Expr): boolean {
+    return Boolean(this.evalExpr(expr).value);
+  }
+
+  // Every variable currently in scope, for the step runner's Variable
+  // Watcher (see stores/stepRunner.ts) — merged outer-to-inner so a shadowed
+  // outer variable never masks the one actually in effect. In practice a
+  // stepped run never pushes past the single top-level scope (see runMore's
+  // comment), but this stays correct if that ever changes.
+  getVariables(): { name: string; kind: VarKind; value: string }[] {
+    const merged = new Map<string, VarSlot>();
+    for (const scope of this.scopes) {
+      for (const [name, slot] of scope) merged.set(name, slot);
+    }
+    return [...merged.entries()].map(([name, slot]) => ({ name, kind: slot.kind, value: formatValue(slot) }));
+  }
+
+  private flushPending() {
+    if (!this.pendingLine) return;
+    this.output.push(this.pendingLine);
+    this.pendingLine = '';
   }
 
   private tick(line: number) {
@@ -491,12 +606,18 @@ class Interpreter {
       }
       case 'print': {
         const value = stmt.arg ? formatValue(this.evalExpr(stmt.arg)) : '';
-        this.output.push(value);
+        this.pendingLine += value;
+        if (stmt.newline) {
+          this.output.push(this.pendingLine);
+          this.pendingLine = '';
+        }
         if (this.output.length > MAX_OUTPUT_LINES) {
           throw new RuntimeError(`Stopped after ${MAX_OUTPUT_LINES.toLocaleString()} lines of output.`);
         }
         return;
       }
+      case 'noop':
+        return;
       case 'block': {
         this.pushScope();
         this.execBlock(stmt.body);
@@ -547,7 +668,45 @@ class Interpreter {
         const right = this.evalExpr(expr.right);
         return applyBinaryOp(expr.op, left, right, expr.line);
       }
+      case 'scannerRead': {
+        // Whatever's printed so far (e.g. a prompt via System.out.print)
+        // should show up before the native input dialog, not get stuck
+        // behind it in a still-pending line.
+        this.flushPending();
+        return readFromUser(this.promptFn, expr.method, expr.line);
+      }
     }
+  }
+}
+
+function readFromUser(promptFn: PromptFn, method: string, line: number): EvalValue {
+  const raw = promptFn('Program is waiting for input:');
+  if (raw === null) throw new RuntimeError(`Input was cancelled (line ${line}).`);
+
+  switch (method) {
+    case 'nextInt': {
+      const n = Number(raw.trim());
+      if (!Number.isFinite(n) || !Number.isInteger(n)) {
+        throw new RuntimeError(`Expected a whole number but got '${raw}' (line ${line}).`);
+      }
+      return { kind: 'int', value: n };
+    }
+    case 'nextDouble': {
+      const n = Number(raw.trim());
+      if (!Number.isFinite(n)) throw new RuntimeError(`Expected a number but got '${raw}' (line ${line}).`);
+      return { kind: 'double', value: n };
+    }
+    case 'nextBoolean': {
+      const v = raw.trim().toLowerCase();
+      if (v !== 'true' && v !== 'false') {
+        throw new RuntimeError(`Expected true or false but got '${raw}' (line ${line}).`);
+      }
+      return { kind: 'boolean', value: v === 'true' };
+    }
+    case 'nextLine':
+    case 'next':
+    default:
+      return { kind: 'String', value: raw };
   }
 }
 
@@ -625,12 +784,48 @@ function applyBinaryOp(op: string, left: EvalValue, right: EvalValue, line: numb
   }
 }
 
-export function runJava(code: string): RunResult {
+// Powers the flowchart's step-by-step runner (see stores/stepRunner.ts):
+// one persistent Interpreter, fed one node's worth of Java text at a time
+// (a Declare/Assign/Process/Input block's generated statement(s), or a
+// Decision block's condition) instead of a whole program at once, so
+// variables declared by an earlier step are still in scope for a later one.
+export interface StepInterpreter {
+  /** Runs one node's generated statement(s) (e.g. "int a = 1;"). Throws (TokenizeError/ParseError/RuntimeError) on bad code. */
+  runStatements(code: string): void;
+  /** Evaluates a Decision node's condition text (e.g. "a > 5"). Throws the same way. */
+  evalCondition(code: string): boolean;
+  /** Everything printed by every runStatements() call so far on this interpreter. */
+  getOutput(): string[];
+  /** Every variable currently in scope — name, declared type, and formatted current value. */
+  getVariables(): { name: string; type: string; value: string }[];
+}
+
+export function createStepInterpreter(promptFn: PromptFn = defaultPrompt): StepInterpreter {
+  const interpreter = new Interpreter(promptFn);
+  return {
+    runStatements(code: string) {
+      const program = new Parser(tokenize(code)).parseProgram();
+      interpreter.runMore(program);
+    },
+    evalCondition(code: string) {
+      const expr = new Parser(tokenize(code)).parseStandaloneExpression();
+      return interpreter.evalCondition(expr);
+    },
+    getOutput() {
+      return interpreter.getOutput();
+    },
+    getVariables() {
+      return interpreter.getVariables().map(({ name, kind, value }) => ({ name, type: kind, value }));
+    },
+  };
+}
+
+export function runJava(code: string, promptFn: PromptFn = defaultPrompt): RunResult {
   let interpreter: Interpreter | null = null;
   try {
     const tokens = tokenize(code);
     const program = new Parser(tokens).parseProgram();
-    interpreter = new Interpreter();
+    interpreter = new Interpreter(promptFn);
     const output = interpreter.run(program);
     return { output, error: null };
   } catch (err) {

@@ -17,6 +17,10 @@
       minimap: { enabled: false },
       fontSize: 14,
       theme: $theme === 'dark' ? 'vs-dark' : 'vs',
+      // Monaco defaults to padding roughly a screen's worth of blank space
+      // below the last line (so it can scroll to the top), which shows a
+      // scrollbar even when the actual code is short enough to fit.
+      scrollBeyondLastLine: false,
     });
 
     editor.onDidChangeModelContent(() => {

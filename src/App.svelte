@@ -2,12 +2,11 @@
   import TopNavbar from './components/Common/TopNavbar.svelte';
   import FlowchartCanvas from './components/Flowchart/FlowchartCanvas.svelte';
   import JavaCodeEditor from './components/CodeEditor/JavaCodeEditor.svelte';
-  import LoopIterationPanel from './components/LoopTracer/LoopIterationPanel.svelte';
-  import OutputPanel from './components/LoopTracer/OutputPanel.svelte';
+  import OutputPanel from './components/Output/OutputPanel.svelte';
   import { loadLayoutPrefs, saveLayoutPrefs } from './lib/storage/layoutPrefs';
   import { isFlowchartDirty } from './stores/flowchart';
   import { toggleTheme } from './stores/theme';
-  import { footerTab } from './stores/run';
+  import { isCodePanelHidden, toggleCodePanel } from './stores/layout';
 
   function handleBeforeUnload(event: BeforeUnloadEvent) {
     if (!$isFlowchartDirty) return;
@@ -97,8 +96,10 @@
 
   <main bind:this={mainEl} class="flex flex-1 flex-col overflow-hidden md:flex-row">
     <section
-      class="flowchart-panel h-1/2 border-b md:h-full md:border-b-0"
-      style="border-color: var(--color-border); --flowchart-percent: {flowchartPercent}%;"
+      class="flowchart-panel {$isCodePanelHidden ? 'h-full' : 'h-1/2 border-b md:border-b-0'} md:h-full"
+      style="border-color: var(--color-border); --flowchart-percent: {flowchartPercent}%; {$isCodePanelHidden
+        ? 'width: 100%;'
+        : ''}"
     >
       <FlowchartCanvas />
     </section>
@@ -108,60 +109,52 @@
       aria-orientation="vertical"
       aria-label="Resize flowchart and code panels"
       class="resizer hidden shrink-0 md:block"
-      onpointerdown={beginColumnResize}
-    ></div>
-
-    <section class="code-column flex h-1/2 flex-1 flex-col overflow-hidden md:h-full">
-      <div class="min-h-0 flex-1" style="background: var(--color-editor-bg);">
-        <JavaCodeEditor />
-      </div>
-
-      <div
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="Resize output panel"
-        class="resizer resizer-horizontal shrink-0"
-        onpointerdown={beginRowResize}
-      ></div>
-
-      <footer
-        class="flex shrink-0 flex-col overflow-hidden border-t"
-        style="height: {outputHeight}px; border-color: var(--color-border); background: var(--color-panel);"
+      onpointerdown={$isCodePanelHidden ? undefined : beginColumnResize}
+    >
+      <!-- The hide/show toggle lives on the divider itself rather than the
+           top bar — it acts on this boundary, so it reads more directly
+           parked right on it. Stops both pointerdown and click from
+           reaching the divider's own drag handler above, or clicking it
+           would also kick off a resize-drag. -->
+      <button
+        type="button"
+        class="absolute left-1/2 top-1/2 z-10 flex h-9 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded border text-xs shadow-sm hover:opacity-80"
+        style="background: var(--color-panel); border-color: var(--color-border); color: var(--color-text); cursor: pointer;"
+        title={$isCodePanelHidden ? 'Show the code panel' : 'Hide the code panel'}
+        onpointerdown={(event) => event.stopPropagation()}
+        onclick={(event) => {
+          event.stopPropagation();
+          toggleCodePanel();
+        }}
       >
-        <div class="flex shrink-0 border-b" style="border-color: var(--color-border);">
-          <button
-            type="button"
-            class="px-3 py-1.5 text-sm"
-            style="color: {$footerTab === 'output' ? 'var(--color-accent)' : 'var(--color-text-secondary)'}; border-bottom: 2px solid {$footerTab ===
-            'output'
-              ? 'var(--color-accent)'
-              : 'transparent'};"
-            onclick={() => footerTab.set('output')}
-          >
-            Output
-          </button>
-          <button
-            type="button"
-            class="px-3 py-1.5 text-sm"
-            style="color: {$footerTab === 'tracer' ? 'var(--color-accent)' : 'var(--color-text-secondary)'}; border-bottom: 2px solid {$footerTab ===
-            'tracer'
-              ? 'var(--color-accent)'
-              : 'transparent'};"
-            onclick={() => footerTab.set('tracer')}
-          >
-            Loop Tracer
-          </button>
+        {$isCodePanelHidden ? '⏴' : '⏵'}
+      </button>
+    </div>
+
+    {#if !$isCodePanelHidden}
+      <section class="code-column flex h-1/2 flex-1 flex-col overflow-hidden md:h-full">
+        <div class="min-h-0 flex-1" style="background: var(--color-editor-bg);">
+          <JavaCodeEditor />
         </div>
 
-        <div class="min-h-0 flex-1">
-          {#if $footerTab === 'output'}
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize output panel"
+          class="resizer resizer-horizontal shrink-0"
+          onpointerdown={beginRowResize}
+        ></div>
+
+        <footer
+          class="flex shrink-0 flex-col overflow-hidden border-t"
+          style="height: {outputHeight}px; border-color: var(--color-border); background: var(--color-panel);"
+        >
+          <div class="min-h-0 flex-1">
             <OutputPanel />
-          {:else}
-            <LoopIterationPanel />
-          {/if}
-        </div>
-      </footer>
-    </section>
+          </div>
+        </footer>
+      </section>
+    {/if}
   </main>
 </div>
 

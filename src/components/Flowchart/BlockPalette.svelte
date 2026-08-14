@@ -1,6 +1,8 @@
 <script lang="ts">
   import { nodes, BLOCK_DEFINITIONS, PARALLELOGRAM_CLIP_PATH, DIAMOND_CLIP_PATH, type BlockDefinition } from '../../stores/flowchart';
 
+  let minimized = $state(false);
+
   let hasStart = $derived($nodes.some((node) => node.data?.blockType === 'start'));
   let hasEnd = $derived($nodes.some((node) => node.data?.blockType === 'end'));
 
@@ -23,6 +25,12 @@
     if (isSingletonBlocked(block)) return `${block.label} — already on the canvas`;
     if (block.comingSoon) return `${block.label} — coming soon`;
     return `Drag onto the canvas to add a ${block.label} block`;
+  }
+
+  // Input and Output share the same flowchart symbol (a parallelogram);
+  // Decision is the only diamond.
+  function clipPathFor(block: BlockDefinition): string {
+    return block.type === 'decision' ? DIAMOND_CLIP_PATH : PARALLELOGRAM_CLIP_PATH;
   }
 
   function handleDragStart(event: DragEvent, block: BlockDefinition) {
@@ -51,49 +59,56 @@
   ondragover={handleCancelledDrop}
   ondrop={handleCancelledDrop}
 >
-  <p class="mb-1 px-1 text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">
-    Blocks
-  </p>
-  {#each BLOCK_DEFINITIONS as block (block.type)}
-    {@const dimmed = isDimmed(block)}
-    {#if block.type === 'process' || block.type === 'decision'}
-      <!-- Standard flowchart Input/Output (parallelogram) and Decision
-           (diamond) symbols, matching their shape on the canvas. -->
-      <div
-        role="button"
-        tabindex="0"
-        draggable="true"
-        ondragstart={(event) => handleDragStart(event, block)}
-        class="cursor-grab active:cursor-grabbing"
-        class:opacity-50={dimmed}
-        style="background: var(--color-node-border); padding: 1px; clip-path: {block.type === 'process'
-          ? PARALLELOGRAM_CLIP_PATH
-          : DIAMOND_CLIP_PATH};"
-        title={chipTitle(block)}
-      >
+  <div class="mb-1 flex items-center justify-between gap-3 px-1">
+    <p class="text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">Blocks</p>
+    <button
+      type="button"
+      class="leading-none hover:opacity-80"
+      style="color: var(--color-text-secondary);"
+      title={minimized ? 'Expand the block palette' : 'Minimize the block palette'}
+      onclick={() => (minimized = !minimized)}
+    >
+      {minimized ? '▾' : '▴'}
+    </button>
+  </div>
+  {#if !minimized}
+    {#each BLOCK_DEFINITIONS as block (block.type)}
+      {@const dimmed = isDimmed(block)}
+      {#if block.type === 'process' || block.type === 'input' || block.type === 'decision'}
+        <!-- Standard flowchart Input/Output (parallelogram) and Decision
+             (diamond) symbols, matching their shape on the canvas. -->
         <div
-          class="px-3 py-1"
-          style="background: var(--color-node-bg); color: var(--color-text); clip-path: {block.type === 'process'
-            ? PARALLELOGRAM_CLIP_PATH
-            : DIAMOND_CLIP_PATH};"
+          role="button"
+          tabindex="0"
+          draggable="true"
+          ondragstart={(event) => handleDragStart(event, block)}
+          class="cursor-grab active:cursor-grabbing"
+          class:opacity-50={dimmed}
+          style="background: var(--color-node-border); padding: 1px; clip-path: {clipPathFor(block)};"
+          title={chipTitle(block)}
         >
-          + {block.label}
+          <div
+            class="px-3 py-1 text-center"
+            style="background: var(--color-node-bg); color: var(--color-text); clip-path: {clipPathFor(block)};"
+          >
+            {block.label}
+          </div>
         </div>
-      </div>
-    {:else}
-      <div
-        role="button"
-        tabindex="0"
-        draggable="true"
-        ondragstart={(event) => handleDragStart(event, block)}
-        class="cursor-grab px-2 py-1 active:cursor-grabbing"
-        class:rounded={block.type !== 'declare'}
-        class:opacity-50={dimmed}
-        style="border: 1px solid var(--color-border); color: var(--color-text);"
-        title={chipTitle(block)}
-      >
-        + {block.label}{block.comingSoon ? ' (soon)' : ''}
-      </div>
-    {/if}
-  {/each}
+      {:else}
+        <div
+          role="button"
+          tabindex="0"
+          draggable="true"
+          ondragstart={(event) => handleDragStart(event, block)}
+          class="cursor-grab px-2 py-1 text-center active:cursor-grabbing"
+          class:rounded={block.type !== 'declare' && block.type !== 'assign'}
+          class:opacity-50={dimmed}
+          style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text);"
+          title={chipTitle(block)}
+        >
+          {block.label}{block.comingSoon ? ' (soon)' : ''}
+        </div>
+      {/if}
+    {/each}
+  {/if}
 </div>

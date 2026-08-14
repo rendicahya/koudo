@@ -5,14 +5,17 @@ export const runOutput = writable<string[]>([]);
 export const runError = writable<string | null>(null);
 export const hasRun = writable<boolean>(false);
 
-// Shared with App.svelte's footer tabs — Play lives in the top navbar now,
-// so running code needs to be able to surface the Output tab itself.
-export const footerTab = writable<'output' | 'tracer'>('output');
-
 export function runCode(code: string) {
   const result = runJava(code);
   runOutput.set(result.output);
   runError.set(result.error);
   hasRun.set(true);
-  footerTab.set('output');
+}
+
+// The Output panel's Clear button — back to "nothing's been run yet", not
+// just an empty output list, so its placeholder text reappears too.
+export function clearRunOutput() {
+  runOutput.set([]);
+  runError.set(null);
+  hasRun.set(false);
 }

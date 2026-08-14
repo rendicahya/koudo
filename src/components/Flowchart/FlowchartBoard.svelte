@@ -11,6 +11,8 @@
   } from '@xyflow/svelte';
   import BlockPalette from './BlockPalette.svelte';
   import DeclareNode from './DeclareNode.svelte';
+  import AssignNode from './AssignNode.svelte';
+  import InputNode from './InputNode.svelte';
   import ProcessNode from './ProcessNode.svelte';
   import DecisionNode from './DecisionNode.svelte';
   import CanvasContextMenu from './CanvasContextMenu.svelte';
@@ -25,6 +27,7 @@
     deleteNodeById,
     deleteEdgeById,
     bottomMostNodeId,
+    unusedDecisionHandle,
     arrangeNodesVertically,
     pruneOutgoingEdge,
     pruneOutgoingEdgeForHandle,
@@ -32,11 +35,24 @@
     DEFAULT_BLOCK_HEIGHT,
     type BlockType,
   } from '../../stores/flowchart';
+  import { stepCurrentNodeId, stepCurrentLine } from '../../stores/stepRunner';
+  import { flowchartToPngDataUrl } from '../../lib/flowchart/exportPng';
+  import { downloadDataUrl } from '../../lib/download';
 
-  const nodeTypes = { declare: DeclareNode, process: ProcessNode, decision: DecisionNode };
+  // "userInput" (not "input") — xyflow's own built-in node type is called
+  // "input" (used by Start blocks, see stores/flowchart.ts's
+  // XYFLOW_NODE_TYPE), so this block's node.type is deliberately different
+  // to avoid colliding with it.
+  const nodeTypes = {
+    declare: DeclareNode,
+    assign: AssignNode,
+    userInput: InputNode,
+    process: ProcessNode,
+    decision: DecisionNode,
+  };
   const defaultEdgeOptions = { markerEnd: { type: MarkerType.ArrowClosed } };
 
-  const { screenToFlowPosition } = useSvelteFlow();
+  const { screenToFlowPosition, getNodesBounds } = useSvelteFlow();
 
   let wrapperEl: HTMLDivElement;
   let contextMenu = $state<{ kind: 'node' | 'edge'; id: string; x: number; y: number } | null>(null);
@@ -53,9 +69,12 @@
 
     // Auto-chain onto whatever's currently at the bottom of the flow, so a
     // freshly dropped block doesn't land disconnected. Start blocks have no
-    // target handle to connect into, so they're left standalone.
-    const previousBottomId = type !== 'start' ? bottomMostNodeId($nodes) : null;
+    // target handle to connect into, so they're left standalone. Passing
+    // $edges lets a bottom-most Decision block (still short a branch) be
+    // picked as the anchor too, instead of always skipping it.
+    const previousBottomId = type !== 'start' ? bottomMostNodeId($nodes, $edges) : null;
     const bottomNode = previousBottomId ? $nodes.find((node) => node.id === previousBottomId) : undefined;
+    const sourceHandle = bottomNode?.data?.blockType === 'decision' ? unusedDecisionHandle(bottomNode.id, $edges) : null;
 
     // Dropping a new Variable block right where it would chain onto an
     // existing Declare block merges it in as another entry instead of
@@ -84,18 +103,32 @@
       const connection: Connection = {
         source: previousBottomId,
         target: newNode.id,
-        sourceHandle: null,
+        sourceHandle,
         targetHandle: null,
       };
       $edges = addEdge(
         { ...connection, markerEnd: { type: MarkerType.ArrowClosed } },
-        pruneOutgoingEdge($edges, previousBottomId),
+        sourceHandle
+          ? pruneOutgoingEdgeForHandle($edges, previousBottomId, sourceHandle)
+          : pruneOutgoingEdge($edges, previousBottomId),
       );
     }
   }
 
   function handleArrange() {
-    $nodes = arrangeNodesVertically($nodes);
+    $nodes = arrangeNodesVertically($nodes, $edges);
+  }
+
+  // The visible canvas background (--color-canvas) rather than the page/panel
+  // background — a transparent PNG would otherwise show whatever's behind
+  // it in a viewer instead of matching what the user actually saw on screen.
+  async function handleDownloadPng() {
+    const viewportEl = wrapperEl.querySelector<HTMLElement>('.svelte-flow__viewport');
+    if (!viewportEl) return;
+
+    const backgroundColor = getComputedStyle(wrapperEl).getPropertyValue('--color-canvas').trim();
+    const dataUrl = await flowchartToPngDataUrl(viewportEl, $nodes, backgroundColor, getNodesBounds);
+    downloadDataUrl('flowchart.png', dataUrl);
   }
 
   // Alt+Shift+A, matching the Alt+Shift+<letter> pattern already used for
@@ -152,6 +185,35 @@
     }
     closeContextMenu();
   }
+
+  // The step runner's "current node"/"current line" is UI-only playhead
+  // state, not part of the flowchart data (see stores/stepRunner.ts) — so
+  // it's applied as a plain DOM class/style here instead of fields on the
+  // node object itself, which would leak into Save/Export and
+  // Arrange-triggered diffs. The line label rides a CSS custom property so
+  // the ::after badge (see <style> below) never needs repositioning itself
+  // — it's a real pseudo-element on the node's own box, so it pans/zooms
+  // with the canvas for free.
+  $effect(() => {
+    const activeId = $stepCurrentNodeId;
+    const line = $stepCurrentLine;
+    if (!wrapperEl) return;
+
+    for (const el of wrapperEl.querySelectorAll<HTMLElement>('.svelte-flow__node.step-active')) {
+      el.classList.remove('step-active', 'step-line');
+      el.style.removeProperty('--step-line-label');
+    }
+    if (!activeId) return;
+
+    const el = wrapperEl.querySelector<HTMLElement>(`.svelte-flow__node[data-id="${CSS.escape(activeId)}"]`);
+    if (!el) return;
+
+    el.classList.add('step-active');
+    if (line) {
+      el.classList.add('step-line');
+      el.style.setProperty('--step-line-label', JSON.stringify(`${line.index}/${line.total} · ${line.text}`));
+    }
+  });
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -166,15 +228,26 @@
 >
   <BlockPalette />
 
-  <button
-    type="button"
-    onclick={handleArrange}
-    class="absolute right-2 top-2 z-10 rounded-md border px-3 py-1.5 text-sm shadow-sm hover:opacity-80"
-    style="background: var(--color-panel); border-color: var(--color-border); color: var(--color-text);"
-    title="Arrange blocks into a straight vertical line (Alt+Shift+A)"
-  >
-    ⇅ Arrange
-  </button>
+  <div class="absolute right-2 top-2 z-10 flex items-center gap-2">
+    <button
+      type="button"
+      onclick={handleArrange}
+      class="rounded-md border px-3 py-1.5 text-sm shadow-sm hover:opacity-80"
+      style="background: var(--color-panel); border-color: var(--color-border); color: var(--color-text);"
+      title="Arrange blocks into a straight vertical line (Alt+Shift+A)"
+    >
+      ⇅ Arrange
+    </button>
+    <button
+      type="button"
+      onclick={handleDownloadPng}
+      class="rounded-md border px-3 py-1.5 text-sm shadow-sm hover:opacity-80"
+      style="background: var(--color-panel); border-color: var(--color-border); color: var(--color-text);"
+      title="Download the flowchart as a PNG image"
+    >
+      ⬇ PNG
+    </button>
+  </div>
   <SvelteFlow
     bind:nodes={$nodes}
     bind:edges={$edges}
@@ -201,3 +274,40 @@
     />
   {/if}
 </div>
+
+<style>
+  /* Applied via plain DOM manipulation (see the $effect above), not a
+     Svelte class directive, so :global() is required — Svelte's scoping
+     hash never reaches an element styled from outside its own markup. */
+  :global(.svelte-flow__node.step-active) {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 6px;
+    z-index: 10;
+  }
+
+  /* Which line (of a possibly multi-line block) is about to run next — a
+     real pseudo-element on the highlighted node's own box, so it moves and
+     scales with the canvas on pan/zoom for free, no repositioning logic
+     needed. Text comes from --step-line-label, set alongside .step-line in
+     the $effect above. */
+  :global(.svelte-flow__node.step-line)::after {
+    content: var(--step-line-label);
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 6px;
+    max-width: 260px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    font-family: monospace;
+    font-size: 11px;
+    z-index: 20;
+    pointer-events: none;
+  }
+</style>

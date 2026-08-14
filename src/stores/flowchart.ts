@@ -1,7 +1,8 @@
 import type { Edge, Node } from '@xyflow/svelte';
 import { derived, writable } from 'svelte/store';
+import { outgoing, findMergePoint } from '../lib/flowchart/graphWalk';
 
-export type BlockType = 'start' | 'end' | 'process' | 'declare' | 'forLoop' | 'decision' | 'whileLoop';
+export type BlockType = 'start' | 'end' | 'process' | 'declare' | 'assign' | 'input' | 'forLoop' | 'decision' | 'whileLoop';
 
 export interface DeclarationEntry {
   varType: string;
@@ -28,6 +29,40 @@ export interface ProcessNodeData extends Record<string, unknown> {
   statements: string[];
 }
 
+export interface AssignmentEntry {
+  varName: string;
+  operator: '=' | '+=' | '-=' | '*=' | '/=';
+  value: string;
+}
+
+// An Assign block can hold several assignments at once, same "+ Add" /
+// multi-row pattern as Declare and Process. Unlike Declare, it doesn't
+// introduce a variable — it targets one that's already in scope, so its
+// dropdown is scoped the same way Output's is (see
+// declaredVariableNamesUpstreamOf).
+export interface AssignNodeData extends Record<string, unknown> {
+  blockType: 'assign';
+  label: string;
+  entries: AssignmentEntry[];
+}
+
+export interface InputEntry {
+  varName: string;
+  prompt: string;
+}
+
+// An Input block reads a value from the user into an already-declared
+// variable — the flowchart Input/Output symbol (parallelogram, same as
+// Output) used for the "in" direction. Its target dropdown is scoped the
+// same way Output's and Assign's are (declaredVariableNamesUpstreamOf);
+// code generation picks the right Scanner method (nextInt/nextDouble/...)
+// from the target's declared type (see declaredVariableEntriesUpstreamOf).
+export interface InputNodeData extends Record<string, unknown> {
+  blockType: 'input';
+  label: string;
+  entries: InputEntry[];
+}
+
 // A Decision block branches: it has two source handles ("true"/"false"),
 // each allowed exactly one outgoing edge (see pruneOutgoingEdgeForHandle),
 // instead of the one-outgoing-edge-total rule every other block follows.
@@ -51,6 +86,8 @@ export interface BlockDefinition {
 export const BLOCK_DEFINITIONS: BlockDefinition[] = [
   { type: 'start', label: 'Start', singleton: true },
   { type: 'declare', label: 'Variable' },
+  { type: 'assign', label: 'Assign' },
+  { type: 'input', label: 'Input' },
   { type: 'process', label: 'Output' },
   { type: 'decision', label: 'Decision' },
   { type: 'forLoop', label: 'For Loop', comingSoon: true },
@@ -81,6 +118,8 @@ const NODE_WIDTH: Record<BlockType, number> = {
   end: TERMINAL_WIDTH,
   process: BLOCK_WIDTH,
   declare: BLOCK_WIDTH,
+  assign: BLOCK_WIDTH,
+  input: BLOCK_WIDTH,
   forLoop: BLOCK_WIDTH,
   decision: DIAMOND_WIDTH,
   whileLoop: BLOCK_WIDTH,
@@ -118,14 +157,16 @@ const DIAMOND_NODE_STYLE = `width: ${DIAMOND_WIDTH}px; height: ${DIAMOND_HEIGHT}
 // Flowchart terminal symbol: fully rounded (pill/stadium) left and right.
 const PILL_STYLE = `${TERMINAL_NODE_STYLE} border-radius: 9999px; padding: 8px 16px; text-align: center;`;
 
-// decision's entry here is never actually read (createBlockNode short-
-// circuits to createDecisionNode before reaching it) — kept only so this
-// object satisfies Record<BlockType, string>.
+// decision's and input's entries here are never actually read
+// (createBlockNode short-circuits to their own createXNode before reaching
+// this) — kept only so this object satisfies Record<BlockType, string>.
 const XYFLOW_NODE_STYLE: Record<BlockType, string> = {
   start: PILL_STYLE,
   end: PILL_STYLE,
   process: BASE_NODE_STYLE,
   declare: BASE_NODE_STYLE,
+  assign: BASE_NODE_STYLE,
+  input: BASE_NODE_STYLE,
   forLoop: BASE_NODE_STYLE,
   decision: DIAMOND_NODE_STYLE,
   whileLoop: BASE_NODE_STYLE,
@@ -150,6 +191,8 @@ export function createBlockNode(type: BlockType, position: { x: number; y: numbe
 
   if (type === 'process') return createProcessNode(position, '');
   if (type === 'declare') return createDeclareNode(position);
+  if (type === 'assign') return createAssignNode(position);
+  if (type === 'input') return createInputNode(position);
   if (type === 'decision') return createDecisionNode(position);
 
   nodeCounter += 1;
@@ -301,6 +344,117 @@ export function removeDeclarationEntryAt(node: Node, index: number): Node {
   return { ...node, data: { ...node.data, entries, label: entriesLabel(entries) } };
 }
 
+export function assignmentLabel(entry: AssignmentEntry): string {
+  return `${entry.varName} ${entry.operator} ${entry.value}`;
+}
+
+export function assignEntriesLabel(entries: AssignmentEntry[]): string {
+  return entries.map(assignmentLabel).join('; ');
+}
+
+export function createAssignNode(position: { x: number; y: number }, overrides?: Partial<AssignmentEntry>): Node {
+  nodeCounter += 1;
+  const entry: AssignmentEntry = {
+    varName: overrides?.varName ?? '',
+    operator: overrides?.operator ?? '=',
+    value: overrides?.value ?? '',
+  };
+
+  return {
+    id: `assign-${nodeCounter}`,
+    type: 'assign',
+    data: { blockType: 'assign', label: assignEntriesLabel([entry]), entries: [entry] },
+    position,
+    style: BASE_NODE_STYLE,
+  };
+}
+
+// Appends another (initially blank) assignment slot — the "+ Add
+// assignment" control on the block itself, same pattern as Process's
+// "+ Add output".
+export function addAssignmentEntry(node: Node): Node {
+  const data = node.data as Partial<AssignNodeData>;
+  const entries = [...(data.entries ?? []), { varName: '', operator: '=' as const, value: '' }];
+  return { ...node, data: { ...node.data, entries, label: assignEntriesLabel(entries) } };
+}
+
+export function updateAssignmentEntryAt(node: Node, index: number, fields: Partial<AssignmentEntry>): Node {
+  const data = node.data as Partial<AssignNodeData>;
+  const current = (data.entries ?? [])[index];
+  const updated: AssignmentEntry = {
+    varName: fields.varName ?? current?.varName ?? '',
+    operator: fields.operator ?? current?.operator ?? '=',
+    value: fields.value ?? current?.value ?? '',
+  };
+  const entries = [...(data.entries ?? [])];
+  entries[index] = updated;
+  return { ...node, data: { ...node.data, entries, label: assignEntriesLabel(entries) } };
+}
+
+export function removeAssignmentEntryAt(node: Node, index: number): Node {
+  const data = node.data as Partial<AssignNodeData>;
+  const entries = (data.entries ?? []).filter((_, i) => i !== index);
+  return { ...node, data: { ...node.data, entries, label: assignEntriesLabel(entries) } };
+}
+
+function inputLabel(entry: InputEntry): string {
+  return entry.prompt ? `${entry.varName} <- "${entry.prompt}"` : entry.varName;
+}
+
+function inputEntriesLabel(entries: InputEntry[]): string {
+  return entries.map(inputLabel).join('; ');
+}
+
+// xyflow's own built-in node type is *also* called "input" (see
+// XYFLOW_NODE_TYPE.start above) — using that same string for this block's
+// node.type would make Start blocks render with this component instead of
+// xyflow's plain terminal box. blockType stays 'input' everywhere else
+// (BLOCK_DEFINITIONS, generator.ts, ...); only the xyflow-facing type
+// differs.
+const INPUT_XYFLOW_TYPE = 'userInput';
+
+export function createInputNode(position: { x: number; y: number }, overrides?: Partial<InputEntry>): Node {
+  nodeCounter += 1;
+  const entry: InputEntry = {
+    varName: overrides?.varName ?? '',
+    prompt: overrides?.prompt ?? '',
+  };
+
+  return {
+    id: `input-${nodeCounter}`,
+    type: INPUT_XYFLOW_TYPE,
+    data: { blockType: 'input', label: inputEntriesLabel([entry]), entries: [entry] },
+    position,
+    style: BASE_NODE_STYLE,
+  };
+}
+
+// Appends another (initially blank) input slot — the "+ Add input" control
+// on the block itself, same pattern as Process/Assign's "+ Add" controls.
+export function addInputEntry(node: Node): Node {
+  const data = node.data as Partial<InputNodeData>;
+  const entries = [...(data.entries ?? []), { varName: '', prompt: '' }];
+  return { ...node, data: { ...node.data, entries, label: inputEntriesLabel(entries) } };
+}
+
+export function updateInputEntryAt(node: Node, index: number, fields: Partial<InputEntry>): Node {
+  const data = node.data as Partial<InputNodeData>;
+  const current = (data.entries ?? [])[index];
+  const updated: InputEntry = {
+    varName: fields.varName ?? current?.varName ?? '',
+    prompt: fields.prompt ?? current?.prompt ?? '',
+  };
+  const entries = [...(data.entries ?? [])];
+  entries[index] = updated;
+  return { ...node, data: { ...node.data, entries, label: inputEntriesLabel(entries) } };
+}
+
+export function removeInputEntryAt(node: Node, index: number): Node {
+  const data = node.data as Partial<InputNodeData>;
+  const entries = (data.entries ?? []).filter((_, i) => i !== index);
+  return { ...node, data: { ...node.data, entries, label: inputEntriesLabel(entries) } };
+}
+
 // x is offset clear of the BlockPalette, which floats over the canvas's
 // top-left corner (see BlockPalette.svelte) — starting Start underneath it
 // would leave it permanently hidden behind the palette panel.
@@ -339,49 +493,38 @@ export const hasConnectedEndBlock = derived([nodes, edges], ([$nodes, $edges]) =
   return $edges.some((edge) => endIds.has(edge.target));
 });
 
-// Variable names available to a specific Output block — only ones declared
-// in a Declare block somewhere upstream of it (connected via edges, walking
-// backward through every incoming edge — a merge point after a Decision can
-// have more than one), not just anywhere on the canvas. A block sitting
-// unconnected, or declared only on a branch that doesn't lead here, doesn't
-// count: the printed variable should always be one Java would actually see
-// by the time this block runs.
-export function declaredVariableNamesUpstreamOf(nodeId: string, nodeList: Node[], edgeList: Edge[]): string[] {
-  const nodesById = new Map(nodeList.map((node) => [node.id, node]));
-  const names: string[] = [];
-  const seenNames = new Set<string>();
-  const visited = new Set<string>([nodeId]);
-  const stack = [nodeId];
+// Re-exported from graphWalk.ts (the pure-logic home for this, shared with
+// generator.ts's own type lookups) so existing component imports from
+// './flowchart' keep working unchanged.
+export { declaredVariableEntriesUpstreamOf, declaredVariableNamesUpstreamOf } from '../lib/flowchart/graphWalk';
 
-  while (stack.length > 0) {
-    const currentId = stack.pop()!;
-    for (const edge of edgeList) {
-      if (edge.target !== currentId || visited.has(edge.source)) continue;
-      visited.add(edge.source);
-      stack.push(edge.source);
-
-      const sourceNode = nodesById.get(edge.source);
-      if (sourceNode?.data?.blockType !== 'declare') continue;
-      for (const entry of (sourceNode.data as Partial<DeclareNodeData>).entries ?? []) {
-        if (entry.varName && !seenNames.has(entry.varName)) {
-          seenNames.add(entry.varName);
-          names.push(entry.varName);
-        }
-      }
-    }
-  }
-
-  return names;
+// Which of a Decision block's two branch handles ("true"/"false") is still
+// free to take a new outgoing edge — "true" is preferred, since it's the
+// branch that continues straight down (matching arrangeNodesVertically).
+// Returns null once both branches are already wired, i.e. this Decision has
+// nothing left to auto-connect.
+export function unusedDecisionHandle(nodeId: string, edgeList: Edge[]): 'true' | 'false' | null {
+  const used = new Set(edgeList.filter((edge) => edge.source === nodeId).map((edge) => edge.sourceHandle));
+  if (!used.has('true')) return 'true';
+  if (!used.has('false')) return 'false';
+  return null;
 }
 
 // Bottom-most node currently on the canvas, i.e. the most natural place for
 // a freshly dropped block to chain onto. Excludes End blocks (no outgoing
-// handle) and Decision blocks (two branch handles — auto-connect can't know
-// which one the user means, so they have to wire it manually).
-export function bottomMostNodeId(nodeList: Node[]): string | null {
+// handle). A Decision block is only a candidate when edgeList is given and
+// it still has a free branch handle (see unusedDecisionHandle) — that's how
+// a Decision sitting at the bottom of the flow still gets auto-connected to
+// instead of being skipped in favor of whatever's above it. Callers that
+// don't pass edgeList (sync.ts's code->flowchart reconciliation, which only
+// ever chains a single plain edge and has no notion of branches) keep
+// excluding Decision entirely, same as before.
+export function bottomMostNodeId(nodeList: Node[], edgeList?: Edge[]): string | null {
   const candidates = nodeList.filter((node) => {
     const type = node.data?.blockType;
-    return type !== 'end' && type !== 'decision';
+    if (type === 'end') return false;
+    if (type === 'decision') return edgeList !== undefined && unusedDecisionHandle(node.id, edgeList) !== null;
+    return true;
   });
   if (candidates.length === 0) return null;
 
@@ -411,30 +554,87 @@ export function pruneOutgoingEdgeForHandle(
 // block under the cursor (new blocks always start single-row).
 export const DEFAULT_BLOCK_HEIGHT = 46;
 const ARRANGE_GAP = 30;
+// Horizontal spacing between a Decision's False-branch column and whatever
+// column it branched off from.
+const ARRANGE_BRANCH_GAP = 40;
 
-// Lines every node up into a single straight column, in their current
-// top-to-bottom order (same y-based ordering bottomMostNodeId uses) — the
+// Arranges the flow along its actual edges (not just current y-position),
+// so Decision blocks branch into two side-by-side columns instead of
+// getting flattened into one straight line with everything else — the
 // "Arrange" button/shortcut, for when drags and auto-connects have left the
-// layout looking scattered. Spacing is based on each node's own measured
-// height (Declare/Process blocks grow taller with more entries/statements),
-// not a fixed gap — otherwise a multi-row block would visually overlap or
-// crowd whatever comes right after it. Aligned by *center*, not a shared x —
-// Start/End are narrower than everything else (see NODE_WIDTH), so sharing
-// an x would leave them looking off-center against the rest of the column.
-export function arrangeNodesVertically(nodeList: Node[]): Node[] {
+// layout looking scattered.
+//
+// The True branch continues straight down in the same column as the
+// Decision; the False branch gets its own column to the right. Both
+// branches are walked recursively (so a Decision nested inside a branch
+// gets its own further-right column, never colliding with an outer
+// Decision's own False column) and, if they reconverge (see
+// graphWalk's findMergePoint), the walk continues as one column again from
+// there. Nodes not reachable from Start at all (disconnected from the
+// flow) are stacked in a plain column below everything else, same as this
+// function's previous straight-line-only behavior.
+export function arrangeNodesVertically(nodeList: Node[], edgeList: Edge[]): Node[] {
   if (nodeList.length === 0) return nodeList;
 
-  const sorted = [...nodeList].sort((a, b) => a.position.y - b.position.y);
-  const centerX = sorted[0].position.x + nodeWidthFor(sorted[0]) / 2;
-
+  const nodesById = new Map(nodeList.map((node) => [node.id, node]));
   const positionById = new Map<string, { x: number; y: number }>();
-  let y = sorted[0].position.y;
-  for (const node of sorted) {
-    positionById.set(node.id, { x: centerX - nodeWidthFor(node) / 2, y });
-    y += (node.measured?.height ?? DEFAULT_BLOCK_HEIGHT) + ARRANGE_GAP;
+  const visited = new Set<string>();
+
+  const startNode = nodeList.find((node) => node.data?.blockType === 'start') ?? nodeList[0];
+  const originX = startNode.position.x + nodeWidthFor(startNode) / 2;
+  const originY = startNode.position.y;
+  let nextBranchColumn = 0;
+
+  // Walks the chain from nodeId (in the column centered at centerX,
+  // starting at y), stopping before stopId if given. Returns the y where
+  // whatever comes next (after this chain, or after the branch pair this
+  // chain belongs to) should be placed.
+  function layout(nodeId: string | null, stopId: string | null, centerX: number, y: number): number {
+    let currentId = nodeId;
+    while (currentId && currentId !== stopId) {
+      if (visited.has(currentId)) break; // cycle guard, matches generator.ts's walk()
+      visited.add(currentId);
+
+      const node = nodesById.get(currentId);
+      if (!node) break;
+
+      positionById.set(currentId, { x: centerX - nodeWidthFor(node) / 2, y });
+      const nextY = y + (node.measured?.height ?? DEFAULT_BLOCK_HEIGHT) + ARRANGE_GAP;
+
+      if (node.data?.blockType === 'decision') {
+        const trueId = outgoing(edgeList, currentId, 'true');
+        const falseId = outgoing(edgeList, currentId, 'false');
+        const mergeId = findMergePoint(trueId, falseId, nodesById, edgeList);
+
+        const trueBottomY = trueId ? layout(trueId, mergeId, centerX, nextY) : nextY;
+
+        nextBranchColumn += 1;
+        const falseX = originX + nextBranchColumn * (BLOCK_WIDTH + ARRANGE_BRANCH_GAP);
+        const falseBottomY = falseId ? layout(falseId, mergeId, falseX, nextY) : nextY;
+
+        y = Math.max(trueBottomY, falseBottomY);
+        currentId = mergeId;
+        continue;
+      }
+
+      y = nextY;
+      currentId = outgoing(edgeList, currentId, null);
+    }
+    return y;
   }
 
-  return nodeList.map((node) => ({ ...node, position: positionById.get(node.id)! }));
+  const afterFlowY = layout(startNode.id, null, originX, originY);
+
+  // Anything the walk never reached (disconnected from Start) — stack
+  // below everything else, in their original relative top-to-bottom order.
+  const leftovers = nodeList.filter((node) => !visited.has(node.id)).sort((a, b) => a.position.y - b.position.y);
+  let leftoverY = leftovers.length > 0 ? afterFlowY + 90 : afterFlowY;
+  for (const node of leftovers) {
+    positionById.set(node.id, { x: originX - nodeWidthFor(node) / 2, y: leftoverY });
+    leftoverY += (node.measured?.height ?? DEFAULT_BLOCK_HEIGHT) + ARRANGE_GAP;
+  }
+
+  return nodeList.map((node) => ({ ...node, position: positionById.get(node.id) ?? node.position }));
 }
 
 export function duplicateNodeById(nodeId: string) {
