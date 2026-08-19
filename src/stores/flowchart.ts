@@ -131,13 +131,14 @@ const DIAMOND_HEIGHT = 110;
 // For Loop uses the hexagon "Preparation"/loop-control symbol, not
 // Decision's diamond — a diamond only has full width right at its vertical
 // center and tapers to a single point above and below, which comfortably
-// fits Decision's one condition line but would clip the top and bottom of
-// three stacked init/condition/update rows against the taper. The hexagon
-// (see PREPARATION_CLIP_PATH below) has flat top/bottom edges — like a
-// normal block, just with its left/right corners cut off — so it holds
-// three rows exactly as roomily as any other multi-row block.
-export const FORLOOP_WIDTH = BLOCK_WIDTH;
-const FORLOOP_HEIGHT = 140;
+// fits Decision's one condition line but would clip the top and bottom of a
+// row of init/condition/update fields against the taper. The hexagon (see
+// PREPARATION_CLIP_PATH below) has flat top/bottom edges — like a normal
+// block, just with its left/right corners cut off — so the row sits flush
+// against them instead of getting clipped. Wider than a normal block since
+// the three fields sit side by side rather than stacked.
+export const FORLOOP_WIDTH = BLOCK_WIDTH + 60;
+const FORLOOP_HEIGHT = 90;
 
 const NODE_WIDTH: Record<BlockType, number> = {
   start: TERMINAL_WIDTH,

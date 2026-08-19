@@ -22,11 +22,11 @@
   <Handle type="target" position={Position.Top} />
 
   <ShapeFrame clipPath={PREPARATION_CLIP_PATH}>
-    <div class="flex h-full flex-col items-center justify-center gap-1 px-5 text-xs" style="color: var(--color-text);">
+    <div class="flex h-full flex-row items-center justify-center gap-1.5 px-5 text-xs" style="color: var(--color-text);">
       <input
         value={nodeData.init}
         oninput={(event) => handleInput('init', event)}
-        class="nodrag w-full rounded border bg-transparent px-1 py-0.5 text-center"
+        class="nodrag w-0 min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5 text-center"
         style="border-color: var(--color-border);"
         placeholder="int i = 0"
         title="Init — runs once, before the loop starts"
@@ -34,7 +34,7 @@
       <input
         value={nodeData.condition}
         oninput={(event) => handleInput('condition', event)}
-        class="nodrag w-full rounded border bg-transparent px-1 py-0.5 text-center"
+        class="nodrag w-0 min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5 text-center"
         style="border-color: var(--color-border);"
         placeholder="i < 10"
         title="Condition — checked before every iteration"
@@ -42,7 +42,7 @@
       <input
         value={nodeData.update}
         oninput={(event) => handleInput('update', event)}
-        class="nodrag w-full rounded border bg-transparent px-1 py-0.5 text-center"
+        class="nodrag w-0 min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5 text-center"
         style="border-color: var(--color-border);"
         placeholder="i++"
         title="Update — runs after every iteration of the body"
