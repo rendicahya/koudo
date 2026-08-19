@@ -24,3 +24,36 @@ button:not(:disabled) {
 button:disabled {
   cursor: not-allowed;
 }
+
+/* Shared coloring for the app's own theme-aware buttons (toolbar, panels).
+   Tailwind's utility classes still carry the layout (rounded-md, px-3,
+   py-1.5, ...) — these three only centralize the `border-color`/`color`/
+   `background` that would otherwise be copy-pasted as an inline `style`
+   onto every button that wants this look. */
+.btn-neutral {
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-accent {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.btn-panel {
+  background: var(--color-panel);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-ghost {
+  color: var(--color-text);
+}
+
+/* Pair with .btn-neutral/.btn-accent on a button whose disabled condition
+   already decides its own look — one shared dimming rule instead of each
+   caller binding `style="opacity: {condition ? 1 : 0.5}"` to a condition
+   that already matches its own `disabled` attribute. */
+.btn:disabled {
+  opacity: 0.5;
+}

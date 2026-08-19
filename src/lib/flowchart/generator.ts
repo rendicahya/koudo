@@ -50,6 +50,7 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
     case 'start':
     case 'end':
     case 'decision': // handled separately in walk() — branches, not a single statement
+    case 'forLoop': // handled separately in walk() — branches (and loops back), not a single statement
       return [];
     case 'process': {
       // One block can hold several print statements (see
@@ -98,7 +99,6 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
       });
       return lines;
     }
-    case 'forLoop':
     case 'whileLoop':
       return [{ text: `// TODO: ${label} — not generated yet`, rowIndex: -1 }];
     default:
@@ -118,10 +118,17 @@ function indent(lines: string[]): string[] {
 }
 
 // Walks the flow starting at nodeId, stopping at stopId (exclusive) if
-// given, following the single outgoing edge each block has — except
-// Decision, which recurses into both branches and resumes the outer walk
-// at their merge point (see findMergePoint), producing a real
-// `if (...) { ... } else { ... }` instead of visiting one arbitrary branch.
+// given, following the single outgoing edge each block has — except the two
+// branching block types (see graphWalk.ts's branchHandlesOf). Decision
+// recurses into both branches and resumes the outer walk at their merge
+// point (see findMergePoint), producing a real `if (...) { ... } else { ... }`
+// instead of visiting one arbitrary branch. ForLoop recurses into just its
+// 'loop' branch (the body) once, stopping the moment that walk loops back
+// around the user-drawn back-edge to the ForLoop node itself — the same
+// "stop at this id" mechanism as Decision's merge point, just with the
+// ForLoop's own id standing in for one. The real repetition happens at
+// runtime, from the emitted `for (...) { ... }` — the body's Java text is
+// only ever walked, and emitted, once.
 function walk(nodeId: string | null, stopId: string | null, nodesById: Map<string, Node>, edges: Edge[], guard: Set<string>): string[] {
   const lines: string[] = [];
   let currentId = nodeId;
@@ -148,6 +155,22 @@ function walk(nodeId: string | null, stopId: string | null, nodesById: Map<strin
       lines.push('}');
 
       currentId = mergeId;
+      continue;
+    }
+
+    if (blockTypeOf(node) === 'forLoop') {
+      const bodyId = outgoing(edges, currentId, 'loop');
+      const exitId = outgoing(edges, currentId, 'exit');
+      const data = node.data as { init?: string; condition?: string; update?: string } | undefined;
+      const init = (data?.init ?? '').trim();
+      const condition = (data?.condition ?? '').trim() || 'true';
+      const update = (data?.update ?? '').trim();
+
+      lines.push(`for (${init}; ${condition}; ${update}) {`);
+      lines.push(...indent(walk(bodyId, currentId, nodesById, edges, guard)));
+      lines.push('}');
+
+      currentId = exitId;
       continue;
     }
 

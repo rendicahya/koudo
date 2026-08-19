@@ -117,10 +117,7 @@
   <div class="flex items-center gap-2">
     <button
       type="button"
-      class="rounded-md border px-3 py-1.5 text-sm font-medium"
-      style="border-color: var(--color-accent); color: var(--color-accent); opacity: {$hasConnectedEndBlock
-        ? 1
-        : 0.5};"
+      class="btn btn-accent rounded-md border px-3 py-1.5 text-sm font-medium"
       disabled={!$hasConnectedEndBlock}
       onclick={handleRun}
       title={$hasConnectedEndBlock
@@ -133,8 +130,7 @@
     {#if !$isStepping}
       <button
         type="button"
-        class="rounded-md border px-3 py-1.5 text-sm font-medium"
-        style="border-color: var(--color-border); color: var(--color-text); opacity: {hasStart ? 1 : 0.5};"
+        class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
         disabled={!hasStart}
         onclick={startStepRun}
         title={hasStart
@@ -146,8 +142,7 @@
     {:else}
       <button
         type="button"
-        class="rounded-md border px-3 py-1.5 text-sm font-medium"
-        style="border-color: var(--color-border); color: var(--color-text); opacity: {$isStepFinished ? 0.5 : 1};"
+        class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
         disabled={$isStepFinished}
         onclick={stepOnce}
         title="Run the next line (Alt+Shift+S)"
@@ -161,8 +156,7 @@
          buttons shifting around it as a step run starts/stops. -->
     <button
       type="button"
-      class="rounded-md border px-3 py-1.5 text-sm font-medium"
-      style="border-color: var(--color-border); color: var(--color-text); opacity: {$isStepping ? 1 : 0.5};"
+      class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
       disabled={!$isStepping}
       onclick={stopStepRun}
     >
@@ -173,8 +167,7 @@
       <div class="relative" bind:this={projectMenuEl}>
         <button
           type="button"
-          class="rounded-md px-3 py-1.5 text-sm hover:opacity-80"
-          style="color: var(--color-text);"
+          class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
           aria-haspopup="menu"
           aria-expanded={projectMenuOpen}
           onclick={() => (projectMenuOpen = !projectMenuOpen)}
@@ -203,8 +196,7 @@
 
       <button
         type="button"
-        class="rounded-md px-3 py-1.5 text-sm hover:opacity-80"
-        style="color: var(--color-text);"
+        class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
         title="Download the generated code as a runnable Main.java"
         onclick={handleExport}
       >

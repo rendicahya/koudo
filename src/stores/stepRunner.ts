@@ -34,6 +34,12 @@ export const stepCurrentRow = writable<{ nodeId: string; rowIndex: number } | nu
 
 let interpreter: StepInterpreter | null = null;
 let nodesById = new Map<string, Node>();
+// Which ForLoop nodes have already run their `init` clause once — every
+// later visit to the same node (arriving back around the user-drawn
+// loop-back edge) runs `update` instead, so a loop variable isn't
+// re-declared on every iteration (see stepOnce's forLoop branch). Reset
+// alongside the rest of a step run's state.
+let initializedForLoops = new Set<string>();
 // Every Java statement line the currently highlighted node generates (a
 // Declare/Assign/Process/Input block can hold several — one per variable,
 // assignment, print, or input row) plus a cursor into it, so a multi-line
@@ -49,6 +55,15 @@ let lineIndex = 0;
 
 function conditionOf(node: Node): string {
   return ((node.data?.condition as string | undefined) ?? '').trim() || 'true';
+}
+
+function forLoopFieldsOf(node: Node): { init: string; condition: string; update: string } {
+  const data = node.data as { init?: string; condition?: string; update?: string } | undefined;
+  return {
+    init: (data?.init ?? '').trim(),
+    condition: (data?.condition ?? '').trim() || 'true',
+    update: (data?.update ?? '').trim(),
+  };
 }
 
 function updateCurrentLineStore() {
@@ -71,6 +86,9 @@ function loadLines(nodeId: string) {
     currentLines = [];
   } else if (blockTypeOf(node) === 'decision') {
     currentLines = [{ text: `if (${conditionOf(node)})`, rowIndex: -1 }];
+  } else if (blockTypeOf(node) === 'forLoop') {
+    const { init, condition, update } = forLoopFieldsOf(node);
+    currentLines = [{ text: `for (${init}; ${condition}; ${update})`, rowIndex: -1 }];
   } else {
     currentLines = statementLinesFor(node, nodesById, get(edges));
   }
@@ -85,6 +103,7 @@ export function startStepRun() {
 
   nodesById = new Map(nodeList.map((node) => [node.id, node]));
   interpreter = createStepInterpreter();
+  initializedForLoops = new Set();
   stepOutput.set([]);
   stepError.set(null);
   stepStatus.set(null);
@@ -105,6 +124,7 @@ export function stopStepRun() {
   stepCurrentLine.set(null);
   stepCurrentRow.set(null);
   interpreter = null;
+  initializedForLoops = new Set();
 }
 
 // Moves the playhead to nextId, running off the end of the flow (a null
@@ -149,6 +169,26 @@ export function stepOnce() {
       // branch stays a single click, unlike every other block below.
       const isTrue = interpreter.evalCondition(conditionOf(node));
       advanceTo(outgoing(get(edges), currentId, isTrue ? 'true' : 'false'));
+      return;
+    }
+
+    if (blockTypeOf(node) === 'forLoop') {
+      // Same one-click-per-visit shape as Decision above. The first time
+      // the playhead lands on this node, run `init` (declaring the loop
+      // variable); every later visit — arriving back around the
+      // user-drawn loop-back edge — runs `update` instead, so the
+      // variable isn't re-declared on every iteration. Either way, the
+      // condition is then checked and the playhead moves into the body
+      // ('loop') or past the loop ('exit').
+      const { init, condition, update } = forLoopFieldsOf(node);
+      if (!initializedForLoops.has(currentId)) {
+        initializedForLoops.add(currentId);
+        if (init) interpreter.runStatements(`${init};`);
+      } else if (update) {
+        interpreter.runStatements(`${update};`);
+      }
+      const isTrue = interpreter.evalCondition(condition);
+      advanceTo(outgoing(get(edges), currentId, isTrue ? 'loop' : 'exit'));
       return;
     }
 

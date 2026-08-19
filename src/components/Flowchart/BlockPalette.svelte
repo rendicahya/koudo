@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { nodes, BLOCK_DEFINITIONS, PARALLELOGRAM_CLIP_PATH, DIAMOND_CLIP_PATH, type BlockDefinition } from '../../stores/flowchart';
+  import {
+    nodes,
+    BLOCK_DEFINITIONS,
+    PARALLELOGRAM_CLIP_PATH,
+    DIAMOND_CLIP_PATH,
+    PREPARATION_CLIP_PATH,
+    type BlockDefinition,
+  } from '../../stores/flowchart';
 
   let minimized = $state(false);
 
@@ -28,9 +35,13 @@
   }
 
   // Input and Output share the same flowchart symbol (a parallelogram);
-  // Decision is the only diamond.
+  // Decision is a diamond; For Loop is the hexagon "Preparation"/loop-control
+  // symbol (see stores/flowchart.ts's PREPARATION_CLIP_PATH for why it isn't
+  // a diamond too, despite also being a test-and-branch block).
   function clipPathFor(block: BlockDefinition): string {
-    return block.type === 'decision' ? DIAMOND_CLIP_PATH : PARALLELOGRAM_CLIP_PATH;
+    if (block.type === 'decision') return DIAMOND_CLIP_PATH;
+    if (block.type === 'forLoop') return PREPARATION_CLIP_PATH;
+    return PARALLELOGRAM_CLIP_PATH;
   }
 
   function handleDragStart(event: DragEvent, block: BlockDefinition) {
@@ -74,7 +85,7 @@
   {#if !minimized}
     {#each BLOCK_DEFINITIONS as block (block.type)}
       {@const dimmed = isDimmed(block)}
-      {#if block.type === 'process' || block.type === 'input' || block.type === 'decision'}
+      {#if block.type === 'process' || block.type === 'input' || block.type === 'decision' || block.type === 'forLoop'}
         <!-- Standard flowchart Input/Output (parallelogram) and Decision
              (diamond) symbols, matching their shape on the canvas. -->
         <div

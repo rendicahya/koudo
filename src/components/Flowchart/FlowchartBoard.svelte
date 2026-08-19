@@ -15,6 +15,7 @@
   import InputNode from './InputNode.svelte';
   import ProcessNode from './ProcessNode.svelte';
   import DecisionNode from './DecisionNode.svelte';
+  import ForLoopNode from './ForLoopNode.svelte';
   import CanvasContextMenu from './CanvasContextMenu.svelte';
   import { theme } from '../../stores/theme';
   import {
@@ -27,7 +28,8 @@
     deleteNodeById,
     deleteEdgeById,
     bottomMostNodeId,
-    unusedDecisionHandle,
+    branchHandlesOf,
+    unusedBranchHandle,
     arrangeNodesVertically,
     pruneOutgoingEdge,
     pruneOutgoingEdgeForHandle,
@@ -49,6 +51,7 @@
     userInput: InputNode,
     process: ProcessNode,
     decision: DecisionNode,
+    forLoop: ForLoopNode,
   };
   const defaultEdgeOptions = { markerEnd: { type: MarkerType.ArrowClosed } };
 
@@ -70,11 +73,13 @@
     // Auto-chain onto whatever's currently at the bottom of the flow, so a
     // freshly dropped block doesn't land disconnected. Start blocks have no
     // target handle to connect into, so they're left standalone. Passing
-    // $edges lets a bottom-most Decision block (still short a branch) be
-    // picked as the anchor too, instead of always skipping it.
+    // $edges lets a bottom-most branching block (Decision or ForLoop, still
+    // short a handle) be picked as the anchor too, instead of always
+    // skipping it.
     const previousBottomId = type !== 'start' ? bottomMostNodeId($nodes, $edges) : null;
     const bottomNode = previousBottomId ? $nodes.find((node) => node.id === previousBottomId) : undefined;
-    const sourceHandle = bottomNode?.data?.blockType === 'decision' ? unusedDecisionHandle(bottomNode.id, $edges) : null;
+    const sourceHandle =
+      bottomNode && branchHandlesOf(bottomNode.data?.blockType as string) ? unusedBranchHandle(bottomNode, $edges) : null;
 
     // Dropping a new Variable block right where it would chain onto an
     // existing Declare block merges it in as another entry instead of
@@ -142,14 +147,15 @@
   }
 
   function handleConnect(connection: Connection) {
-    // Decision blocks branch: each of their two handles (true/false) may
-    // have its own outgoing edge, so only that handle's previous edge is
-    // replaced. Every other block keeps the single-outgoing-edge rule.
+    // Branching blocks (Decision, ForLoop) have two handles, each of which
+    // may have its own outgoing edge, so only that handle's previous edge
+    // is replaced — including a ForLoop's own 'loop' handle, so wiring the
+    // loop-back edge doesn't disturb 'exit' (or vice versa). Every other
+    // block keeps the single-outgoing-edge rule.
     const sourceNode = $nodes.find((node) => node.id === connection.source);
-    const prunedEdges =
-      sourceNode?.data?.blockType === 'decision'
-        ? pruneOutgoingEdgeForHandle($edges, connection.source, connection.sourceHandle)
-        : pruneOutgoingEdge($edges, connection.source);
+    const prunedEdges = branchHandlesOf(sourceNode?.data?.blockType as string | undefined)
+      ? pruneOutgoingEdgeForHandle($edges, connection.source, connection.sourceHandle)
+      : pruneOutgoingEdge($edges, connection.source);
 
     $edges = addEdge({ ...connection, markerEnd: { type: MarkerType.ArrowClosed } }, prunedEdges);
   }
@@ -232,8 +238,7 @@
     <button
       type="button"
       onclick={handleArrange}
-      class="rounded-md border px-3 py-1.5 text-sm shadow-sm hover:opacity-80"
-      style="background: var(--color-panel); border-color: var(--color-border); color: var(--color-text);"
+      class="btn-panel rounded-md border px-3 py-1.5 text-sm shadow-sm hover:opacity-80"
       title="Arrange blocks into a straight vertical line (Alt+Shift+A)"
     >
       ⇅ Arrange
@@ -241,8 +246,7 @@
     <button
       type="button"
       onclick={handleDownloadPng}
-      class="rounded-md border px-3 py-1.5 text-sm shadow-sm hover:opacity-80"
-      style="background: var(--color-panel); border-color: var(--color-border); color: var(--color-text);"
+      class="btn-panel rounded-md border px-3 py-1.5 text-sm shadow-sm hover:opacity-80"
       title="Download the flowchart as a PNG image"
     >
       ⬇ PNG

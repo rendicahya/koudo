@@ -23,8 +23,7 @@
     <p class="text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">Output</p>
     <button
       type="button"
-      class="rounded-md border px-2 py-1 text-xs font-medium hover:opacity-80"
-      style="border-color: var(--color-border); color: var(--color-text); opacity: {$isStepping || !$hasRun ? 0.5 : 1};"
+      class="btn btn-neutral rounded-md border px-2 py-1 text-xs font-medium hover:opacity-80"
       disabled={$isStepping || !$hasRun}
       title={$isStepping ? 'Stop the step run to clear the output' : 'Clear the output'}
       onclick={clearRunOutput}

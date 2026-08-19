@@ -118,8 +118,7 @@
            would also kick off a resize-drag. -->
       <button
         type="button"
-        class="absolute left-1/2 top-1/2 z-10 flex h-9 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded border text-xs shadow-sm hover:opacity-80"
-        style="background: var(--color-panel); border-color: var(--color-border); color: var(--color-text); cursor: pointer;"
+        class="btn-panel absolute left-1/2 top-1/2 z-10 flex h-9 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded border text-xs shadow-sm hover:opacity-80"
         title={$isCodePanelHidden ? 'Show the code panel' : 'Hide the code panel'}
         onpointerdown={(event) => event.stopPropagation()}
         onclick={(event) => {
