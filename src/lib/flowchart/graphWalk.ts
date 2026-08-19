@@ -19,17 +19,19 @@ export function blockTypeOf(node: Node | undefined): string | undefined {
 //
 // Decision's pair is a real if/else fork: both branches run once, and
 // generator.ts/arrangeNodesVertically look for where they reconverge (see
-// findMergePoint). ForLoop's pair looks structurally identical — same "two
-// named handles, one edge each" rule — but means something different: 'loop'
-// leads into the body, which the user wires back to the ForLoop node itself
-// to close the loop, and 'exit' is simply "what comes after," not a second
-// branch to reconverge with. generator.ts and stores/flowchart.ts's Arrange
-// each handle that distinction themselves; this map only centralizes the
-// handle *names*, shared by every caller that needs to prune/find-free/probe
-// reachability without caring which of the two block types it's looking at.
+// findMergePoint). ForLoop's and WhileLoop's pairs look structurally
+// identical — same "two named handles, one edge each" rule — but mean
+// something different: 'loop' leads into the body, which the user wires back
+// to the loop node itself to close the loop, and 'exit' is simply "what
+// comes after," not a second branch to reconverge with. generator.ts and
+// stores/flowchart.ts's Arrange each handle that distinction themselves;
+// this map only centralizes the handle *names*, shared by every caller that
+// needs to prune/find-free/probe reachability without caring which of the
+// block types it's looking at.
 const BRANCH_HANDLES: Record<string, readonly [string, string]> = {
   decision: ['true', 'false'],
   forLoop: ['loop', 'exit'],
+  whileLoop: ['loop', 'exit'],
 };
 
 export function branchHandlesOf(blockType: string | undefined): readonly [string, string] | null {

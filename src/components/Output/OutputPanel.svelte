@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { runOutput, runError, hasRun, clearRunOutput } from '../../stores/run';
+  import { runOutput, runError, runVariables, hasRun, clearRunOutput } from '../../stores/run';
   import {
     isStepping,
     isStepFinished,
@@ -16,6 +16,10 @@
   // untouched.
   let displayOutput = $derived($isStepping ? $stepOutput : $runOutput);
   let displayError = $derived($isStepping ? $stepError : $runError);
+  // The Variable Watcher stays visible at all times (not just mid-Step
+  // Through) — live values while stepping, the last ▶ Run's final values
+  // otherwise, so it's still useful right after a normal Run finishes.
+  let displayVariables = $derived($isStepping ? $stepVariables : $runVariables);
 </script>
 
 <div class="flex h-full flex-col gap-3 p-4 text-sm" style="color: var(--color-text);">
@@ -71,39 +75,38 @@
       {/if}
     </div>
 
-    {#if $isStepping}
-      <!-- Variable Watcher — live values in scope as of the most recent
-           step, refreshed by stepRunner.ts on every stepOnce(). -->
-      <div
-        class="flex w-56 shrink-0 flex-col overflow-hidden rounded-md border"
-        style="border-color: var(--color-border);"
+    <!-- Variable Watcher — always visible: live values in scope while a
+         step run is active (refreshed by stepRunner.ts on every
+         stepOnce()), otherwise the last ▶ Run's final values. -->
+    <div
+      class="flex w-56 shrink-0 flex-col overflow-hidden rounded-md border"
+      style="border-color: var(--color-border);"
+    >
+      <p
+        class="shrink-0 border-b px-2 py-1 text-xs font-semibold tracking-wide uppercase"
+        style="border-color: var(--color-border); color: var(--color-text-secondary);"
       >
-        <p
-          class="shrink-0 border-b px-2 py-1 text-xs font-semibold tracking-wide uppercase"
-          style="border-color: var(--color-border); color: var(--color-text-secondary);"
-        >
-          Variables
-        </p>
-        <div class="min-h-0 flex-1 overflow-y-auto">
-          <table class="w-full text-left text-xs">
-            <tbody>
-              {#each $stepVariables as v (v.name)}
-                <tr style="border-top: 1px solid var(--color-border);">
-                  <td class="px-2 py-1 font-mono">{v.name}</td>
-                  <td class="px-2 py-1 font-mono" style="color: var(--color-text-secondary);">{v.type}</td>
-                  <td class="px-2 py-1 font-mono">{v.value}</td>
-                </tr>
-              {:else}
-                <tr>
-                  <td class="px-2 py-2 text-center" colspan="3" style="color: var(--color-text-secondary);">
-                    No variables yet
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
+        Variables
+      </p>
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        <table class="w-full text-left text-xs">
+          <tbody>
+            {#each displayVariables as v (v.name)}
+              <tr style="border-top: 1px solid var(--color-border);">
+                <td class="px-2 py-1 font-mono">{v.name}</td>
+                <td class="px-2 py-1 font-mono" style="color: var(--color-text-secondary);">{v.type}</td>
+                <td class="px-2 py-1 font-mono">{v.value}</td>
+              </tr>
+            {:else}
+              <tr>
+                <td class="px-2 py-2 text-center" colspan="3" style="color: var(--color-text-secondary);">
+                  {$isStepping || $hasRun ? 'No variables' : 'Run the program to see variables here'}
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
       </div>
-    {/if}
+    </div>
   </div>
 </div>

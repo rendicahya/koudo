@@ -3,7 +3,7 @@
   import {
     nodes,
     edges,
-    declaredVariableNamesUpstreamOf,
+    declaredVariableEntriesUpstreamOf,
     addAssignmentEntry,
     updateAssignmentEntryAt,
     removeAssignmentEntryAt,
@@ -15,28 +15,51 @@
   const OPERATORS: AssignmentEntry['operator'][] = ['=', '+=', '-=', '*=', '/='];
 
   // Sentinel <option> value for "assign a literal/expression instead of
-  // another variable" — distinct from '' (the unset placeholder) and from
-  // any real variable name.
+  // another variable" — distinct from any real variable name, so it can
+  // share the same <select> as the variable-name options below it.
   const CUSTOM_VALUE = ' custom';
 
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as AssignNodeData);
   let entries = $derived(nodeData.entries ?? []);
-  let variables = $derived(declaredVariableNamesUpstreamOf(id, $nodes, $edges));
+  let variableEntries = $derived(declaredVariableEntriesUpstreamOf(id, $nodes, $edges));
+  let variables = $derived(variableEntries.map((entry) => entry.varName));
 
-  function valueKind(value: string, vars: string[]): 'empty' | 'variable' | 'custom' {
-    if (!value) return 'empty';
+  // A value that names another declared variable is a reference; anything
+  // else — including blank, a new row's own starting state — is edited as a
+  // custom literal/expression (see the type-aware editor below), same as
+  // generator.ts's own reference-vs-literal check for codegen.
+  function valueKind(value: string, vars: string[]): 'variable' | 'custom' {
     return vars.includes(value) ? 'variable' : 'custom';
+  }
+
+  // The assignment target's own declared type — a custom value has to match
+  // it (see the type-aware editor below), same idea as DeclareNode's type
+  // <select> driving its own value field.
+  function targetTypeOf(varName: string): string | undefined {
+    return variableEntries.find((entry) => entry.varName === varName)?.varType;
   }
 
   function handleField(index: number, field: 'varName' | 'operator', event: Event) {
     const value = (event.currentTarget as HTMLSelectElement).value;
+
+    // Switching the target variable can also switch its type — a custom
+    // value left over from the old type (e.g. a numeric '0' after retargeting
+    // to a boolean) isn't valid for the new one, so it's cleared alongside
+    // the target, same as DeclareNode's type <select>. A "from var" value
+    // isn't type-specific, so it's left alone.
+    if (field === 'varName' && valueKind(entries[index]?.value ?? '', variables) === 'custom') {
+      $nodes = $nodes.map((node) =>
+        node.id === id ? updateAssignmentEntryAt(node, index, { varName: value, value: '' }) : node,
+      );
+      return;
+    }
+
     $nodes = $nodes.map((node) => (node.id === id ? updateAssignmentEntryAt(node, index, { [field]: value }) : node));
   }
 
   function handleValueSelect(index: number, event: Event) {
     const selected = (event.currentTarget as HTMLSelectElement).value;
-    // Custom starts blank — the user types the literal/expression next.
     const value = selected === CUSTOM_VALUE ? '' : selected;
     $nodes = $nodes.map((node) => (node.id === id ? updateAssignmentEntryAt(node, index, { value }) : node));
   }
@@ -101,7 +124,6 @@
         class="nodrag min-w-[4.5rem] rounded border bg-transparent px-1 py-0.5"
         style="border-color: var(--color-border);"
       >
-        <option value="" disabled>{variables.length === 0 ? 'no variables' : 'from var'}</option>
         {#each variables as varName (varName)}
           <option value={varName}>{varName}</option>
         {/each}
@@ -109,13 +131,42 @@
       </select>
 
       {#if kind === 'custom'}
-        <input
-          value={entry.value}
-          oninput={(event) => handleValueText(index, event)}
-          class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
-          style="border-color: var(--color-border);"
-          placeholder={'"text" or 5'}
-        />
+        {@const targetType = targetTypeOf(entry.varName)}
+        {#if targetType === 'boolean'}
+          <select
+            value={entry.value}
+            onchange={(event) => handleValueText(index, event)}
+            class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
+            style="border-color: var(--color-border);"
+          >
+            <!-- Blank is this row's own starting state (see valueKind) — a
+                 select always shows *some* option selected, so that state
+                 needs its own explicit option, same as DeclareNode's. -->
+            <option value="">—</option>
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        {:else if targetType === 'String' || targetType === 'char'}
+          {@const quote = targetType === 'String' ? '"' : "'"}
+          <span class="select-none" style="color: var(--color-text-secondary);">{quote}</span>
+          <input
+            value={entry.value}
+            oninput={(event) => handleValueText(index, event)}
+            maxlength={targetType === 'char' ? 1 : undefined}
+            class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
+            style="border-color: var(--color-border);"
+            placeholder="value"
+          />
+          <span class="select-none" style="color: var(--color-text-secondary);">{quote}</span>
+        {:else}
+          <input
+            value={entry.value}
+            oninput={(event) => handleValueText(index, event)}
+            class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
+            style="border-color: var(--color-border);"
+            placeholder={'"text" or 5'}
+          />
+        {/if}
       {/if}
 
       {#if entries.length > 1}

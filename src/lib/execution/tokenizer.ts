@@ -4,6 +4,7 @@
 export type TokenType =
   | 'number'
   | 'string'
+  | 'char'
   | 'identifier'
   | 'keyword'
   | 'punct'
@@ -17,11 +18,14 @@ export interface Token {
 
 const KEYWORDS = new Set([
   'int',
+  'long',
   'double',
   'float',
   'boolean',
+  'char',
   'String',
   'for',
+  'while',
   'if',
   'else',
   'System',
@@ -90,6 +94,25 @@ export function tokenize(source: string): Token[] {
       if (source[i] !== '"') throw new TokenizeError(`Unterminated string literal on line ${startLine}`);
       i++;
       tokens.push({ type: 'string', value, line: startLine });
+      continue;
+    }
+    if (ch === "'") {
+      let value = '';
+      const startLine = line;
+      i++;
+      while (i < source.length && source[i] !== "'") {
+        if (source[i] === '\\') {
+          const next = source[i + 1];
+          value += next === 'n' ? '\n' : next === 't' ? '\t' : next;
+          i += 2;
+        } else {
+          value += source[i];
+          i++;
+        }
+      }
+      if (source[i] !== "'") throw new TokenizeError(`Unterminated char literal on line ${startLine}`);
+      i++;
+      tokens.push({ type: 'char', value, line: startLine });
       continue;
     }
     if (/[0-9]/.test(ch)) {

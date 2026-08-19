@@ -5,6 +5,7 @@
     addDeclarationEntry,
     updateDeclarationEntryAt,
     removeDeclarationEntryAt,
+    renameDeclaredVariable,
     type DeclareNodeData,
   } from '../../stores/flowchart';
   import { isValidJavaIdentifier } from '../../lib/flowchart/declarationParser';
@@ -14,9 +15,26 @@
   let nodeData = $derived(data as DeclareNodeData);
   let entries = $derived(nodeData.entries ?? []);
 
-  function handleInput(index: number, field: 'varType' | 'varName' | 'varValue', event: Event) {
+  function handleInput(index: number, field: 'varName' | 'varValue', event: Event) {
     const value = (event.currentTarget as HTMLInputElement | HTMLSelectElement).value;
+    // A rename has to reach every other block referencing this variable by
+    // name (Process/Assign/Input — see renameDeclaredVariable), not just
+    // this one Declare entry.
+    if (field === 'varName') {
+      $nodes = renameDeclaredVariable($nodes, id, index, value);
+      return;
+    }
     $nodes = $nodes.map((node) => (node.id === id ? updateDeclarationEntryAt(node, index, { [field]: value }) : node));
+  }
+
+  // A leftover value from the previous type (e.g. a numeric '0' left over
+  // after switching to boolean) isn't valid for the new one, so the type
+  // <select> clears it alongside the type rather than leaving a stale
+  // mismatch — same "blank until the user fills it in" default a brand new
+  // entry starts with (see stores/flowchart.ts's defaultDeclarationEntry).
+  function handleTypeChange(index: number, event: Event) {
+    const varType = (event.currentTarget as HTMLSelectElement).value;
+    $nodes = $nodes.map((node) => (node.id === id ? updateDeclarationEntryAt(node, index, { varType, varValue: '' }) : node));
   }
 
   function handleRemove(index: number) {
@@ -46,13 +64,16 @@
       <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
       <select
         value={entry.varType}
-        onchange={(event) => handleInput(index, 'varType', event)}
+        onchange={(event) => handleTypeChange(index, event)}
         class="nodrag rounded border bg-transparent px-1 py-0.5"
         style="border-color: var(--color-border);"
       >
         <option value="int">int</option>
+        <option value="long">long</option>
         <option value="double">double</option>
+        <option value="float">float</option>
         <option value="boolean">boolean</option>
+        <option value="char">char</option>
         <option value="String">String</option>
       </select>
 
@@ -69,13 +90,42 @@
 
       <span>=</span>
 
-      <input
-        value={entry.varValue}
-        oninput={(event) => handleInput(index, 'varValue', event)}
-        class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
-        style="border-color: var(--color-border);"
-        placeholder="value"
-      />
+      {#if entry.varType === 'boolean'}
+        <select
+          value={entry.varValue}
+          onchange={(event) => handleInput(index, 'varValue', event)}
+          class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
+          style="border-color: var(--color-border);"
+        >
+          <!-- A select always has *some* option selected, so "declare only,
+               no value yet" (see generator.ts's declare case) needs its own
+               explicit blank option — unlike the free-text value fields
+               below, which represent that same state just by being empty. -->
+          <option value="">—</option>
+          <option value="true">true</option>
+          <option value="false">false</option>
+        </select>
+      {:else if entry.varType === 'String' || entry.varType === 'char'}
+        {@const quote = entry.varType === 'String' ? '"' : "'"}
+        <span class="select-none" style="color: var(--color-text-secondary);">{quote}</span>
+        <input
+          value={entry.varValue}
+          oninput={(event) => handleInput(index, 'varValue', event)}
+          maxlength={entry.varType === 'char' ? 1 : undefined}
+          class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
+          style="border-color: var(--color-border);"
+          placeholder="value"
+        />
+        <span class="select-none" style="color: var(--color-text-secondary);">{quote}</span>
+      {:else}
+        <input
+          value={entry.varValue}
+          oninput={(event) => handleInput(index, 'varValue', event)}
+          class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
+          style="border-color: var(--color-border);"
+          placeholder="value"
+        />
+      {/if}
 
       {#if entries.length > 1}
         <button

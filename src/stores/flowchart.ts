@@ -1,6 +1,7 @@
 import type { Edge, Node } from '@xyflow/svelte';
-import { derived, writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 import { outgoing, findMergePoint, branchHandlesOf, unusedBranchHandle } from '../lib/flowchart/graphWalk';
+import { formatDeclaredValue } from '../lib/flowchart/valueFormat';
 
 export type BlockType = 'start' | 'end' | 'process' | 'declare' | 'assign' | 'input' | 'forLoop' | 'decision' | 'whileLoop';
 
@@ -88,6 +89,18 @@ export interface ForLoopNodeData extends Record<string, unknown> {
   update: string;
 }
 
+// A While Loop block branches the same way ForLoop does (see BRANCH_HANDLES
+// above) — 'loop' into the body, wired back to this same node to close the
+// loop, 'exit' as whatever comes after — just with only a condition, no
+// init/update clause. Rendered as a diamond (same shape as Decision, see
+// WhileLoopNode.svelte) since a single condition line doesn't need the
+// hexagon's flat top/bottom the way ForLoop's three fields do.
+export interface WhileLoopNodeData extends Record<string, unknown> {
+  blockType: 'whileLoop';
+  label: string;
+  condition: string;
+}
+
 export interface BlockDefinition {
   type: BlockType;
   label: string;
@@ -105,9 +118,9 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
   { type: 'assign', label: 'Assign' },
   { type: 'input', label: 'Input' },
   { type: 'process', label: 'Output' },
-  { type: 'decision', label: 'Decision' },
-  { type: 'forLoop', label: 'For Loop' },
-  { type: 'whileLoop', label: 'While Loop', comingSoon: true },
+  { type: 'decision', label: 'If' },
+  { type: 'forLoop', label: 'For' },
+  { type: 'whileLoop', label: 'While' },
   { type: 'end', label: 'End', singleton: true },
 ];
 
@@ -149,7 +162,7 @@ const NODE_WIDTH: Record<BlockType, number> = {
   input: BLOCK_WIDTH,
   forLoop: FORLOOP_WIDTH,
   decision: DIAMOND_WIDTH,
-  whileLoop: BLOCK_WIDTH,
+  whileLoop: DIAMOND_WIDTH,
 };
 
 // The width to lay a block out with before it exists yet (e.g. sizing a
@@ -191,9 +204,10 @@ const FORLOOP_NODE_STYLE = `width: ${FORLOOP_WIDTH}px; height: ${FORLOOP_HEIGHT}
 // Flowchart terminal symbol: fully rounded (pill/stadium) left and right.
 const PILL_STYLE = `${TERMINAL_NODE_STYLE} border-radius: 9999px; padding: 8px 16px; text-align: center;`;
 
-// decision's, input's, and forLoop's entries here are never actually read
-// (createBlockNode short-circuits to their own createXNode before reaching
-// this) — kept only so this object satisfies Record<BlockType, string>.
+// decision's, input's, forLoop's, and whileLoop's entries here are never
+// actually read (createBlockNode short-circuits to their own createXNode
+// before reaching this) — kept only so this object satisfies
+// Record<BlockType, string>.
 const XYFLOW_NODE_STYLE: Record<BlockType, string> = {
   start: PILL_STYLE,
   end: PILL_STYLE,
@@ -203,38 +217,47 @@ const XYFLOW_NODE_STYLE: Record<BlockType, string> = {
   input: BASE_NODE_STYLE,
   forLoop: FORLOOP_NODE_STYLE,
   decision: DIAMOND_NODE_STYLE,
-  whileLoop: BASE_NODE_STYLE,
+  whileLoop: DIAMOND_NODE_STYLE,
 };
 
 let nodeCounter = 0;
 
-// Kept separate from nodeCounter (used for node IDs) — Start already
-// consumes nodeCounter's first value on every fresh canvas, so a shared
-// counter would make the first variable a user actually declares default
-// to `var2` instead of `var1`.
-let varNameCounter = 0;
-
-function nextDefaultVarName(): string {
-  varNameCounter += 1;
-  return `var${varNameCounter}`;
+// Every `varN` name already in use by some Declare entry currently on the
+// canvas (across every Declare block, not just one) — scanned fresh from
+// live state rather than tracked as a running counter, so deleting every
+// declared variable and adding a new one starts back at `var1` instead of
+// continuing on from a name nothing on the canvas uses anymore.
+function usedDefaultVarNames(): Set<string> {
+  const used = new Set<string>();
+  for (const node of get(nodes)) {
+    if (node.data?.blockType !== 'declare') continue;
+    const entries = (node.data as Partial<DeclareNodeData>).entries ?? [];
+    for (const entry of entries) {
+      if (/^var\d+$/.test(entry.varName ?? '')) used.add(entry.varName);
+    }
+  }
+  return used;
 }
 
-// After Open Project loads a saved flow, these counters must resume above
+// The lowest-numbered `varN` not already in use — fills a gap left by a
+// deleted variable rather than always climbing past every name ever used.
+function nextDefaultVarName(): string {
+  const used = usedDefaultVarNames();
+  let n = 1;
+  while (used.has(`var${n}`)) n++;
+  return `var${n}`;
+}
+
+// After Open Project loads a saved flow, nodeCounter must resume above
 // whatever's already in it — otherwise the next block dropped in could mint
-// an id (`${type}-${n}`, see createBlockNode) or default variable name
-// (`varN`, see nextDefaultVarName) that collides with one the loaded file
-// already uses. Best-effort for var names: only catches the `varN` pattern
-// nextDefaultVarName itself generates, not names the user typed by hand.
+// an id (`${type}-${n}`, see createBlockNode) that collides with one the
+// loaded file already uses. Default variable names need no equivalent
+// resync: nextDefaultVarName always reflects live state (see
+// usedDefaultVarNames above), including whatever the loaded file brought in.
 function resyncCountersAfterLoad(nodeList: Node[]) {
   for (const node of nodeList) {
     const idMatch = /-(\d+)$/.exec(node.id);
     if (idMatch) nodeCounter = Math.max(nodeCounter, Number(idMatch[1]));
-
-    const entries = (node.data as { entries?: { varName?: string }[] } | undefined)?.entries;
-    for (const entry of entries ?? []) {
-      const varMatch = /^var(\d+)$/.exec(entry.varName ?? '');
-      if (varMatch) varNameCounter = Math.max(varNameCounter, Number(varMatch[1]));
-    }
   }
 }
 
@@ -296,6 +319,7 @@ export function createBlockNode(type: BlockType, position: { x: number; y: numbe
   if (type === 'input') return createInputNode(position);
   if (type === 'decision') return createDecisionNode(position);
   if (type === 'forLoop') return createForLoopNode(position);
+  if (type === 'whileLoop') return createWhileLoopNode(position);
 
   nodeCounter += 1;
   const label = definition.comingSoon ? `${definition.label} (soon)` : definition.label;
@@ -399,8 +423,31 @@ export function updateForLoopField(node: Node, field: 'init' | 'condition' | 'up
   return { ...node, data: { ...node.data, init, condition, update, label: forLoopLabel(init, condition, update) } };
 }
 
+export function whileLoopLabel(condition: string): string {
+  return `while (${condition})`;
+}
+
+// Seeded with a runnable skeleton, same reasoning as createForLoopNode.
+export function createWhileLoopNode(position: { x: number; y: number }): Node {
+  nodeCounter += 1;
+  const condition = 'i < 10';
+
+  return {
+    id: `whileLoop-${nodeCounter}`,
+    type: 'whileLoop',
+    data: { blockType: 'whileLoop', label: whileLoopLabel(condition), condition },
+    position,
+    style: DIAMOND_NODE_STYLE,
+  };
+}
+
+export function updateWhileLoopCondition(node: Node, condition: string): Node {
+  return { ...node, data: { ...node.data, condition, label: whileLoopLabel(condition) } };
+}
+
 export function declareLabel(varType: string, varName: string, varValue: string): string {
-  return `${varType} ${varName} = ${varValue}`;
+  if (!varValue.trim()) return `${varType} ${varName}`;
+  return `${varType} ${varName} = ${formatDeclaredValue(varType, varValue)}`;
 }
 
 export function entriesLabel(entries: DeclarationEntry[]): string {
@@ -413,7 +460,9 @@ function defaultDeclarationEntry(overrides?: { varType?: string; varName?: strin
   return {
     varType: overrides?.varType ?? 'int',
     varName: overrides?.varName ?? nextDefaultVarName(),
-    varValue: overrides?.varValue ?? '0',
+    // Blank, not '0' — a freshly added variable is "declare only" (see
+    // generator.ts's declare case) until the user actually types a value.
+    varValue: overrides?.varValue ?? '',
   };
 }
 
@@ -441,7 +490,7 @@ export function updateDeclarationEntryAt(
   const updated: DeclarationEntry = {
     varType: fields.varType ?? current?.varType ?? 'int',
     varName: fields.varName ?? current?.varName ?? 'value',
-    varValue: fields.varValue ?? current?.varValue ?? '0',
+    varValue: fields.varValue ?? current?.varValue ?? '',
   };
   return updateListItemAt(DECLARE_LIST, node, index, updated);
 }
@@ -546,6 +595,77 @@ export function removeInputEntryAt(node: Node, index: number): Node {
   return removeListItemAt(INPUT_LIST, node, index);
 }
 
+// Declare's varName field, unlike its type or value, participates in a
+// rename: every other block that reads that variable (Process's println
+// content, Assign's target and "from var" value, Input's target — see each
+// one's own dropdown, all populated from declaredVariableNamesUpstreamOf)
+// references it purely by matching the name string, with no other link
+// back to the Declare entry that introduced it. Renaming a Declare entry
+// directly (via updateDeclarationEntryAt) would silently break every one of
+// those, so this instead walks the *whole* node list — not just what's
+// downstream, matching the rest of this app's simplified, edge-position-
+// agnostic variable model (see graphWalk.ts's declaredVariableEntriesUpstreamOf) —
+// and updates any exact-name match alongside the Declare entry itself.
+//
+// Free-text expressions (Decision/ForLoop/WhileLoop conditions, an Assign
+// row's own custom literal) are deliberately left untouched: safely
+// rewriting an identifier embedded inside an arbitrary expression needs
+// real parsing, not just a string-equality check, so those are left for the
+// user to fix by hand.
+export function renameDeclaredVariable(nodeList: Node[], declareNodeId: string, entryIndex: number, newName: string): Node[] {
+  const declareNode = nodeList.find((node) => node.id === declareNodeId);
+  const oldName = (declareNode?.data as Partial<DeclareNodeData> | undefined)?.entries?.[entryIndex]?.varName;
+
+  return nodeList.map((node) => {
+    if (node.id === declareNodeId) {
+      return updateDeclarationEntryAt(node, entryIndex, { varName: newName });
+    }
+    if (!oldName || newName === oldName) return node;
+
+    const blockType = node.data?.blockType as BlockType | undefined;
+
+    if (blockType === 'process') {
+      const data = node.data as Partial<ProcessNodeData>;
+      const oldStatements = data.statements ?? [];
+      const statements = oldStatements.map((statement) => {
+        const content = printlnContent(statement);
+        return content === oldName ? printlnStatement(newName) : statement;
+      });
+      if (statements.every((line, i) => line === oldStatements[i])) return node;
+      return { ...node, data: { ...node.data, statements, label: statementsLabel(statements) } };
+    }
+
+    if (blockType === 'assign') {
+      const data = node.data as Partial<AssignNodeData>;
+      const oldEntries = data.entries ?? [];
+      let changed = false;
+      const entries = oldEntries.map((entry) => {
+        const varName = entry.varName === oldName ? newName : entry.varName;
+        const value = entry.value === oldName ? newName : entry.value;
+        if (varName !== entry.varName || value !== entry.value) changed = true;
+        return { ...entry, varName, value };
+      });
+      if (!changed) return node;
+      return { ...node, data: { ...node.data, entries, label: assignEntriesLabel(entries) } };
+    }
+
+    if (blockType === 'input') {
+      const data = node.data as Partial<InputNodeData>;
+      const oldEntries = data.entries ?? [];
+      let changed = false;
+      const entries = oldEntries.map((entry) => {
+        if (entry.varName !== oldName) return entry;
+        changed = true;
+        return { ...entry, varName: newName };
+      });
+      if (!changed) return node;
+      return { ...node, data: { ...node.data, entries, label: inputEntriesLabel(entries) } };
+    }
+
+    return node;
+  });
+}
+
 // x is offset clear of the BlockPalette, which floats over the canvas's
 // top-left corner (see BlockPalette.svelte) — starting Start underneath it
 // would leave it permanently hidden behind the palette panel.
@@ -560,8 +680,13 @@ export const edges = writable<Edge[]>([]);
 
 // Powers the "New" button — wipes the canvas back to a single fresh Start
 // block. The code panel clears itself too, since it's just a reactive
-// projection of the node list (see stores/sync.ts).
+// projection of the node list (see stores/sync.ts). Also resets nodeCounter,
+// so a brand new project mints the same `declare-1`/... a truly fresh page
+// load would, instead of continuing on from whatever the previous project
+// last reached (default variable names need no equivalent reset — see
+// usedDefaultVarNames above, which always reflects live state).
 export function resetFlowchart() {
+  nodeCounter = 0;
   nodes.set(createDefaultNodes());
   edges.set([]);
 }
@@ -710,16 +835,17 @@ export function arrangeNodesVertically(nodeList: Node[], edgeList: Edge[]): Node
         continue;
       }
 
-      // Unlike Decision, ForLoop only has one column to lay out: the body
-      // stacks straight down from the diamond, in the very same column
-      // (mirroring how the True branch continues straight down above) —
-      // there's no second, divergent branch needing its own column, since
-      // 'exit' isn't a parallel path to reconverge with, just "whatever's
-      // next" once the body's done. stopId is the ForLoop node's own id,
-      // so the body's layout walk stops the moment it reaches back around
-      // the user-drawn loop-back edge, the same way generator.ts's walk()
-      // stops there when emitting the `for (...) { ... }` block.
-      if (node.data?.blockType === 'forLoop') {
+      // Unlike Decision, ForLoop/WhileLoop only have one column to lay out:
+      // the body stacks straight down from the diamond/hexagon, in the very
+      // same column (mirroring how the True branch continues straight down
+      // above) — there's no second, divergent branch needing its own
+      // column, since 'exit' isn't a parallel path to reconverge with, just
+      // "whatever's next" once the body's done. stopId is the loop node's
+      // own id, so the body's layout walk stops the moment it reaches back
+      // around the user-drawn loop-back edge, the same way generator.ts's
+      // walk() stops there when emitting the `for (...) { ... }` /
+      // `while (...) { ... }` block.
+      if (node.data?.blockType === 'forLoop' || node.data?.blockType === 'whileLoop') {
         const bodyId = outgoing(edgeList, currentId, 'loop');
         y = bodyId ? layout(bodyId, currentId, centerX, nextY) : nextY;
         currentId = outgoing(edgeList, currentId, 'exit');

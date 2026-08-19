@@ -1,5 +1,6 @@
 import type { Edge, Node } from '@xyflow/svelte';
 import { blockTypeOf, outgoing, findMergePoint, declaredVariableEntriesUpstreamOf } from './graphWalk';
+import { formatDeclaredValue } from './valueFormat';
 
 // Free-typed text (an Input block's prompt) embedded into a generated Java
 // string literal needs its own quotes/backslashes escaped, or a `"` typed
@@ -15,6 +16,7 @@ function escapeJavaString(text: string): string {
 function scannerMethodFor(varType: string): string {
   switch (varType) {
     case 'int':
+    case 'long':
       return 'nextInt';
     case 'double':
     case 'float':
@@ -44,13 +46,13 @@ export interface StatementLine {
 
 export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edges: Edge[]): StatementLine[] {
   const blockType = blockTypeOf(node);
-  const label = (node.data?.label as string | undefined) ?? '';
 
   switch (blockType) {
     case 'start':
     case 'end':
     case 'decision': // handled separately in walk() — branches, not a single statement
     case 'forLoop': // handled separately in walk() — branches (and loops back), not a single statement
+    case 'whileLoop': // handled separately in walk() — branches (and loops back), not a single statement
       return [];
     case 'process': {
       // One block can hold several print statements (see
@@ -63,21 +65,45 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
     }
     case 'declare': {
       // One block can hold several variables (merged via drag — see
-      // FlowchartBoard's handleDrop), each becoming its own line.
+      // FlowchartBoard's handleDrop), each becoming its own line. A blank
+      // value field (see DeclareNode.svelte) means "declare only" — no `=
+      // ...` at all, not an (invalid) empty initializer.
       const entries = (node.data?.entries as { varType: string; varName: string; varValue: string }[] | undefined) ?? [];
       return entries
         .map((entry, rowIndex) => ({ entry, rowIndex }))
         .filter(({ entry }) => entry.varName.trim())
-        .map(({ entry, rowIndex }) => ({ text: `${entry.varType} ${entry.varName} = ${entry.varValue};`, rowIndex }));
+        .map(({ entry, rowIndex }) => {
+          const hasValue = entry.varValue.trim().length > 0;
+          const text = hasValue
+            ? `${entry.varType} ${entry.varName} = ${formatDeclaredValue(entry.varType, entry.varValue)};`
+            : `${entry.varType} ${entry.varName};`;
+          return { text, rowIndex };
+        });
     }
     case 'assign': {
       // One block can hold several assignments (the "+ Add assignment"
-      // control), each becoming its own line.
+      // control), each becoming its own line. A value that names another
+      // declared variable is a reference (assigned as-is); anything else is
+      // a literal, quoted per the *target's* own type (see AssignNode.svelte's
+      // matching type-aware value editor) — same String/char auto-quoting as
+      // Declare's entries. Unlike Declare, an assignment's value isn't
+      // optional (`x = ;` isn't valid Java the way `int x;` is) — a row
+      // whose value is still blank (its own starting state — see
+      // AssignNode.svelte's valueKind) is filtered out entirely rather than
+      // emitted broken.
       const entries = (node.data?.entries as { varName: string; operator: string; value: string }[] | undefined) ?? [];
+      const nodeList = [...nodesById.values()];
+      const declarations = declaredVariableEntriesUpstreamOf(node.id, nodeList, edges);
+      const declaredNames = new Set(declarations.map((d) => d.varName));
       return entries
         .map((entry, rowIndex) => ({ entry, rowIndex }))
-        .filter(({ entry }) => entry.varName.trim())
-        .map(({ entry, rowIndex }) => ({ text: `${entry.varName} ${entry.operator} ${entry.value};`, rowIndex }));
+        .filter(({ entry }) => entry.varName.trim() && entry.value.trim())
+        .map(({ entry, rowIndex }) => {
+          const isVarRef = declaredNames.has(entry.value);
+          const targetType = declarations.find((d) => d.varName === entry.varName)?.varType;
+          const value = isVarRef || !targetType ? entry.value : formatDeclaredValue(targetType, entry.value);
+          return { text: `${entry.varName} ${entry.operator} ${value};`, rowIndex };
+        });
     }
     case 'input': {
       // One block can hold several reads (the "+ Add input" control), each
@@ -99,8 +125,6 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
       });
       return lines;
     }
-    case 'whileLoop':
-      return [{ text: `// TODO: ${label} — not generated yet`, rowIndex: -1 }];
     default:
       return [];
   }
@@ -118,17 +142,17 @@ function indent(lines: string[]): string[] {
 }
 
 // Walks the flow starting at nodeId, stopping at stopId (exclusive) if
-// given, following the single outgoing edge each block has — except the two
+// given, following the single outgoing edge each block has — except the
 // branching block types (see graphWalk.ts's branchHandlesOf). Decision
 // recurses into both branches and resumes the outer walk at their merge
 // point (see findMergePoint), producing a real `if (...) { ... } else { ... }`
-// instead of visiting one arbitrary branch. ForLoop recurses into just its
-// 'loop' branch (the body) once, stopping the moment that walk loops back
-// around the user-drawn back-edge to the ForLoop node itself — the same
-// "stop at this id" mechanism as Decision's merge point, just with the
-// ForLoop's own id standing in for one. The real repetition happens at
-// runtime, from the emitted `for (...) { ... }` — the body's Java text is
-// only ever walked, and emitted, once.
+// instead of visiting one arbitrary branch. ForLoop/WhileLoop each recurse
+// into just their 'loop' branch (the body) once, stopping the moment that
+// walk loops back around the user-drawn back-edge to the loop node itself —
+// the same "stop at this id" mechanism as Decision's merge point, just with
+// the loop node's own id standing in for one. The real repetition happens at
+// runtime, from the emitted `for (...) { ... }` / `while (...) { ... }` —
+// the body's Java text is only ever walked, and emitted, once.
 function walk(nodeId: string | null, stopId: string | null, nodesById: Map<string, Node>, edges: Edge[], guard: Set<string>): string[] {
   const lines: string[] = [];
   let currentId = nodeId;
@@ -167,6 +191,19 @@ function walk(nodeId: string | null, stopId: string | null, nodesById: Map<strin
       const update = (data?.update ?? '').trim();
 
       lines.push(`for (${init}; ${condition}; ${update}) {`);
+      lines.push(...indent(walk(bodyId, currentId, nodesById, edges, guard)));
+      lines.push('}');
+
+      currentId = exitId;
+      continue;
+    }
+
+    if (blockTypeOf(node) === 'whileLoop') {
+      const bodyId = outgoing(edges, currentId, 'loop');
+      const exitId = outgoing(edges, currentId, 'exit');
+      const condition = ((node.data?.condition as string | undefined) ?? '').trim() || 'true';
+
+      lines.push(`while (${condition}) {`);
       lines.push(...indent(walk(bodyId, currentId, nodesById, edges, guard)));
       lines.push('}');
 

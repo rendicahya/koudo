@@ -20,6 +20,7 @@ import {
 import { codeContent } from './code';
 import { generateJavaCode } from '../lib/flowchart/generator';
 import { parseDeclarations } from '../lib/flowchart/declarationParser';
+import { unquoteDeclaredValue } from '../lib/flowchart/valueFormat';
 import { parseStatements } from '../lib/flowchart/statementParser';
 
 // Guards against the two directions fighting each other: while one side is
@@ -45,7 +46,12 @@ function blockTypeOf(node: Node): string | undefined {
 }
 
 export function syncCodeToFlowchart(code: string) {
-  const declarations = parseDeclarations(code);
+  // A Declare block's String/char entries are edited unquoted in the UI
+  // (see DeclareNode.svelte) — code typed/pasted directly into the editor
+  // has real Java literals (`"Hello"`, `'a'`), so strip that quoting back
+  // off here, once, before it reaches any entry the flowchart side compares
+  // or stores (see valueFormat.ts's unquoteDeclaredValue).
+  const declarations = parseDeclarations(code).map((d) => ({ ...d, varValue: unquoteDeclaredValue(d.varType, d.varValue) }));
   const declByName = new Map(declarations.map((d) => [d.varName, d]));
   const statements = parseStatements(code);
   const current = get(nodes);

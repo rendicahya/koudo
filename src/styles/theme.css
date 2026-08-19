@@ -16,13 +16,14 @@
   --color-error: #c41e3a;
   --color-success: #008000;
   --color-warning: #ff8c00;
+  --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 
-  /* Start/End and the coming-soon blocks (For Loop/Decision/While Loop) are
-     xyflow's own built-in node types, which default to xyflow's own gray
-     border (--xy-node-border-default) instead of this theme's node color.
-     Overriding the variable xyflow actually checks first keeps every
-     block's outline the same, without touching the custom Declare/Process
-     components (which already reference --color-node-border directly). */
+  /* Start/End are xyflow's own built-in node types, which default to
+     xyflow's own gray border (--xy-node-border-default) instead of this
+     theme's node color. Overriding the variable xyflow actually checks
+     first keeps every block's outline the same, without touching the
+     custom Declare/Process/... components (which already reference
+     --color-node-border directly). */
   --xy-node-border: 1px solid var(--color-node-border);
 }
 
@@ -43,6 +44,24 @@
   --color-error: #ff6b6b;
   --color-success: #51cf66;
   --color-warning: #ffd93d;
+  /* Node background matches the canvas exactly in dark mode (both
+     --color-node-bg and --color-canvas are #1a1f3a) — border alone
+     separates a block from the canvas, so the shadow needs to read clearly
+     against a same-colored background, not just add subtle depth to an
+     already-visible edge. */
+  --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 
   --xy-node-border: 1px solid var(--color-node-border);
+}
+
+/* Every block — Declare/Assign/Input/Process/Decision/ForLoop/WhileLoop's
+   own components, and Start/End (xyflow's built-in node types) alike — gets
+   wrapped in this same class (see @xyflow/svelte's NodeWrapper.svelte), so
+   one rule here shadows all of them without touching each component. A
+   `filter: drop-shadow` (not `box-shadow`) follows a node's actual clipped
+   silhouette — the diamond/hexagon/parallelogram shapes ShapeFrame.svelte
+   renders via clip-path — instead of drawing a shadow around its full
+   rectangular bounding box, which would poke out past the shape's corners. */
+.svelte-flow__node {
+  filter: drop-shadow(var(--color-node-shadow));
 }

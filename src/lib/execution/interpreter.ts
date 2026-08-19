@@ -11,9 +11,16 @@
 import { tokenize, TokenizeError } from './tokenizer';
 import { Parser, ParseError, type Expr, type Stmt, type VarKind } from './parser';
 
+export interface VariableSnapshot {
+  name: string;
+  type: string;
+  value: string;
+}
+
 export interface RunResult {
   output: string[];
   error: string | null;
+  variables: VariableSnapshot[];
 }
 
 // ---- Interpreter ---------------------------------------------------------
@@ -27,7 +34,15 @@ interface EvalValue {
   value: number | string | boolean;
 }
 
-type VarSlot = EvalValue;
+// A declared variable's storage slot — `initialized` is false for one
+// declared without a value (see zeroValueFor); `value` still holds a real
+// placeholder even then (so assignment machinery like coerceToKind always
+// has something to work with), but *reading* an uninitialized slot is a
+// RuntimeError (see the `identifier` case in evalExpr and the compound-
+// assign/update cases in execStmt) — it's only ever meant to be written to
+// before anything reads it, mirroring Java's own "variable might not have
+// been initialized" compile error.
+type VarSlot = EvalValue & { initialized: boolean };
 
 class RuntimeError extends Error {}
 
@@ -93,7 +108,15 @@ class Interpreter {
     for (const scope of this.scopes) {
       for (const [name, slot] of scope) merged.set(name, slot);
     }
-    return [...merged.entries()].map(([name, slot]) => ({ name, kind: slot.kind, value: formatValue(slot) }));
+    // Shows the placeholder state plainly rather than its underlying
+    // zeroValueFor() value — printing that value would itself be a
+    // RuntimeError (see lookupInitialized), so displaying it here as if it
+    // were real would be misleading.
+    return [...merged.entries()].map(([name, slot]) => ({
+      name,
+      kind: slot.kind,
+      value: slot.initialized ? formatValue(slot) : '(not initialized)',
+    }));
   }
 
   private flushPending() {
@@ -131,6 +154,19 @@ class Interpreter {
     throw new RuntimeError(`Variable '${name}' is not declared (line ${line}).`);
   }
 
+  // Every place that *reads* a variable's current value (an expression's
+  // own identifier reference, or a compound assignment/++/-- that folds the
+  // old value into the new one) goes through this instead of lookup() —
+  // lookup() alone is still right for a plain `=` assignment's target,
+  // which is about to be written to, not read from.
+  private lookupInitialized(name: string, line: number): VarSlot {
+    const slot = this.lookup(name, line);
+    if (!slot.initialized) {
+      throw new RuntimeError(`Variable '${name}' might not have been initialized (line ${line}).`);
+    }
+    return slot;
+  }
+
   private execBlock(statements: Stmt[]) {
     for (const stmt of statements) this.execStmt(stmt);
   }
@@ -140,19 +176,33 @@ class Interpreter {
 
     switch (stmt.kind) {
       case 'varDecl': {
-        const value = coerceToKind(this.evalExpr(stmt.init).value, stmt.varType);
-        this.declare(stmt.name, { kind: stmt.varType, value }, stmt.line);
+        if (stmt.init) {
+          const value = coerceToKind(this.evalExpr(stmt.init).value, stmt.varType);
+          this.declare(stmt.name, { kind: stmt.varType, value, initialized: true }, stmt.line);
+        } else {
+          this.declare(stmt.name, { kind: stmt.varType, value: zeroValueFor(stmt.varType), initialized: false }, stmt.line);
+        }
         return;
       }
       case 'assign': {
+        // A plain `=` overwrites the slot outright, so it's fine as the
+        // *first* real value for one declared without an initializer —
+        // only a compound op (+=, -=, ...) actually reads the slot's
+        // current value first, so only that path requires it already be
+        // initialized.
         const slot = this.lookup(stmt.name, stmt.line);
+        if (stmt.op !== '=' && !slot.initialized) {
+          throw new RuntimeError(`Variable '${stmt.name}' might not have been initialized (line ${stmt.line}).`);
+        }
         const rhs = this.evalExpr(stmt.value);
         const next = stmt.op === '=' ? rhs : applyBinaryOp(stmt.op[0], slot, rhs, stmt.line);
         slot.value = coerceToKind(next.value, slot.kind);
+        slot.initialized = true;
         return;
       }
       case 'update': {
-        const slot = this.lookup(stmt.name, stmt.line);
+        // ++/-- always reads the current value before writing the new one.
+        const slot = this.lookupInitialized(stmt.name, stmt.line);
         const delta: EvalValue = { kind: 'int', value: stmt.op === '++' ? 1 : -1 };
         slot.value = coerceToKind(applyBinaryOp('+', slot, delta, stmt.line).value, slot.kind);
         return;
@@ -190,6 +240,15 @@ class Interpreter {
         this.popScope();
         return;
       }
+      case 'while': {
+        while (Boolean(this.evalExpr(stmt.test).value)) {
+          this.tick(stmt.line);
+          this.pushScope();
+          this.execBlock(stmt.body);
+          this.popScope();
+        }
+        return;
+      }
       case 'if': {
         if (Boolean(this.evalExpr(stmt.test).value)) {
           this.execStmt(stmt.then);
@@ -207,10 +266,12 @@ class Interpreter {
         return { kind: expr.isInt ? 'int' : 'double', value: expr.value };
       case 'string':
         return { kind: 'String', value: expr.value };
+      case 'char':
+        return { kind: 'char', value: expr.value };
       case 'boolean':
         return { kind: 'boolean', value: expr.value };
       case 'identifier':
-        return this.lookup(expr.name, expr.line);
+        return this.lookupInitialized(expr.name, expr.line);
       case 'unary': {
         const operand = this.evalExpr(expr.operand);
         if (expr.op === '-') return { kind: operand.kind, value: -Number(operand.value) };
@@ -222,18 +283,24 @@ class Interpreter {
         return applyBinaryOp(expr.op, left, right, expr.line);
       }
       case 'scannerRead': {
-        // Whatever's printed so far (e.g. a prompt via System.out.print)
-        // should show up before the native input dialog, not get stuck
-        // behind it in a still-pending line.
+        // An Input block's generated code is always `System.out.print(prompt);`
+        // immediately followed by the read (see generator.ts's 'input' case),
+        // so whatever's still pending here (not yet flushed to `output`) is
+        // that same prompt — shown as the native dialog's own message,
+        // instead of the dialog just saying something generic while the
+        // prompt sits unseen in the output panel behind it.
+        const message = this.pendingLine || DEFAULT_PROMPT_MESSAGE;
         this.flushPending();
-        return readFromUser(this.promptFn, expr.method, expr.line);
+        return readFromUser(this.promptFn, expr.method, expr.line, message);
       }
     }
   }
 }
 
-function readFromUser(promptFn: PromptFn, method: string, line: number): EvalValue {
-  const raw = promptFn('Program is waiting for input:');
+const DEFAULT_PROMPT_MESSAGE = 'Program is waiting for input:';
+
+function readFromUser(promptFn: PromptFn, method: string, line: number, message: string): EvalValue {
+  const raw = promptFn(message);
   if (raw === null) throw new RuntimeError(`Input was cancelled (line ${line}).`);
 
   switch (method) {
@@ -263,10 +330,35 @@ function readFromUser(promptFn: PromptFn, method: string, line: number): EvalVal
   }
 }
 
+// A Declare block's value field is optional (see DeclareNode.svelte) — Java
+// itself only allows this for fields, not local variables, but this
+// simplified interpreter doesn't distinguish the two, so an uninitialized
+// local just gets its type's normal Java default. String's real default is
+// `null`; simplified to '' here rather than threading a null case through
+// every value consumer (formatValue, applyBinaryOp, ...) for a case a
+// beginner is unlikely to print before assigning something meaningful.
+function zeroValueFor(kind: VarKind): number | string | boolean {
+  switch (kind) {
+    case 'int':
+    case 'long':
+      return 0;
+    case 'double':
+    case 'float':
+      return 0;
+    case 'boolean':
+      return false;
+    case 'char':
+      return ' ';
+    default:
+      return '';
+  }
+}
+
 function coerceToKind(value: number | string | boolean, kind: VarKind): number | string | boolean {
-  if (kind === 'int') return Math.trunc(Number(value));
+  if (kind === 'int' || kind === 'long') return Math.trunc(Number(value));
   if (kind === 'double' || kind === 'float') return Number(value);
   if (kind === 'boolean') return Boolean(value);
+  if (kind === 'char') return String(value).charAt(0);
   return String(value);
 }
 
@@ -350,7 +442,11 @@ export interface StepInterpreter {
   /** Everything printed by every runStatements() call so far on this interpreter. */
   getOutput(): string[];
   /** Every variable currently in scope — name, declared type, and formatted current value. */
-  getVariables(): { name: string; type: string; value: string }[];
+  getVariables(): VariableSnapshot[];
+}
+
+function snapshotVariables(interpreter: Interpreter): VariableSnapshot[] {
+  return interpreter.getVariables().map(({ name, kind, value }) => ({ name, type: kind, value }));
 }
 
 export function createStepInterpreter(promptFn: PromptFn = defaultPrompt): StepInterpreter {
@@ -368,7 +464,7 @@ export function createStepInterpreter(promptFn: PromptFn = defaultPrompt): StepI
       return interpreter.getOutput();
     },
     getVariables() {
-      return interpreter.getVariables().map(({ name, kind, value }) => ({ name, type: kind, value }));
+      return snapshotVariables(interpreter);
     },
   };
 }
@@ -380,10 +476,10 @@ export function runJava(code: string, promptFn: PromptFn = defaultPrompt): RunRe
     const program = new Parser(tokens).parseProgram();
     interpreter = new Interpreter(promptFn);
     const output = interpreter.run(program);
-    return { output, error: null };
+    return { output, error: null, variables: snapshotVariables(interpreter) };
   } catch (err) {
     if (err instanceof TokenizeError || err instanceof ParseError || err instanceof RuntimeError) {
-      return { output: interpreter?.getOutput() ?? [], error: err.message };
+      return { output: interpreter?.getOutput() ?? [], error: err.message, variables: interpreter ? snapshotVariables(interpreter) : [] };
     }
     throw err;
   }

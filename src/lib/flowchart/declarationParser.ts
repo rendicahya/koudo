@@ -4,7 +4,7 @@ export interface ParsedDeclaration {
   varValue: string;
 }
 
-const DECLARATION_TYPES = ['int', 'double', 'float', 'boolean', 'String'];
+const DECLARATION_TYPES = ['int', 'long', 'double', 'float', 'boolean', 'char', 'String'];
 
 // Reserved words a beginner might plausibly type as a variable name — not
 // the full Java keyword list, just the ones likely to show up here.
@@ -27,9 +27,12 @@ export function isValidJavaIdentifier(name: string): boolean {
 // One statement per line, no semicolons inside the value (e.g. inside a
 // string literal) — a narrow, reliable subset rather than a real Java
 // tokenizer. See CLAUDE.md > Execution Engine Decision for the same
-// reliable-subset-over-general-parser tradeoff.
+// reliable-subset-over-general-parser tradeoff. The `= value` part is
+// optional (group 3 is undefined without it) — a Declare block's value
+// field can be left blank (see DeclareNode.svelte), generating a bare
+// `int a;` with no initializer.
 const DECLARATION_PATTERN = new RegExp(
-  `^\\s*(${DECLARATION_TYPES.join('|')})\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*(.+?);\\s*$`,
+  `^\\s*(${DECLARATION_TYPES.join('|')})\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?:=\\s*(.+?))?;\\s*$`,
 );
 
 export function isDeclarationLine(line: string): boolean {
@@ -46,7 +49,7 @@ export function parseDeclarations(code: string): ParsedDeclaration[] {
     const [, varType, varName, varValue] = match;
     const existingIndex = declarations.findIndex((d) => d.varName === varName);
     if (existingIndex !== -1) declarations.splice(existingIndex, 1);
-    declarations.push({ varType, varName, varValue: varValue.trim() });
+    declarations.push({ varType, varName, varValue: (varValue ?? '').trim() });
   }
 
   return declarations;

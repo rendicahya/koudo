@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@xyflow/svelte": "^1.6.2",
-    "html-to-image": "^1.11.13",
+    "html-to-image": "1.11.11",
     "monaco-editor": "^0.56.0"
   }
 }

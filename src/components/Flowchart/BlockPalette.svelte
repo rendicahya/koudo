@@ -31,15 +31,19 @@
   function chipTitle(block: BlockDefinition): string {
     if (isSingletonBlocked(block)) return `${block.label} — already on the canvas`;
     if (block.comingSoon) return `${block.label} — coming soon`;
-    return `Drag onto the canvas to add a ${block.label} block`;
+    const article = /^[aeiou]/i.test(block.label) ? 'an' : 'a';
+    return `Drag onto the canvas to add ${article} ${block.label} block`;
   }
 
   // Input and Output share the same flowchart symbol (a parallelogram);
-  // Decision is a diamond; For Loop is the hexagon "Preparation"/loop-control
-  // symbol (see stores/flowchart.ts's PREPARATION_CLIP_PATH for why it isn't
-  // a diamond too, despite also being a test-and-branch block).
+  // Decision and While Loop are both a diamond (a while loop's single
+  // condition fits the same taper Decision's does); For Loop is the hexagon
+  // "Preparation"/loop-control symbol (see stores/flowchart.ts's
+  // PREPARATION_CLIP_PATH for why it isn't a diamond too, despite also
+  // being a test-and-branch block — its three init/condition/update fields
+  // need the flat top/bottom a diamond's taper would clip).
   function clipPathFor(block: BlockDefinition): string {
-    if (block.type === 'decision') return DIAMOND_CLIP_PATH;
+    if (block.type === 'decision' || block.type === 'whileLoop') return DIAMOND_CLIP_PATH;
     if (block.type === 'forLoop') return PREPARATION_CLIP_PATH;
     return PARALLELOGRAM_CLIP_PATH;
   }
@@ -85,7 +89,7 @@
   {#if !minimized}
     {#each BLOCK_DEFINITIONS as block (block.type)}
       {@const dimmed = isDimmed(block)}
-      {#if block.type === 'process' || block.type === 'input' || block.type === 'decision' || block.type === 'forLoop'}
+      {#if block.type === 'process' || block.type === 'input' || block.type === 'decision' || block.type === 'forLoop' || block.type === 'whileLoop'}
         <!-- Standard flowchart Input/Output (parallelogram) and Decision
              (diamond) symbols, matching their shape on the canvas. -->
         <div

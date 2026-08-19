@@ -4,11 +4,12 @@
 
 import type { Token, TokenType } from './tokenizer';
 
-export type VarKind = 'int' | 'double' | 'float' | 'boolean' | 'String';
+export type VarKind = 'int' | 'long' | 'double' | 'float' | 'boolean' | 'char' | 'String';
 
 export type Expr =
   | { kind: 'number'; value: number; isInt: boolean; line: number }
   | { kind: 'string'; value: string; line: number }
+  | { kind: 'char'; value: string; line: number }
   | { kind: 'boolean'; value: boolean; line: number }
   | { kind: 'identifier'; name: string; line: number }
   | { kind: 'unary'; op: '-' | '!'; operand: Expr; line: number }
@@ -16,11 +17,15 @@ export type Expr =
   | { kind: 'scannerRead'; method: string; line: number };
 
 export type Stmt =
-  | { kind: 'varDecl'; varType: VarKind; name: string; init: Expr; line: number }
+  // init is null for a declaration with no initializer (`int a;`) — the
+  // variable still gets its Java-style default value (see interpreter.ts's
+  // zeroValueFor), it's just never evaluated from an expression.
+  | { kind: 'varDecl'; varType: VarKind; name: string; init: Expr | null; line: number }
   | { kind: 'assign'; name: string; op: '=' | '+=' | '-=' | '*=' | '/='; value: Expr; line: number }
   | { kind: 'update'; name: string; op: '++' | '--'; line: number }
   | { kind: 'print'; arg: Expr | null; newline: boolean; line: number }
   | { kind: 'for'; init: Stmt | null; test: Expr | null; update: Stmt | null; body: Stmt[]; line: number }
+  | { kind: 'while'; test: Expr; body: Stmt[]; line: number }
   | { kind: 'if'; test: Expr; then: Stmt; else: Stmt | null; line: number }
   | { kind: 'block'; body: Stmt[]; line: number }
   // A `Scanner sc = new Scanner(System.in);` declaration — this interpreter
@@ -31,7 +36,7 @@ export type Stmt =
 
 export class ParseError extends Error {}
 
-const TYPE_KEYWORDS = new Set(['int', 'double', 'float', 'boolean', 'String']);
+const TYPE_KEYWORDS = new Set(['int', 'long', 'double', 'float', 'boolean', 'char', 'String']);
 
 // Recognized as `<anyIdentifier>.<methodName>()` inside an expression (see
 // parsePrimary) — the identifier itself is never checked against a real
@@ -90,6 +95,7 @@ export class Parser {
       return stmt;
     }
     if (t.type === 'keyword' && t.value === 'for') return this.parseFor();
+    if (t.type === 'keyword' && t.value === 'while') return this.parseWhile();
     if (t.type === 'keyword' && t.value === 'if') return this.parseIf();
     if (t.type === 'keyword' && t.value === 'System') {
       const stmt = this.parsePrint();
@@ -114,8 +120,11 @@ export class Parser {
   private parseVarDecl(): Stmt {
     const typeTok = this.next();
     const nameTok = this.expect('identifier');
-    this.expect('punct', '=');
-    const init = this.parseExpression();
+    let init: Expr | null = null;
+    if (this.check('punct', '=')) {
+      this.next();
+      init = this.parseExpression();
+    }
     return { kind: 'varDecl', varType: typeTok.value as VarKind, name: nameTok.value, init, line: typeTok.line };
   }
 
@@ -190,6 +199,18 @@ export class Parser {
     const body = bodyStmt.kind === 'block' ? bodyStmt.body : [bodyStmt];
 
     return { kind: 'for', init, test, update, body, line: startTok.line };
+  }
+
+  private parseWhile(): Stmt {
+    const startTok = this.next(); // while
+    this.expect('punct', '(');
+    const test = this.parseExpression();
+    this.expect('punct', ')');
+
+    const bodyStmt = this.parseStatement();
+    const body = bodyStmt.kind === 'block' ? bodyStmt.body : [bodyStmt];
+
+    return { kind: 'while', test, body, line: startTok.line };
   }
 
   private parseIf(): Stmt {
@@ -296,6 +317,10 @@ export class Parser {
     if (t.type === 'string') {
       this.next();
       return { kind: 'string', value: t.value, line: t.line };
+    }
+    if (t.type === 'char') {
+      this.next();
+      return { kind: 'char', value: t.value, line: t.line };
     }
     if (t.type === 'keyword' && (t.value === 'true' || t.value === 'false')) {
       this.next();

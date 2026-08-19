@@ -16,6 +16,7 @@
   import ProcessNode from './ProcessNode.svelte';
   import DecisionNode from './DecisionNode.svelte';
   import ForLoopNode from './ForLoopNode.svelte';
+  import WhileLoopNode from './WhileLoopNode.svelte';
   import CanvasContextMenu from './CanvasContextMenu.svelte';
   import { theme } from '../../stores/theme';
   import {
@@ -52,6 +53,7 @@
     process: ProcessNode,
     decision: DecisionNode,
     forLoop: ForLoopNode,
+    whileLoop: WhileLoopNode,
   };
   const defaultEdgeOptions = { markerEnd: { type: MarkerType.ArrowClosed } };
 
@@ -131,9 +133,17 @@
     const viewportEl = wrapperEl.querySelector<HTMLElement>('.svelte-flow__viewport');
     if (!viewportEl) return;
 
-    const backgroundColor = getComputedStyle(wrapperEl).getPropertyValue('--color-canvas').trim();
-    const dataUrl = await flowchartToPngDataUrl(viewportEl, $nodes, backgroundColor, getNodesBounds);
-    downloadDataUrl('flowchart.png', dataUrl);
+    try {
+      const backgroundColor = getComputedStyle(wrapperEl).getPropertyValue('--color-canvas').trim();
+      const dataUrl = await flowchartToPngDataUrl(viewportEl, $nodes, backgroundColor, getNodesBounds);
+      downloadDataUrl('flowchart.png', dataUrl);
+    } catch (err) {
+      // html-to-image's toPng() rejects (rather than resolving to a broken
+      // image) on things like a cross-origin/tainted canvas — surface it
+      // instead of failing the click silently, same as Open/Save Project's
+      // own error handling (see TopNavbar.svelte).
+      alert(err instanceof Error ? err.message : String(err));
+    }
   }
 
   // Alt+Shift+A, matching the Alt+Shift+<letter> pattern already used for

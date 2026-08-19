@@ -89,6 +89,8 @@ function loadLines(nodeId: string) {
   } else if (blockTypeOf(node) === 'forLoop') {
     const { init, condition, update } = forLoopFieldsOf(node);
     currentLines = [{ text: `for (${init}; ${condition}; ${update})`, rowIndex: -1 }];
+  } else if (blockTypeOf(node) === 'whileLoop') {
+    currentLines = [{ text: `while (${conditionOf(node)})`, rowIndex: -1 }];
   } else {
     currentLines = statementLinesFor(node, nodesById, get(edges));
   }
@@ -188,6 +190,16 @@ export function stepOnce() {
         interpreter.runStatements(`${update};`);
       }
       const isTrue = interpreter.evalCondition(condition);
+      advanceTo(outgoing(get(edges), currentId, isTrue ? 'loop' : 'exit'));
+      return;
+    }
+
+    if (blockTypeOf(node) === 'whileLoop') {
+      // Same one-click-per-visit shape as Decision/ForLoop above, but
+      // simpler — no init/update clause, just re-check the condition on
+      // every visit (including ones arriving back around the loop-back
+      // edge) and move into the body ('loop') or past the loop ('exit').
+      const isTrue = interpreter.evalCondition(conditionOf(node));
       advanceTo(outgoing(get(edges), currentId, isTrue ? 'loop' : 'exit'));
       return;
     }
