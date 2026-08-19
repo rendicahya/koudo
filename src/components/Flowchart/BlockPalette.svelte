@@ -69,7 +69,7 @@
 </script>
 
 <div
-  class="absolute left-2 top-2 z-10 flex flex-col gap-1 rounded-md border p-2 text-sm shadow-sm"
+  class="absolute left-2 top-2 z-10 flex flex-col gap-1 rounded-md border p-2 text-xs shadow-sm"
   style="background: var(--color-panel); border-color: var(--color-border);"
   ondragover={handleCancelledDrop}
   ondrop={handleCancelledDrop}
@@ -103,11 +103,24 @@
           title={chipTitle(block)}
         >
           <div
-            class="px-3 py-1 text-center"
+            class="px-4 py-1 text-center"
             style="background: var(--color-node-bg); color: var(--color-text); clip-path: {clipPathFor(block)};"
           >
             {block.label}
           </div>
+        </div>
+      {:else if block.type === 'start' || block.type === 'end'}
+        <div
+          role="button"
+          tabindex="0"
+          draggable="true"
+          ondragstart={(event) => handleDragStart(event, block)}
+          class="cursor-grab px-3 py-1 text-center active:cursor-grabbing"
+          class:opacity-50={dimmed}
+          style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text); border-radius: 9999px;"
+          title={chipTitle(block)}
+        >
+          {block.label}{block.comingSoon ? ' (soon)' : ''}
         </div>
       {:else}
         <div
@@ -115,8 +128,7 @@
           tabindex="0"
           draggable="true"
           ondragstart={(event) => handleDragStart(event, block)}
-          class="cursor-grab px-2 py-1 text-center active:cursor-grabbing"
-          class:rounded={block.type !== 'declare' && block.type !== 'assign'}
+          class="cursor-grab px-3 py-1 text-center active:cursor-grabbing rounded"
           class:opacity-50={dimmed}
           style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text);"
           title={chipTitle(block)}
