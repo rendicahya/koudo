@@ -1,5 +1,8 @@
 <script lang="ts">
+  import '@xyflow/svelte/dist/style.css';
+  import { SvelteFlowProvider } from '@xyflow/svelte';
   import TopNavbar from './components/Common/TopNavbar.svelte';
+  import Toast from './components/Common/Toast.svelte';
   import FlowchartCanvas from './components/Flowchart/FlowchartCanvas.svelte';
   import JavaCodeEditor from './components/CodeEditor/JavaCodeEditor.svelte';
   import OutputPanel from './components/Output/OutputPanel.svelte';
@@ -91,6 +94,10 @@
 
 <svelte:window onbeforeunload={handleBeforeUnload} onkeydown={handleGlobalKeydown} />
 
+<!-- Hoisted above TopNavbar (not just around FlowchartCanvas) so its Canvas
+     menu (Arrange/PNG) can call useSvelteFlow() itself, instead of needing
+     the actual canvas DOM/hooks threaded down from FlowchartBoard. -->
+<SvelteFlowProvider>
 <div class="flex h-screen flex-col">
   <TopNavbar />
 
@@ -156,6 +163,8 @@
     {/if}
   </main>
 </div>
+<Toast />
+</SvelteFlowProvider>
 
 <style>
   @media (min-width: 768px) {

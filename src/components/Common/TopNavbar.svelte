@@ -1,22 +1,44 @@
 <script lang="ts">
+  import { useSvelteFlow } from '@xyflow/svelte';
   import ThemeToggle from './ThemeToggle.svelte';
   import { codeContent } from '../../stores/code';
   import { runCode } from '../../stores/run';
-  import { hasConnectedEndBlock, resetFlowchart, loadFlowchart, nodes, edges } from '../../stores/flowchart';
-  import { downloadTextFile } from '../../lib/download';
+  import {
+    hasConnectedEndBlock,
+    resetFlowchart,
+    loadFlowchart,
+    arrangeNodesVertically,
+    nodes,
+    edges,
+  } from '../../stores/flowchart';
+  import { downloadTextFile, downloadDataUrl } from '../../lib/download';
   import { serializeFlowchart, parseFlowchartFile } from '../../lib/storage/flowchartFile';
   import { wrapAsJavaFile } from '../../lib/flowchart/exportJava';
+  import { flowchartToPngDataUrl } from '../../lib/flowchart/exportPng';
   import { blockTypeOf } from '../../lib/flowchart/graphWalk';
   import { isStepping, isStepFinished, startStepRun, stepOnce, stopStepRun } from '../../stores/stepRunner';
 
   // New/Open/Save all act on the same thing — the flowchart project — so
-  // they live under one "Project" menu; Export Java is its own button since
-  // it produces something different (a Java source file, not a project).
-  const projectActions = ['New', 'Open Project', 'Save Project'] as const;
+  // they live under one "Project" menu; Export Java joins them there too,
+  // even though it produces something different (a Java source file, not a
+  // project), since it's still a whole-project action rather than a
+  // canvas-editing one.
+  const projectActions = ['New', 'Open Project', 'Save Project', 'Export Java'] as const;
+  // Arrange/PNG both act on the canvas as a whole (not any one block), so
+  // they get their own menu rather than crowding the toolbar as standalone
+  // buttons.
+  const canvasActions = ['Arrange', 'Download PNG'] as const;
 
   let projectMenuOpen = $state(false);
   let projectMenuEl: HTMLDivElement;
+  let canvasMenuOpen = $state(false);
+  let canvasMenuEl: HTMLDivElement;
   let fileInputEl: HTMLInputElement;
+
+  // Only used by Download PNG — see useSvelteFlow requiring this component to
+  // sit inside a SvelteFlowProvider (hoisted up to App.svelte for exactly
+  // this reason, since TopNavbar and FlowchartCanvas are siblings there).
+  const { getNodesBounds } = useSvelteFlow();
 
   let hasStart = $derived($nodes.some((node) => blockTypeOf(node) === 'start'));
 
@@ -38,6 +60,33 @@
 
   function handleExport() {
     downloadTextFile('Main.java', wrapAsJavaFile($codeContent), 'text/x-java-source');
+  }
+
+  function handleArrange() {
+    $nodes = arrangeNodesVertically($nodes, $edges);
+  }
+
+  // The visible canvas background (--color-canvas) rather than the page/panel
+  // background — a transparent PNG would otherwise show whatever's behind
+  // it in a viewer instead of matching what the user actually saw on screen.
+  // Queried off document.documentElement/a global selector rather than a
+  // bound ref, since there's only ever one canvas on the page and neither is
+  // reachable from here otherwise (TopNavbar sits outside FlowchartBoard).
+  async function handleDownloadPng() {
+    const viewportEl = document.querySelector<HTMLElement>('.svelte-flow__viewport');
+    if (!viewportEl) return;
+
+    try {
+      const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--color-canvas').trim();
+      const dataUrl = await flowchartToPngDataUrl(viewportEl, $nodes, backgroundColor, getNodesBounds);
+      downloadDataUrl('flowchart.png', dataUrl);
+    } catch (err) {
+      // html-to-image's toPng() rejects (rather than resolving to a broken
+      // image) on things like a cross-origin/tainted canvas — surface it
+      // instead of failing the click silently, same as Open/Save Project's
+      // own error handling.
+      alert(err instanceof Error ? err.message : String(err));
+    }
   }
 
   function handleOpen() {
@@ -67,6 +116,13 @@
     if (action === 'New') return handleNew();
     if (action === 'Open Project') return handleOpen();
     if (action === 'Save Project') return handleSave();
+    if (action === 'Export Java') return handleExport();
+  }
+
+  function handleCanvasAction(action: (typeof canvasActions)[number]) {
+    canvasMenuOpen = false;
+    if (action === 'Arrange') return handleArrange();
+    if (action === 'Download PNG') return handleDownloadPng();
   }
 
   // Starts a step run if none is active yet; otherwise advances the one
@@ -74,17 +130,23 @@
   // otherwise (see stores/stepRunner.ts) — same as clicking whichever of
   // ⏭ Step Through / ⏭ Next Step is currently showing.
   function handleStepShortcut() {
-    if (!$isStepping) return startStepRun();
+    if (!$isStepping) {
+      if (!hasStart || !$hasConnectedEndBlock) return;
+      return startStepRun();
+    }
     if (!$isStepFinished) stepOnce();
   }
 
   function handleGlobalKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') projectMenuOpen = false;
+    if (event.key === 'Escape') {
+      projectMenuOpen = false;
+      canvasMenuOpen = false;
+    }
     if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
 
     // Alt+Shift+<letter>, matching the pattern already used for the theme
-    // toggle and Arrange — avoids Ctrl combos, which Monaco and the browser
-    // both claim heavily.
+    // toggle — avoids Ctrl combos, which Monaco and the browser both claim
+    // heavily.
     const key = event.key.toLowerCase();
     if (key === 'r') {
       event.preventDefault();
@@ -92,12 +154,18 @@
     } else if (key === 's') {
       event.preventDefault();
       handleStepShortcut();
+    } else if (key === 'a') {
+      event.preventDefault();
+      handleArrange();
     }
   }
 
   function handleWindowClick(event: MouseEvent) {
     if (projectMenuOpen && projectMenuEl && !projectMenuEl.contains(event.target as globalThis.Node)) {
       projectMenuOpen = false;
+    }
+    if (canvasMenuOpen && canvasMenuEl && !canvasMenuEl.contains(event.target as globalThis.Node)) {
+      canvasMenuOpen = false;
     }
   }
 </script>
@@ -131,11 +199,13 @@
       <button
         type="button"
         class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
-        disabled={!hasStart}
+        disabled={!hasStart || !$hasConnectedEndBlock}
         onclick={startStepRun}
-        title={hasStart
-          ? 'Run one line at a time, highlighting each block on the canvas (Alt+Shift+S)'
-          : 'Add a Start block first'}
+        title={!hasStart
+          ? 'Add a Start block first'
+          : !$hasConnectedEndBlock
+            ? 'Connect an End block to the flowchart before stepping through'
+            : 'Run one line at a time, highlighting each block on the canvas (Alt+Shift+S)'}
       >
         ⏭ Step Through
       </button>
@@ -194,14 +264,38 @@
         {/if}
       </div>
 
-      <button
-        type="button"
-        class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
-        title="Download the generated code as a runnable Main.java"
-        onclick={handleExport}
-      >
-        Export Java
-      </button>
+      <div class="relative" bind:this={canvasMenuEl}>
+        <button
+          type="button"
+          class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
+          aria-haspopup="menu"
+          aria-expanded={canvasMenuOpen}
+          onclick={() => (canvasMenuOpen = !canvasMenuOpen)}
+        >
+          Canvas ▾
+        </button>
+        {#if canvasMenuOpen}
+          <div
+            role="menu"
+            class="absolute right-0 top-full z-20 mt-1 flex w-44 flex-col overflow-hidden rounded-md border text-sm shadow-md"
+            style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
+          >
+            {#each canvasActions as action (action)}
+              <button
+                type="button"
+                role="menuitem"
+                class="px-3 py-1.5 text-left hover:opacity-80"
+                title={action === 'Arrange'
+                  ? 'Arrange blocks into a straight vertical line (Alt+Shift+A)'
+                  : 'Download the flowchart as a PNG image'}
+                onclick={() => handleCanvasAction(action)}
+              >
+                {action}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
     </nav>
 
     <input

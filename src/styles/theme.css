@@ -17,6 +17,7 @@
   --color-success: #008000;
   --color-warning: #ff8c00;
   --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  --color-node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.22);
 
   /* Start/End are xyflow's own built-in node types, which default to
      xyflow's own gray border (--xy-node-border-default) instead of this
@@ -50,6 +51,7 @@
      against a same-colored background, not just add subtle depth to an
      already-visible edge. */
   --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --color-node-shadow-hover: 0 2px 7px rgba(0, 0, 0, 0.6);
 
   --xy-node-border: 1px solid var(--color-node-border);
 }
@@ -64,4 +66,23 @@
    rectangular bounding box, which would poke out past the shape's corners. */
 .svelte-flow__node {
   filter: drop-shadow(var(--color-node-shadow));
+}
+
+/* Start/End (xyflow's built-in "input"/"output" node types) already get a
+   hover box-shadow for free from xyflow's own stylesheet, keyed off their
+   -input/-output type class. Every other block here is a custom component
+   (see FlowchartBoard.svelte's nodeTypes), so it gets its own -declare/
+   -assign/-userInput/-process/-decision/-forLoop/-whileLoop type class
+   instead — none of which that built-in rule matches — leaving them with no
+   hover feedback at all. This gives them the same "lift" feedback, via
+   filter (not box-shadow) so it follows each block's real clipped silhouette
+   (parallelogram/diamond/hexagon) instead of its rectangular bounding box. */
+.svelte-flow__node-declare.selectable:hover,
+.svelte-flow__node-assign.selectable:hover,
+.svelte-flow__node-userInput.selectable:hover,
+.svelte-flow__node-process.selectable:hover,
+.svelte-flow__node-decision.selectable:hover,
+.svelte-flow__node-forLoop.selectable:hover,
+.svelte-flow__node-whileLoop.selectable:hover {
+  filter: drop-shadow(var(--color-node-shadow-hover));
 }

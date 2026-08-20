@@ -69,16 +69,16 @@
 </script>
 
 <div
-  class="absolute left-2 top-2 z-10 flex flex-col gap-1 rounded-md border p-2 text-xs shadow-sm"
+  class="absolute left-2 top-2 z-10 flex flex-col gap-2 rounded-md border p-3 text-sm shadow-sm"
   style="background: var(--color-panel); border-color: var(--color-border);"
   ondragover={handleCancelledDrop}
   ondrop={handleCancelledDrop}
 >
   <div class="mb-1 flex items-center justify-between gap-3 px-1">
-    <p class="text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">Blocks</p>
+    <p class="text-sm font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">Blocks</p>
     <button
       type="button"
-      class="leading-none hover:opacity-80"
+      class="text-lg leading-none hover:opacity-80"
       style="color: var(--color-text-secondary);"
       title={minimized ? 'Expand the block palette' : 'Minimize the block palette'}
       onclick={() => (minimized = !minimized)}
@@ -103,7 +103,7 @@
           title={chipTitle(block)}
         >
           <div
-            class="px-4 py-1 text-center"
+            class="px-5 py-2 text-center"
             style="background: var(--color-node-bg); color: var(--color-text); clip-path: {clipPathFor(block)};"
           >
             {block.label}
@@ -115,7 +115,7 @@
           tabindex="0"
           draggable="true"
           ondragstart={(event) => handleDragStart(event, block)}
-          class="cursor-grab px-3 py-1 text-center active:cursor-grabbing"
+          class="cursor-grab px-4 py-2 text-center active:cursor-grabbing"
           class:opacity-50={dimmed}
           style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text); border-radius: 9999px;"
           title={chipTitle(block)}
@@ -128,7 +128,7 @@
           tabindex="0"
           draggable="true"
           ondragstart={(event) => handleDragStart(event, block)}
-          class="cursor-grab px-3 py-1 text-center active:cursor-grabbing rounded"
+          class="cursor-grab px-4 py-2 text-center active:cursor-grabbing rounded"
           class:opacity-50={dimmed}
           style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text);"
           title={chipTitle(block)}

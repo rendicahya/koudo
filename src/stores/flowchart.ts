@@ -130,9 +130,10 @@ const XYFLOW_NODE_TYPE: Partial<Record<BlockType, string>> = {
   process: 'process',
 };
 
-// Content blocks (Declare/Process/loop placeholders) all share this width,
-// so lining them up by their left edge (auto-connect, Arrange) also lines
-// them up by their center. Start/End are their own, narrower width — they
+// Declare/Process/Input all share this width, so lining them up by their
+// left edge (auto-connect, Arrange) also lines them up by their center.
+// Assign is its own, wider width (see ASSIGN_WIDTH below — its row packs
+// more fields than the others). Start/End are their own, narrower width — they
 // only ever hold a short "Start"/"End" label, so stretching them to match
 // would look oddly elongated. Anywhere blocks of different widths need to
 // share a column (Arrange, the code-sync auto-connect) has to align by
@@ -152,13 +153,20 @@ const DIAMOND_HEIGHT = 110;
 // the three fields sit side by side rather than stacked.
 export const FORLOOP_WIDTH = BLOCK_WIDTH + 60;
 const FORLOOP_HEIGHT = 90;
+// Assign's row packs a target-variable select, an operator select, a
+// from-variable/custom select, and (for a custom value) its own text/select
+// editor all on one line — noticeably more than Declare/Process/Input's
+// single field, so it needs more breathing room than BLOCK_WIDTH gives the
+// rest of the plain rectangular blocks before that last editor gets crushed
+// down to nothing.
+export const ASSIGN_WIDTH = BLOCK_WIDTH + 100;
 
 const NODE_WIDTH: Record<BlockType, number> = {
   start: TERMINAL_WIDTH,
   end: TERMINAL_WIDTH,
   process: BLOCK_WIDTH,
   declare: BLOCK_WIDTH,
-  assign: BLOCK_WIDTH,
+  assign: ASSIGN_WIDTH,
   input: BLOCK_WIDTH,
   forLoop: FORLOOP_WIDTH,
   decision: DIAMOND_WIDTH,
@@ -193,6 +201,7 @@ export const DIAMOND_CLIP_PATH = 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)';
 export const PREPARATION_CLIP_PATH = 'polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%)';
 
 const BASE_NODE_STYLE = `width: ${BLOCK_WIDTH}px;`;
+const ASSIGN_NODE_STYLE = `width: ${ASSIGN_WIDTH}px;`;
 const TERMINAL_NODE_STYLE = `width: ${TERMINAL_WIDTH}px;`;
 // Decision is a custom component (diamond via clip-path, see
 // DecisionNode.svelte), so it needs an explicit height too — a rectangle's
@@ -213,7 +222,7 @@ const XYFLOW_NODE_STYLE: Record<BlockType, string> = {
   end: PILL_STYLE,
   process: BASE_NODE_STYLE,
   declare: BASE_NODE_STYLE,
-  assign: BASE_NODE_STYLE,
+  assign: ASSIGN_NODE_STYLE,
   input: BASE_NODE_STYLE,
   forLoop: FORLOOP_NODE_STYLE,
   decision: DIAMOND_NODE_STYLE,
@@ -274,6 +283,8 @@ interface ListBlockConfig<T> {
   xyflowType?: string;
   dataKey: 'entries' | 'statements';
   label: (list: T[]) => string;
+  /** Defaults to BASE_NODE_STYLE — only Assign overrides it (see ASSIGN_NODE_STYLE). */
+  style?: string;
 }
 
 function listOf<T>(node: Node, dataKey: ListBlockConfig<T>['dataKey']): T[] {
@@ -291,7 +302,7 @@ function createListNode<T>(config: ListBlockConfig<T>, position: { x: number; y:
     type: config.xyflowType ?? config.blockType,
     data: { blockType: config.blockType, [config.dataKey]: [item], label: config.label([item]) },
     position,
-    style: BASE_NODE_STYLE,
+    style: config.style ?? BASE_NODE_STYLE,
   };
 }
 
@@ -507,7 +518,12 @@ export function assignEntriesLabel(entries: AssignmentEntry[]): string {
   return entries.map(assignmentLabel).join('; ');
 }
 
-const ASSIGN_LIST: ListBlockConfig<AssignmentEntry> = { blockType: 'assign', dataKey: 'entries', label: assignEntriesLabel };
+const ASSIGN_LIST: ListBlockConfig<AssignmentEntry> = {
+  blockType: 'assign',
+  dataKey: 'entries',
+  label: assignEntriesLabel,
+  style: ASSIGN_NODE_STYLE,
+};
 
 function defaultAssignmentEntry(overrides?: Partial<AssignmentEntry>): AssignmentEntry {
   return {
@@ -775,6 +791,57 @@ const ARRANGE_GAP = 30;
 // Horizontal spacing between a Decision's False-branch column and whatever
 // column it branched off from.
 const ARRANGE_BRANCH_GAP = 40;
+
+// How much horizontal slack a drop point gets when matching it to the
+// column an existing A→B edge runs through — generous enough to forgive a
+// drop that isn't pixel-perfectly centered on that column, without also
+// matching some unrelated column a full block-width away.
+const INSERTION_COLUMN_TOLERANCE = 60;
+// The gap between A and B has to be at least this tall before a drop into it
+// counts as "inserting into the gap" rather than a coincidental few-pixel
+// overlap from Arrange's own ARRANGE_GAP spacing between normally-adjacent
+// blocks.
+const MIN_INSERTION_GAP = 40;
+
+// The plain (non-branching) edge whose gap a freshly dropped block's
+// position falls into — e.g. block A connected to block B, with B dragged
+// down to leave room, and a new block C dropped in between: this finds the
+// A→B edge so the caller (FlowchartBoard's handleDrop) can splice C into it
+// (A→C, C→B) instead of just chaining C onto whatever's at the very bottom
+// of the whole flow. Branching/loop edges (Decision's true/false, ForLoop's
+// and WhileLoop's loop/exit) are excluded — their two-handles-one-edge-each
+// shape, and a loop's own loop-back edge, make "splice a block into this
+// gap" ambiguous, so those are left to the ordinary bottom-of-chain
+// auto-connect instead.
+export function findInsertionEdge(nodeList: Node[], edgeList: Edge[], dropCenter: { x: number; y: number }): Edge | null {
+  const nodesById = new Map(nodeList.map((node) => [node.id, node]));
+  let best: { edge: Edge; gap: number } | null = null;
+
+  for (const edge of edgeList) {
+    if (edge.sourceHandle) continue; // a branching/loop-back edge, not a plain A→B connection
+    const source = nodesById.get(edge.source);
+    const target = nodesById.get(edge.target);
+    if (!source || !target) continue;
+
+    const sourceBottomY = source.position.y + (source.measured?.height ?? DEFAULT_BLOCK_HEIGHT);
+    const targetTopY = target.position.y;
+    const gap = targetTopY - sourceBottomY;
+    if (gap < MIN_INSERTION_GAP) continue;
+    if (dropCenter.y < sourceBottomY || dropCenter.y > targetTopY) continue;
+
+    const sourceCenterX = source.position.x + nodeWidthFor(source) / 2;
+    const targetCenterX = target.position.x + nodeWidthFor(target) / 2;
+    const minX = Math.min(sourceCenterX, targetCenterX) - INSERTION_COLUMN_TOLERANCE;
+    const maxX = Math.max(sourceCenterX, targetCenterX) + INSERTION_COLUMN_TOLERANCE;
+    if (dropCenter.x < minX || dropCenter.x > maxX) continue;
+
+    // Prefer the smallest gap on the rare chance the drop point matches more
+    // than one candidate (e.g. overlapping columns).
+    if (!best || gap < best.gap) best = { edge, gap };
+  }
+
+  return best?.edge ?? null;
+}
 
 // Arranges the flow along its actual edges (not just current y-position),
 // so Decision blocks branch into two side-by-side columns instead of

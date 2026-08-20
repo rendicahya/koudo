@@ -31,16 +31,16 @@
     bottomMostNodeId,
     branchHandlesOf,
     unusedBranchHandle,
-    arrangeNodesVertically,
+    findInsertionEdge,
     pruneOutgoingEdge,
     pruneOutgoingEdgeForHandle,
     nodeWidthForType,
+    declaredVariableNamesUpstreamOf,
     DEFAULT_BLOCK_HEIGHT,
     type BlockType,
   } from '../../stores/flowchart';
   import { stepCurrentNodeId, stepCurrentLine } from '../../stores/stepRunner';
-  import { flowchartToPngDataUrl } from '../../lib/flowchart/exportPng';
-  import { downloadDataUrl } from '../../lib/download';
+  import { showToast } from '../../stores/toast';
 
   // "userInput" (not "input") — xyflow's own built-in node type is called
   // "input" (used by Start blocks, see stores/flowchart.ts's
@@ -57,7 +57,7 @@
   };
   const defaultEdgeOptions = { markerEnd: { type: MarkerType.ArrowClosed } };
 
-  const { screenToFlowPosition, getNodesBounds } = useSvelteFlow();
+  const { screenToFlowPosition } = useSvelteFlow();
 
   let wrapperEl: HTMLDivElement;
   let contextMenu = $state<{ kind: 'node' | 'edge'; id: string; x: number; y: number } | null>(null);
@@ -72,33 +72,47 @@
     const type = event.dataTransfer?.getData('application/koudo-node-type') as BlockType | '';
     if (!type) return;
 
-    // Auto-chain onto whatever's currently at the bottom of the flow, so a
-    // freshly dropped block doesn't land disconnected. Start blocks have no
-    // target handle to connect into, so they're left standalone. Passing
-    // $edges lets a bottom-most branching block (Decision or ForLoop, still
-    // short a handle) be picked as the anchor too, instead of always
-    // skipping it.
-    const previousBottomId = type !== 'start' ? bottomMostNodeId($nodes, $edges) : null;
-    const bottomNode = previousBottomId ? $nodes.find((node) => node.id === previousBottomId) : undefined;
-    const sourceHandle =
-      bottomNode && branchHandlesOf(bottomNode.data?.blockType as string) ? unusedBranchHandle(bottomNode, $edges) : null;
-
-    // Dropping a new Variable block right where it would chain onto an
-    // existing Declare block merges it in as another entry instead of
-    // stacking a second block — e.g. declaring `a` then `b` right below it
-    // ends up as one block holding both. Output blocks don't get this
-    // treatment: dropping a new print block always creates a separate one —
-    // adding another print line to an existing Output block is what its own
-    // "+ Add variable" control is for.
-    if (type === 'declare' && bottomNode?.data?.blockType === 'declare') {
-      $nodes = $nodes.map((node) => (node.id === bottomNode.id ? addDeclarationEntry(node) : node));
-      return;
-    }
-
     // xyflow positions a node by its top-left corner, but a drop should
     // land where the cursor is relative to the block's center — otherwise
     // the block appears shifted down-right of where the user actually let go.
     const dropCenter = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+
+    // Dropping into the visual gap between two already-connected blocks —
+    // say A → B, with B dragged down to leave room — splices the new block
+    // in between them (A → C → B) instead of just chaining it onto whatever
+    // sits at the very bottom of the whole flow. See findInsertionEdge for
+    // the geometry this is based on.
+    const insertionEdge = type !== 'start' ? findInsertionEdge($nodes, $edges, dropCenter) : null;
+
+    let previousBottomId: string | null = null;
+    let sourceHandle: string | null = null;
+
+    if (!insertionEdge) {
+      // Auto-chain onto whatever's currently at the bottom of the flow, so a
+      // freshly dropped block doesn't land disconnected. Start blocks have no
+      // target handle to connect into, so they're left standalone. Passing
+      // $edges lets a bottom-most branching block (Decision or ForLoop, still
+      // short a handle) be picked as the anchor too, instead of always
+      // skipping it.
+      previousBottomId = type !== 'start' ? bottomMostNodeId($nodes, $edges) : null;
+      const bottomNode = previousBottomId ? $nodes.find((node) => node.id === previousBottomId) : undefined;
+      sourceHandle =
+        bottomNode && branchHandlesOf(bottomNode.data?.blockType as string) ? unusedBranchHandle(bottomNode, $edges) : null;
+
+      // Dropping a new Variable block right where it would chain onto an
+      // existing Declare block merges it in as another entry instead of
+      // stacking a second block — e.g. declaring `a` then `b` right below it
+      // ends up as one block holding both. Output blocks don't get this
+      // treatment: dropping a new print block always creates a separate one —
+      // adding another print line to an existing Output block is what its own
+      // "+ Add variable" control is for. Doesn't apply when inserting into a
+      // mid-chain gap — that always creates a distinct block, never merges.
+      if (type === 'declare' && bottomNode?.data?.blockType === 'declare') {
+        $nodes = $nodes.map((node) => (node.id === bottomNode.id ? addDeclarationEntry(node) : node));
+        return;
+      }
+    }
+
     const position = {
       x: dropCenter.x - nodeWidthForType(type) / 2,
       y: dropCenter.y - DEFAULT_BLOCK_HEIGHT / 2,
@@ -106,7 +120,30 @@
     const newNode = type === 'declare' ? createDeclareNode(position) : createBlockNode(type, position);
 
     $nodes = [...$nodes, newNode];
-    if (previousBottomId) {
+
+    if (insertionEdge) {
+      const edgesWithoutInsertionPoint = $edges.filter((edge) => edge.id !== insertionEdge.id);
+      $edges = addEdge(
+        {
+          source: insertionEdge.source,
+          target: newNode.id,
+          sourceHandle: insertionEdge.sourceHandle ?? null,
+          targetHandle: null,
+          markerEnd: { type: MarkerType.ArrowClosed },
+        },
+        edgesWithoutInsertionPoint,
+      );
+      $edges = addEdge(
+        {
+          source: newNode.id,
+          target: insertionEdge.target,
+          sourceHandle: null,
+          targetHandle: insertionEdge.targetHandle ?? null,
+          markerEnd: { type: MarkerType.ArrowClosed },
+        },
+        $edges,
+      );
+    } else if (previousBottomId) {
       const connection: Connection = {
         source: previousBottomId,
         target: newNode.id,
@@ -120,39 +157,19 @@
           : pruneOutgoingEdge($edges, previousBottomId),
       );
     }
-  }
 
-  function handleArrange() {
-    $nodes = arrangeNodesVertically($nodes, $edges);
-  }
-
-  // The visible canvas background (--color-canvas) rather than the page/panel
-  // background — a transparent PNG would otherwise show whatever's behind
-  // it in a viewer instead of matching what the user actually saw on screen.
-  async function handleDownloadPng() {
-    const viewportEl = wrapperEl.querySelector<HTMLElement>('.svelte-flow__viewport');
-    if (!viewportEl) return;
-
-    try {
-      const backgroundColor = getComputedStyle(wrapperEl).getPropertyValue('--color-canvas').trim();
-      const dataUrl = await flowchartToPngDataUrl(viewportEl, $nodes, backgroundColor, getNodesBounds);
-      downloadDataUrl('flowchart.png', dataUrl);
-    } catch (err) {
-      // html-to-image's toPng() rejects (rather than resolving to a broken
-      // image) on things like a cross-origin/tainted canvas — surface it
-      // instead of failing the click silently, same as Open/Save Project's
-      // own error handling (see TopNavbar.svelte).
-      alert(err instanceof Error ? err.message : String(err));
-    }
-  }
-
-  // Alt+Shift+A, matching the Alt+Shift+<letter> pattern already used for
-  // the dark/light shortcut — avoids Ctrl combos, which Monaco and the
-  // browser both claim heavily.
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === 'a') {
-      event.preventDefault();
-      handleArrange();
+    // Input and Assign both target an already-declared variable (see their
+    // own dropdowns in InputNode.svelte/AssignNode.svelte) — dropping one
+    // before any Declare block exists upstream leaves it with nothing to
+    // target, which is easy to miss since the block itself still looks fine
+    // sitting on the canvas.
+    const NEEDS_DECLARED_VARIABLE: Partial<Record<BlockType, string>> = {
+      input: 'Declare a variable before adding an Input block — it needs an existing variable to read a value into.',
+      assign: 'Declare a variable before adding an Assign block — it needs an existing variable to assign a value to.',
+    };
+    const warning = NEEDS_DECLARED_VARIABLE[type];
+    if (warning && declaredVariableNamesUpstreamOf(newNode.id, $nodes, $edges).length === 0) {
+      showToast(warning);
     }
   }
 
@@ -232,8 +249,6 @@
   });
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 <div
   bind:this={wrapperEl}
   role="region"
@@ -244,24 +259,6 @@
 >
   <BlockPalette />
 
-  <div class="absolute right-2 top-2 z-10 flex items-center gap-2">
-    <button
-      type="button"
-      onclick={handleArrange}
-      class="btn-panel rounded-md border px-3 py-1.5 text-sm shadow-sm hover:opacity-80"
-      title="Arrange blocks into a straight vertical line (Alt+Shift+A)"
-    >
-      ⇅ Arrange
-    </button>
-    <button
-      type="button"
-      onclick={handleDownloadPng}
-      class="btn-panel rounded-md border px-3 py-1.5 text-sm shadow-sm hover:opacity-80"
-      title="Download the flowchart as a PNG image"
-    >
-      ⬇ PNG
-    </button>
-  </div>
   <SvelteFlow
     bind:nodes={$nodes}
     bind:edges={$edges}
