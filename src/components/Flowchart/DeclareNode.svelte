@@ -9,11 +9,16 @@
     type DeclareNodeData,
   } from '../../stores/flowchart';
   import { isValidJavaIdentifier } from '../../lib/flowchart/declarationParser';
+  import { inferDeclaredType } from '../../lib/flowchart/typeInference';
+  import { variableMode } from '../../stores/settings';
   import { stepCurrentRow } from '../../stores/stepRunner';
 
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as DeclareNodeData);
   let entries = $derived(nodeData.entries ?? []);
+  // Beginner mode (see stores/settings.ts): no type <select> — the type
+  // tracks the value instead (see handleInput below).
+  let inferred = $derived($variableMode === 'inferred');
 
   function handleInput(index: number, field: 'varName' | 'varValue', event: Event) {
     const value = (event.currentTarget as HTMLInputElement | HTMLSelectElement).value;
@@ -22,6 +27,18 @@
     // this one Declare entry.
     if (field === 'varName') {
       $nodes = renameDeclaredVariable($nodes, id, index, value);
+      return;
+    }
+    // Beginner mode re-infers the type from the value on every keystroke —
+    // a blank value keeps whatever type was last inferred rather than
+    // flipping to String, so the required-value warning below is the only
+    // feedback an empty field gets (see typeInference.ts's INTEGER_PATTERN
+    // rejecting '' outright).
+    if (field === 'varValue' && inferred) {
+      const varType = value.trim() ? inferDeclaredType(value) : (entries[index]?.varType ?? 'int');
+      $nodes = $nodes.map((node) =>
+        node.id === id ? updateDeclarationEntryAt(node, index, { varValue: value, varType }) : node,
+      );
       return;
     }
     $nodes = $nodes.map((node) => (node.id === id ? updateDeclarationEntryAt(node, index, { [field]: value }) : node));
@@ -56,26 +73,29 @@
 
   {#each entries as entry, index (index)}
     {@const nameIsValid = isValidJavaIdentifier(entry.varName ?? '')}
+    {@const valueIsMissing = inferred && !entry.varValue?.trim()}
     {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
     <div class="flex items-center gap-1">
       <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
            stepCurrentRow) — reserved width so other rows don't shift when
            one of them lights up. -->
       <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
-      <select
-        value={entry.varType}
-        onchange={(event) => handleTypeChange(index, event)}
-        class="nodrag rounded border bg-transparent px-1 py-0.5"
-        style="border-color: var(--color-border);"
-      >
-        <option value="int">int</option>
-        <option value="long">long</option>
-        <option value="double">double</option>
-        <option value="float">float</option>
-        <option value="boolean">boolean</option>
-        <option value="char">char</option>
-        <option value="String">String</option>
-      </select>
+      {#if !inferred}
+        <select
+          value={entry.varType}
+          onchange={(event) => handleTypeChange(index, event)}
+          class="nodrag rounded border bg-transparent px-1 py-0.5"
+          style="border-color: var(--color-border);"
+        >
+          <option value="int">int</option>
+          <option value="long">long</option>
+          <option value="double">double</option>
+          <option value="float">float</option>
+          <option value="boolean">boolean</option>
+          <option value="char">char</option>
+          <option value="String">String</option>
+        </select>
+      {/if}
 
       <input
         value={entry.varName}
@@ -90,7 +110,29 @@
 
       <span>=</span>
 
-      {#if entry.varType === 'boolean'}
+      {#if inferred}
+        <input
+          value={entry.varValue}
+          oninput={(event) => handleInput(index, 'varValue', event)}
+          class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
+          style="border-color: {valueIsMissing ? 'var(--color-error)' : 'var(--color-border)'};"
+          style:outline={valueIsMissing ? '1px solid var(--color-error)' : 'none'}
+          aria-invalid={valueIsMissing}
+          title={valueIsMissing ? 'A value is required in Beginner mode — it determines this variable’s type' : undefined}
+          placeholder="value"
+        />
+        <!-- Beginner mode has no type <select> to show this in — the
+             inferred type (see typeInference.ts) is surfaced here instead,
+             read-only, so it's still visible without asking the user to
+             pick it. -->
+        <span
+          class="shrink-0 rounded px-1 text-[10px] uppercase"
+          style="color: var(--color-text-secondary); border: 1px solid var(--color-border);"
+          title="Type inferred from the value"
+        >
+          {entry.varValue?.trim() ? entry.varType : '?'}
+        </span>
+      {:else if entry.varType === 'boolean'}
         <select
           value={entry.varValue}
           onchange={(event) => handleInput(index, 'varValue', event)}

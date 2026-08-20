@@ -35,6 +35,15 @@
     editor?.dispose();
   });
 
+  // Monaco sizes itself off its container's actual pixel dimensions —
+  // useless while this tab is hidden behind Pseudocode (display: none, so
+  // the container measures 0x0 — see CodeEditorPanel.svelte). Called once
+  // this tab becomes visible again, so the editor doesn't stay squished to
+  // its last-known (possibly stale, possibly zero) size.
+  export function refreshLayout() {
+    editor?.layout();
+  }
+
   $effect(() => {
     monaco.editor.setTheme($theme === 'dark' ? 'vs-dark' : 'vs');
   });

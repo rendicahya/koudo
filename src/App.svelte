@@ -4,7 +4,7 @@
   import TopNavbar from './components/Common/TopNavbar.svelte';
   import Toast from './components/Common/Toast.svelte';
   import FlowchartCanvas from './components/Flowchart/FlowchartCanvas.svelte';
-  import JavaCodeEditor from './components/CodeEditor/JavaCodeEditor.svelte';
+  import CodeEditorPanel from './components/CodeEditor/CodeEditorPanel.svelte';
   import OutputPanel from './components/Output/OutputPanel.svelte';
   import { loadLayoutPrefs, saveLayoutPrefs } from './lib/storage/layoutPrefs';
   import { isFlowchartDirty } from './stores/flowchart';
@@ -140,7 +140,7 @@
     {#if !$isCodePanelHidden}
       <section class="code-column flex h-1/2 flex-1 flex-col overflow-hidden md:h-full">
         <div class="min-h-0 flex-1" style="background: var(--color-editor-bg);">
-          <JavaCodeEditor />
+          <CodeEditorPanel />
         </div>
 
         <div

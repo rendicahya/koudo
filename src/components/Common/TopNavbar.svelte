@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow } from '@xyflow/svelte';
   import ThemeToggle from './ThemeToggle.svelte';
+  import HelpModal from './HelpModal.svelte';
   import { codeContent } from '../../stores/code';
   import { runCode } from '../../stores/run';
   import {
@@ -17,6 +18,7 @@
   import { flowchartToPngDataUrl } from '../../lib/flowchart/exportPng';
   import { blockTypeOf } from '../../lib/flowchart/graphWalk';
   import { isStepping, isStepFinished, startStepRun, stepOnce, stopStepRun } from '../../stores/stepRunner';
+  import { variableMode, setVariableMode, type VariableMode } from '../../stores/settings';
 
   // New/Open/Save all act on the same thing — the flowchart project — so
   // they live under one "Project" menu; Export Java joins them there too,
@@ -28,11 +30,20 @@
   // they get their own menu rather than crowding the toolbar as standalone
   // buttons.
   const canvasActions = ['Arrange', 'Download PNG'] as const;
+  // Also lives in the Project menu, as a second group below the actions
+  // above — it's a project-wide setting (persisted, see stores/settings.ts),
+  // not a one-off action, but there's no other menu it fits better than this
+  // one.
+  const variableModeOptions: { mode: VariableMode; label: string; hint: string }[] = [
+    { mode: 'inferred', label: 'Beginner Mode', hint: 'Declare a variable with just a value — its type is inferred automatically' },
+    { mode: 'explicit', label: 'Standard Mode', hint: 'Declare a variable by choosing its data type explicitly' },
+  ];
 
   let projectMenuOpen = $state(false);
   let projectMenuEl: HTMLDivElement;
   let canvasMenuOpen = $state(false);
   let canvasMenuEl: HTMLDivElement;
+  let helpOpen = $state(false);
   let fileInputEl: HTMLInputElement;
 
   // Only used by Download PNG — see useSvelteFlow requiring this component to
@@ -141,6 +152,7 @@
     if (event.key === 'Escape') {
       projectMenuOpen = false;
       canvasMenuOpen = false;
+      helpOpen = false;
     }
     if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
 
@@ -247,7 +259,7 @@
         {#if projectMenuOpen}
           <div
             role="menu"
-            class="absolute right-0 top-full z-20 mt-1 flex w-40 flex-col overflow-hidden rounded-md border text-sm shadow-md"
+            class="absolute right-0 top-full z-20 mt-1 flex w-52 flex-col overflow-hidden rounded-md border text-sm shadow-md"
             style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
           >
             {#each projectActions as action (action)}
@@ -258,6 +270,27 @@
                 onclick={() => handleProjectAction(action)}
               >
                 {action}
+              </button>
+            {/each}
+
+            <div class="border-t" style="border-color: var(--color-border);"></div>
+
+            {#each variableModeOptions as option (option.mode)}
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={$variableMode === option.mode}
+                class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
+                title={option.hint}
+                onclick={() => {
+                  projectMenuOpen = false;
+                  setVariableMode(option.mode);
+                }}
+              >
+                <span>{option.label}</span>
+                {#if $variableMode === option.mode}
+                  <span style="color: var(--color-accent);">✓</span>
+                {/if}
               </button>
             {/each}
           </div>
@@ -296,6 +329,14 @@
           </div>
         {/if}
       </div>
+
+      <button
+        type="button"
+        class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
+        onclick={() => (helpOpen = true)}
+      >
+        Help
+      </button>
     </nav>
 
     <input
@@ -309,3 +350,5 @@
 
   <ThemeToggle />
 </header>
+
+<HelpModal open={helpOpen} onclose={() => (helpOpen = false)} />
