@@ -38,6 +38,9 @@
     declaredVariableNamesUpstreamOf,
     DEFAULT_BLOCK_HEIGHT,
     pendingFocusNodeId,
+    updateInputEntryAt,
+    updateProcessStatementAt,
+    printlnStatement,
     type BlockType,
   } from '../../stores/flowchart';
   import { stepCurrentNodeId, stepCurrentLine } from '../../stores/stepRunner';
@@ -186,11 +189,29 @@
       );
     }
 
+    // Input's and Output's dropdowns (see InputNode.svelte/ProcessNode.svelte)
+    // otherwise start on the "choose" placeholder, needing a manual pick even
+    // when there's only one sensible option — default straight to whichever
+    // declared variable sits topmost in that same dropdown, if any exists yet.
+    if (type === 'input' || type === 'process') {
+      const availableVars = declaredVariableNamesUpstreamOf(newNode.id, $nodes, $edges);
+      if (availableVars.length > 0) {
+        const firstVar = availableVars[0];
+        $nodes = $nodes.map((node) => {
+          if (node.id !== newNode.id) return node;
+          return type === 'input'
+            ? updateInputEntryAt(node, 0, { varName: firstVar })
+            : updateProcessStatementAt(node, 0, printlnStatement(firstVar));
+        });
+      }
+    }
+
     // Input and Assign both target an already-declared variable (see their
     // own dropdowns in InputNode.svelte/AssignNode.svelte) — dropping one
     // before any Declare block exists upstream leaves it with nothing to
     // target, which is easy to miss since the block itself still looks fine
-    // sitting on the canvas.
+    // sitting on the canvas. Never fires for Input once the auto-select above
+    // has already found a variable to default to.
     const NEEDS_DECLARED_VARIABLE: Partial<Record<BlockType, string>> = {
       input: 'Declare a variable before adding an Input block — it needs an existing variable to read a value into.',
       assign: 'Declare a variable before adding an Assign block — it needs an existing variable to assign a value to.',
