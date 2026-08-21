@@ -71,7 +71,7 @@
             oninput={(event) => handlePromptInput(index, event)}
             class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
             style="border-color: var(--color-border);"
-            placeholder="prompt (optional)"
+            placeholder="Prompt (optional)"
           />
 
           {#if entries.length > 1}

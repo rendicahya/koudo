@@ -151,7 +151,7 @@
         oninput={(event) => handleInput(index, 'varName', event)}
         data-declare-name
         data-entry-index={index}
-        class="nodrag w-14 rounded border bg-transparent px-1 py-0.5"
+        class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
         style="border-color: {nameIsValid ? 'var(--color-border)' : 'var(--color-error)'};"
         style:outline={nameIsValid ? 'none' : '1px solid var(--color-error)'}
         aria-invalid={!nameIsValid}
@@ -167,9 +167,9 @@
           oninput={(event) => handleInput(index, 'varValue', event)}
           data-declare-value
           data-entry-index={index}
-          class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
+          class="nodrag w-20 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
-          placeholder="value (optional)"
+          placeholder="Value (optional)"
         />
         {#if entry.varValue}
           <!-- Beginner mode has no type <select> to show this in while a
@@ -207,7 +207,7 @@
           onchange={(event) => handleInput(index, 'varValue', event)}
           data-declare-value
           data-entry-index={index}
-          class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
+          class="nodrag w-20 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
         >
           <!-- A select always has *some* option selected, so "declare only,
@@ -227,7 +227,7 @@
           maxlength={entry.varType === 'char' ? 1 : undefined}
           data-declare-value
           data-entry-index={index}
-          class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
+          class="nodrag w-20 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
           placeholder="value"
         />
@@ -238,7 +238,7 @@
           oninput={(event) => handleInput(index, 'varValue', event)}
           data-declare-value
           data-entry-index={index}
-          class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
+          class="nodrag w-20 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
           placeholder="value"
         />
