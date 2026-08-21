@@ -145,6 +145,7 @@
           <ul class="list-disc pl-5" style="color: var(--color-text-secondary);">
             <li>Dropping a block of the same kind onto an existing one merges them into a single block with multiple lines.</li>
             <li>Right-click a block or a connecting line to Duplicate or Delete it.</li>
+            <li>The ⛶ button, top-right, toggles fullscreen.</li>
             <li>Everything runs entirely in your browser — nothing you build is ever sent anywhere.</li>
           </ul>
         </section>

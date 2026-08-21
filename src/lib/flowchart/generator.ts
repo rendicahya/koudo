@@ -73,7 +73,9 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
         .map((entry, rowIndex) => ({ entry, rowIndex }))
         .filter(({ entry }) => entry.varName.trim())
         .map(({ entry, rowIndex }) => {
-          const hasValue = entry.varValue.trim().length > 0;
+          // Not .trim() — a value that's just a space is a real (String)
+          // value the user typed on purpose, not "no value given".
+          const hasValue = entry.varValue.length > 0;
           const text = hasValue
             ? `${entry.varType} ${entry.varName} = ${formatDeclaredValue(entry.varType, entry.varValue)};`
             : `${entry.varType} ${entry.varName};`;

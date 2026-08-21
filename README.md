@@ -49,8 +49,11 @@ A small hand-written interpreter (`src/lib/execution/interpreter.ts`) actually r
 ### Everything else
 
 - **Help** menu — an in-app usage guide covering blocks, running, the code panel, variable modes, and keyboard shortcuts, for anyone who doesn't want to leave the app to find this README
-- **Project** menu — New / Open Project / Save Project, **Export Java** (downloads the generated code as a real, compilable `Main.java`), and the variable-mode switch above. Save Project downloads the flowchart as `.koudo.json`; Open Project loads one back onto the canvas, behind the same confirmation as New
+- **Project** menu — New / Open Project / Save Project, **Export Java** (downloads the generated code as a real, compilable `Main.java`), **Export Pseudocode** (downloads the same program as a `.txt`), and the variable-mode switch above. Save Project downloads the flowchart as `.koudo.json`; Open Project loads one back onto the canvas, behind the same confirmation as New
 - **Canvas** menu — Arrange, and Download PNG (rasterizes the flowchart as-is)
+- Input and Output blocks default their dropdown to the topmost declared variable as soon as they're placed, instead of an unset "choose" placeholder
+- The code panel remembers which tab (Java or Pseudocode) you last had open, persisted to `localStorage` — Pseudocode is the default for a first-time visitor
+- A fullscreen toggle (⛶, top-right)
 - Non-blocking toast warnings — e.g. dropping an Input or Assign block before any variable's been declared — instead of a blocking `alert()`
 - A hover "lift" effect on every block, not just Start/End
 - Hide/show the code panel from a toggle on the divider between it and the canvas, to give the flowchart more room
@@ -116,7 +119,8 @@ src/
 │       ├── TopNavbar.svelte             Project/Canvas menus, Help
 │       ├── HelpModal.svelte             in-app usage guide
 │       ├── Toast.svelte                 non-blocking warning banner
-│       └── ThemeToggle.svelte
+│       ├── ThemeToggle.svelte
+│       └── FullscreenToggle.svelte
 ├── stores/
 │   ├── flowchart.ts     nodes/edges + every node-shape/connect/merge/insertion rule
 │   ├── code.ts           Monaco's text content
@@ -125,7 +129,7 @@ src/
 │   ├── stepRunner.ts      the step-by-step runner + Variable Watcher state
 │   ├── settings.ts        Beginner/Standard variable-mode setting, persisted
 │   ├── toast.ts           non-blocking warning messages
-│   ├── layout.ts          hide/show code panel state
+│   ├── layout.ts          hide/show code panel state, active code tab (persisted)
 │   └── theme.ts
 └── lib/
     ├── flowchart/

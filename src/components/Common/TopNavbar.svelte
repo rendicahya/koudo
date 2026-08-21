@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useSvelteFlow } from '@xyflow/svelte';
   import ThemeToggle from './ThemeToggle.svelte';
+  import FullscreenToggle from './FullscreenToggle.svelte';
   import HelpModal from './HelpModal.svelte';
   import { codeContent } from '../../stores/code';
   import { resetFlowchart, loadFlowchart, arrangeNodesVertically, nodes, edges } from '../../stores/flowchart';
@@ -270,7 +271,10 @@
     />
   </div>
 
-  <ThemeToggle />
+  <div class="flex items-center gap-2">
+    <ThemeToggle />
+    <FullscreenToggle />
+  </div>
 </header>
 
 <HelpModal open={helpOpen} onclose={() => (helpOpen = false)} />

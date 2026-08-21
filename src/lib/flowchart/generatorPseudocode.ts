@@ -67,7 +67,9 @@ function statementLinesFor(node: Node, nodesById: Map<string, Node>, edges: Edge
       return entries
         .filter((entry) => entry.varName.trim())
         .map((entry) => {
-          const hasValue = entry.varValue.trim().length > 0;
+          // Not .trim() — a value that's just a space is a real (String)
+          // value the user typed on purpose, not "no value given".
+          const hasValue = entry.varValue.length > 0;
           return hasValue
             ? `DECLARE ${entry.varName} AS ${typeWord(entry.varType)} = ${formatDeclaredValue(entry.varType, entry.varValue)}`
             : `DECLARE ${entry.varName} AS ${typeWord(entry.varType)}`;

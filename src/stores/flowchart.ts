@@ -457,7 +457,9 @@ export function updateWhileLoopCondition(node: Node, condition: string): Node {
 }
 
 export function declareLabel(varType: string, varName: string, varValue: string): string {
-  if (!varValue.trim()) return `${varType} ${varName}`;
+  // Not .trim() — a value that's just a space is a real (String) value the
+  // user typed on purpose, not "no value given".
+  if (!varValue) return `${varType} ${varName}`;
   return `${varType} ${varName} = ${formatDeclaredValue(varType, varValue)}`;
 }
 

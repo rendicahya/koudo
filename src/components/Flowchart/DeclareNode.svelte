@@ -56,12 +56,14 @@
       return;
     }
     // Beginner mode re-infers the type from the value on every keystroke —
-    // a blank value keeps whatever type was last inferred rather than
+    // a truly blank value keeps whatever type was last inferred rather than
     // flipping to String, so the required-value warning below is the only
-    // feedback an empty field gets (see typeInference.ts's INTEGER_PATTERN
-    // rejecting '' outright).
+    // feedback an empty field gets. Checked by raw length, not .trim(): a
+    // value that's just a space is a real (String) value the user typed on
+    // purpose, not "nothing yet" (see typeInference.ts's own trim(), which
+    // still correctly infers String for it).
     if (field === 'varValue' && inferred) {
-      const varType = value.trim() ? inferDeclaredType(value) : (entries[index]?.varType ?? 'int');
+      const varType = value.length > 0 ? inferDeclaredType(value) : (entries[index]?.varType ?? 'int');
       $nodes = $nodes.map((node) =>
         node.id === id ? updateDeclarationEntryAt(node, index, { varValue: value, varType }) : node,
       );
@@ -100,7 +102,7 @@
 
   {#each entries as entry, index (index)}
     {@const nameIsValid = isValidJavaIdentifier(entry.varName ?? '')}
-    {@const valueIsMissing = inferred && !entry.varValue?.trim()}
+    {@const valueIsMissing = inferred && !entry.varValue}
     {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
     <div class="flex items-center gap-1">
       <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
@@ -159,7 +161,7 @@
           style="color: var(--color-text-secondary); border: 1px solid var(--color-border);"
           title="Type inferred from the value"
         >
-          {entry.varValue?.trim() ? entry.varType : '?'}
+          {entry.varValue ? entry.varType : '?'}
         </span>
       {:else if entry.varType === 'boolean'}
         <select
