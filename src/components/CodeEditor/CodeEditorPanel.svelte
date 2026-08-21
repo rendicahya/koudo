@@ -9,6 +9,7 @@
     MIN_CODE_FONT_SIZE,
     MAX_CODE_FONT_SIZE,
   } from '../../stores/layout';
+  import { t } from '../../stores/i18n';
 
   const TABS: CodeTab[] = ['Pseudocode', 'Java'];
 
@@ -37,7 +38,7 @@
             : 'transparent'}; color: {$activeCodeTab === tab ? 'var(--color-text)' : 'var(--color-text-secondary)'};"
           onclick={() => ($activeCodeTab = tab)}
         >
-          {tab}
+          {tab === 'Java' ? $t('code.javaTab') : $t('code.pseudocodeTab')}
         </button>
       {/each}
     </div>
@@ -52,8 +53,8 @@
         class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
         style="border-color: var(--color-border);"
         disabled={$codeFontSize <= MIN_CODE_FONT_SIZE}
-        title="Decrease text size"
-        aria-label="Decrease text size"
+        title={$t('code.decreaseTextSize')}
+        aria-label={$t('code.decreaseTextSize')}
         onclick={() => zoomCodeFontSize(-1)}
       >
         −
@@ -64,8 +65,8 @@
         class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
         style="border-color: var(--color-border);"
         disabled={$codeFontSize >= MAX_CODE_FONT_SIZE}
-        title="Increase text size"
-        aria-label="Increase text size"
+        title={$t('code.increaseTextSize')}
+        aria-label={$t('code.increaseTextSize')}
         onclick={() => zoomCodeFontSize(1)}
       >
         +

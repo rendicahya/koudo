@@ -2,6 +2,7 @@
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
   import ShapeFrame from './ShapeFrame.svelte';
   import { nodes, updateForLoopField, PREPARATION_CLIP_PATH, type ForLoopNodeData } from '../../stores/flowchart';
+  import { t } from '../../stores/i18n';
 
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as ForLoopNodeData);
@@ -29,7 +30,7 @@
         class="nodrag w-0 min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5 text-center"
         style="border-color: var(--color-border);"
         placeholder="int i = 0"
-        title="Init — runs once, before the loop starts"
+        title={$t('flow.initTitle')}
       />
       <input
         value={nodeData.condition}
@@ -37,7 +38,7 @@
         class="nodrag w-0 min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5 text-center"
         style="border-color: var(--color-border);"
         placeholder="i < 10"
-        title="Condition — checked before every iteration"
+        title={$t('flow.conditionTitle')}
       />
       <input
         value={nodeData.update}
@@ -45,7 +46,7 @@
         class="nodrag w-0 min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5 text-center"
         style="border-color: var(--color-border);"
         placeholder="i++"
-        title="Update — runs after every iteration of the body"
+        title={$t('flow.updateTitle')}
       />
     </div>
   </ShapeFrame>
@@ -59,7 +60,7 @@
     class="pointer-events-none absolute text-[10px]"
     style="left: 54%; bottom: -14px; color: var(--color-text-secondary);"
   >
-    loop
+    {$t('flow.loopLabel')}
   </span>
 
   <Handle type="source" position={Position.Right} id="exit" />
@@ -67,6 +68,6 @@
     class="pointer-events-none absolute text-[10px]"
     style="right: -30px; top: 46%; color: var(--color-text-secondary);"
   >
-    exit
+    {$t('flow.exitLabel')}
   </span>
 </div>

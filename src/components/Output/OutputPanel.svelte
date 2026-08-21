@@ -15,6 +15,7 @@
   import { hasConnectedEndBlock, nodes } from '../../stores/flowchart';
   import { blockTypeOf } from '../../lib/flowchart/graphWalk';
   import { codeContent } from '../../stores/code';
+  import { t } from '../../stores/i18n';
 
   // While a step run is active it takes over the panel — Start/Next/Stop
   // live next to ▶ Run, right here above the panel. Stopping just switches
@@ -72,11 +73,9 @@
       class="btn btn-accent rounded-md border px-3 py-1.5 text-sm font-medium"
       disabled={!$hasConnectedEndBlock}
       onclick={handleRun}
-      title={$hasConnectedEndBlock
-        ? 'Run the code (Alt+Shift+R) — output appears below'
-        : 'Connect an End block to the flowchart before running'}
+      title={$hasConnectedEndBlock ? $t('output.runTitleEnabled') : $t('output.runTitleDisabled')}
     >
-      ▶ Run
+      {$t('output.run')}
     </button>
 
     {#if !$isStepping}
@@ -86,12 +85,12 @@
         disabled={!hasStart || !$hasConnectedEndBlock}
         onclick={startStepRun}
         title={!hasStart
-          ? 'Add a Start block first'
+          ? $t('output.stepTitleNoStart')
           : !$hasConnectedEndBlock
-            ? 'Connect an End block to the flowchart before stepping'
-            : 'Run one line at a time, highlighting each block on the canvas (Alt+Shift+S)'}
+            ? $t('output.stepTitleNoEnd')
+            : $t('output.stepTitleReady')}
       >
-        ⏭ Step
+        {$t('output.step')}
       </button>
     {:else}
       <button
@@ -99,9 +98,9 @@
         class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
         disabled={$isStepFinished}
         onclick={stepOnce}
-        title="Run the next line (Alt+Shift+S)"
+        title={$t('output.nextStepTitle')}
       >
-        ⏭ Next Step
+        {$t('output.nextStep')}
       </button>
     {/if}
 
@@ -114,20 +113,20 @@
       disabled={!$isStepping}
       onclick={stopStepRun}
     >
-      ⏹ Stop
+      {$t('output.stop')}
     </button>
   </div>
 
   <div class="flex shrink-0 items-center gap-2">
-    <p class="text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">Output</p>
+    <p class="text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">{$t('output.heading')}</p>
     <button
       type="button"
       class="btn btn-neutral rounded-md border px-2 py-1 text-xs font-medium hover:opacity-80"
       disabled={$isStepping || !$hasRun}
-      title={$isStepping ? 'Stop the step run to clear the output' : 'Clear the output'}
+      title={$isStepping ? $t('output.clearTitleStepping') : $t('output.clearTitleReady')}
       onclick={clearRunOutput}
     >
-      Clear
+      {$t('output.clear')}
     </button>
   </div>
 
@@ -140,7 +139,9 @@
       style="border-color: var(--color-border); background: var(--color-editor-bg);"
       title={$stepCurrentLine.text}
     >
-      <span style="color: var(--color-text-secondary);">Line {$stepCurrentLine.index}/{$stepCurrentLine.total}:</span>
+      <span style="color: var(--color-text-secondary);"
+        >{$t('output.line', { index: $stepCurrentLine.index, total: $stepCurrentLine.total })}</span
+      >
       {$stepCurrentLine.text}
     </p>
   {/if}
@@ -155,7 +156,9 @@
       style="border-color: var(--color-border); background: var(--color-editor-bg);"
     >
       {#if !$isStepping && !$hasRun}
-        <p style="color: var(--color-text-secondary);">Click ▶ Run, or ⏭ Step, above to see output here.</p>
+        <p style="color: var(--color-text-secondary);">
+          {$t('output.emptyPrompt', { run: $t('output.run'), step: $t('output.step') })}
+        </p>
       {:else}
         {#each displayOutput as line, i (i)}
           <p class="whitespace-pre-wrap">{line}</p>
@@ -163,7 +166,7 @@
         {#if displayError}
           <p class="whitespace-pre-wrap" style="color: var(--color-error);">⚠ {displayError}</p>
         {:else if displayOutput.length === 0}
-          <p style="color: var(--color-text-secondary);">(no output)</p>
+          <p style="color: var(--color-text-secondary);">{$t('output.noOutput')}</p>
         {/if}
       {/if}
     </div>
@@ -179,7 +182,7 @@
         class="shrink-0 border-b px-2 py-1 text-xs font-semibold tracking-wide uppercase"
         style="border-color: var(--color-border); color: var(--color-text-secondary);"
       >
-        Variables
+        {$t('output.variables')}
       </p>
       <div class="min-h-0 flex-1 overflow-y-auto">
         <table class="w-full text-left text-xs">
@@ -193,7 +196,7 @@
             {:else}
               <tr>
                 <td class="px-2 py-2 text-center" colspan="3" style="color: var(--color-text-secondary);">
-                  {$isStepping || $hasRun ? 'No variables' : 'Run the program to see variables here'}
+                  {$isStepping || $hasRun ? $t('output.noVariablesRun') : $t('output.noVariablesPrompt')}
                 </td>
               </tr>
             {/each}

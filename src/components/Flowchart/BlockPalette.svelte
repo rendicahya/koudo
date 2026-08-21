@@ -8,6 +8,8 @@
     type BlockDefinition,
     type BlockType,
   } from '../../stores/flowchart';
+  import { t } from '../../stores/i18n';
+  import type { TranslationKey } from '../../lib/i18n/translations';
 
   interface Props {
     onPlaceBlock: (type: BlockType, clientX: number, clientY: number) => void;
@@ -23,6 +25,28 @@
 
   let hasStart = $derived($nodes.some((node) => node.data?.blockType === 'start'));
   let hasEnd = $derived($nodes.some((node) => node.data?.blockType === 'end'));
+
+  // Every block's name except Start/End, which stay whatever BLOCK_DEFINITIONS
+  // says (English) — those two are xyflow's built-in node types, rendered
+  // from a label baked into the node's data at creation time rather than
+  // read reactively, so they can't follow a language switch (see
+  // translations.ts's file header comment). Every other block never shows
+  // its own name on the canvas at all (DeclareNode etc. render their fields,
+  // not a heading), so translating it here doesn't create that mismatch.
+  const BLOCK_TYPE_LABEL_KEY: Partial<Record<BlockType, TranslationKey>> = {
+    declare: 'block.type.declare',
+    assign: 'block.type.assign',
+    input: 'block.type.input',
+    process: 'block.type.process',
+    decision: 'block.type.decision',
+    forLoop: 'block.type.forLoop',
+    whileLoop: 'block.type.whileLoop',
+  };
+
+  function displayLabel(block: BlockDefinition): string {
+    const key = BLOCK_TYPE_LABEL_KEY[block.type];
+    return key ? $t(key) : block.label;
+  }
 
   // Only Start/End are actually drag-blocked once one exists — comingSoon
   // blocks stay draggable-but-inert (see CLAUDE.md: they can still be
@@ -40,10 +64,13 @@
   }
 
   function chipTitle(block: BlockDefinition): string {
-    if (isSingletonBlocked(block)) return `${block.label} — already on the canvas`;
-    if (block.comingSoon) return `${block.label} — coming soon`;
-    const article = /^[aeiou]/i.test(block.label) ? 'an' : 'a';
-    return `Drag onto the canvas to add ${article} ${block.label} block`;
+    const label = displayLabel(block);
+    if (isSingletonBlocked(block)) return $t('palette.chipAlreadyOnCanvas', { label });
+    if (block.comingSoon) return $t('palette.chipComingSoon', { label });
+    // Indonesian's template has no {article} token, so this is silently
+    // unused there — English is the only language needing a/an agreement.
+    const article = /^[aeiou]/i.test(label) ? 'an' : 'a';
+    return $t('palette.chipDragHint', { article, label });
   }
 
   // Input and Output share the same flowchart symbol (a parallelogram);
@@ -74,7 +101,7 @@
     const chip = event.currentTarget as HTMLElement;
     const pointerId = event.pointerId;
     chip.setPointerCapture(pointerId);
-    drag = { type: block.type, label: block.label, x: event.clientX, y: event.clientY };
+    drag = { type: block.type, label: displayLabel(block), x: event.clientX, y: event.clientY };
     document.body.style.cursor = 'grabbing';
 
     function cleanup() {
@@ -87,7 +114,7 @@
     }
     function handleMove(moveEvent: PointerEvent) {
       if (moveEvent.pointerId !== pointerId) return;
-      drag = { type: block.type, label: block.label, x: moveEvent.clientX, y: moveEvent.clientY };
+      drag = { type: block.type, label: displayLabel(block), x: moveEvent.clientX, y: moveEvent.clientY };
     }
     function handleUp(upEvent: PointerEvent) {
       if (upEvent.pointerId !== pointerId) return;
@@ -119,12 +146,12 @@
   style="background: var(--color-panel); border-color: var(--color-border);"
 >
   <div class="mb-1 flex items-center justify-between gap-3 px-1">
-    <p class="text-sm font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">Blocks</p>
+    <p class="text-sm font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">{$t('palette.heading')}</p>
     <button
       type="button"
       class="text-lg leading-none hover:opacity-80"
       style="color: var(--color-text-secondary);"
-      title={minimized ? 'Expand the block palette' : 'Minimize the block palette'}
+      title={minimized ? $t('palette.expand') : $t('palette.minimize')}
       onclick={() => (minimized = !minimized)}
     >
       {minimized ? '▾' : '▴'}
@@ -149,7 +176,7 @@
             class="px-5 py-2 text-center"
             style="background: var(--color-node-bg); color: var(--color-text); clip-path: {clipPathFor(block)};"
           >
-            {block.label}
+            {displayLabel(block)}
           </div>
         </div>
       {:else if block.type === 'start' || block.type === 'end'}
@@ -162,7 +189,7 @@
           style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text); border-radius: 9999px;"
           title={chipTitle(block)}
         >
-          {block.label}{block.comingSoon ? ' (soon)' : ''}
+          {block.label}{block.comingSoon ? $t('palette.comingSoonSuffix') : ''}
         </div>
       {:else}
         <div
@@ -174,7 +201,7 @@
           style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text);"
           title={chipTitle(block)}
         >
-          {block.label}{block.comingSoon ? ' (soon)' : ''}
+          {displayLabel(block)}{block.comingSoon ? $t('palette.comingSoonSuffix') : ''}
         </div>
       {/if}
     {/each}

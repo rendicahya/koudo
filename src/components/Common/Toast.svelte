@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import { toastMessage, dismissToast } from '../../stores/toast';
+  import { t } from '../../stores/i18n';
 </script>
 
 {#if $toastMessage}
@@ -16,7 +17,7 @@
       type="button"
       class="leading-none hover:opacity-70"
       style="color: var(--color-text-secondary);"
-      title="Dismiss"
+      title={$t('toast.dismiss')}
       onclick={dismissToast}
     >
       ×

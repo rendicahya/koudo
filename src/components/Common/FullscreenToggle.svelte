@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from '../../stores/i18n';
+
   // No store needed (unlike theme/variableMode) — fullscreen isn't a
   // preference worth persisting across reloads, and the browser itself
   // already drops it on refresh/navigation. document.fullscreenElement is
@@ -33,8 +35,8 @@
   onclick={toggleFullscreen}
   class="rounded-md border px-3 py-1.5 text-sm"
   style="border-color: var(--color-border); color: var(--color-text);"
-  aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-  title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+  aria-label={isFullscreen ? $t('toggle.exitFullscreen') : $t('toggle.enterFullscreen')}
+  title={isFullscreen ? $t('toggle.exitFullscreen') : $t('toggle.enterFullscreen')}
 >
   ⛶
 </button>

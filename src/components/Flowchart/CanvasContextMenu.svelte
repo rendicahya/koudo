@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from '../../stores/i18n';
+
   // Shared by both node and edge right-clicks in FlowchartBoard.svelte —
   // Duplicate only makes sense for nodes, so it's omitted whenever an edge
   // is the target.
@@ -37,7 +39,7 @@
 >
   {#if onDuplicate}
     <button type="button" role="menuitem" class="px-3 py-1.5 text-left hover:opacity-80" onclick={onDuplicate}>
-      Duplicate
+      {$t('contextMenu.duplicate')}
     </button>
   {/if}
   <button
@@ -47,6 +49,6 @@
     style="color: var(--color-error);"
     onclick={onDelete}
   >
-    Delete
+    {$t('contextMenu.delete')}
   </button>
 </div>

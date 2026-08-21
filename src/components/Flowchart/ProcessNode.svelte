@@ -17,6 +17,7 @@
   import { variableMode } from '../../stores/settings';
   import { inferDeclaredType } from '../../lib/flowchart/typeInference';
   import { formatDeclaredValue, unquoteDeclaredValue } from '../../lib/flowchart/valueFormat';
+  import { t } from '../../stores/i18n';
 
   // Sentinel <option> value for "print a literal/expression instead of a
   // variable" — distinct from '' (the unset placeholder) and from any real
@@ -95,18 +96,18 @@
               {info.statement}
             </span>
           {:else}
-            <span style="color: var(--color-text-secondary);">Print</span>
+            <span style="color: var(--color-text-secondary);">{$t('process.print')}</span>
             <select
               value={info.kind === 'variable' ? info.varName : info.kind === 'value' ? CUSTOM_VALUE : ''}
               onchange={(event) => handleSelect(index, event)}
               class="nodrag min-w-[5rem] rounded border bg-transparent px-1 py-0.5"
               style="border-color: var(--color-border);"
             >
-              <option value="" disabled>{variables.length === 0 ? 'No variables' : 'Choose'}</option>
+              <option value="" disabled>{variables.length === 0 ? $t('shared.noVariables') : $t('shared.choose')}</option>
               {#each variables as varName (varName)}
                 <option value={varName}>{varName}</option>
               {/each}
-              <option value={CUSTOM_VALUE}>✎ value</option>
+              <option value={CUSTOM_VALUE}>{$t('process.customValue')}</option>
             </select>
 
             {#if info.kind === 'value'}
@@ -115,7 +116,7 @@
                 oninput={(event) => handleValueInput(index, event)}
                 class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
                 style="border-color: var(--color-border);"
-                placeholder={inferred ? 'text or 5' : '"text" or 5'}
+                placeholder={inferred ? $t('process.valueOrLiteralInferred') : $t('process.valueOrLiteral')}
               />
             {/if}
           {/if}
@@ -125,7 +126,7 @@
               type="button"
               class="nodrag px-1 leading-none hover:opacity-70"
               style="color: var(--color-text-secondary);"
-              title="Remove this line"
+              title={$t('process.removeLine')}
               onclick={() => handleRemove(index)}
             >
               ×
@@ -140,7 +141,7 @@
         style="color: var(--color-accent);"
         onclick={handleAdd}
       >
-        + Add output
+        {$t('process.add')}
       </button>
     </div>
   </ShapeFrame>

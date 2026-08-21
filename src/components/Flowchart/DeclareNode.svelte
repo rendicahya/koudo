@@ -14,6 +14,7 @@
   import { inferDeclaredType } from '../../lib/flowchart/typeInference';
   import { variableMode } from '../../stores/settings';
   import { stepCurrentRow } from '../../stores/stepRunner';
+  import { t } from '../../stores/i18n';
 
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as DeclareNodeData);
@@ -155,8 +156,8 @@
         style="border-color: {nameIsValid ? 'var(--color-border)' : 'var(--color-error)'};"
         style:outline={nameIsValid ? 'none' : '1px solid var(--color-error)'}
         aria-invalid={!nameIsValid}
-        title={nameIsValid ? undefined : `'${entry.varName}' is not a valid Java variable name`}
-        placeholder="Name"
+        title={nameIsValid ? undefined : $t('declare.invalidName', { name: entry.varName })}
+        placeholder={$t('declare.name')}
       />
 
       <span>=</span>
@@ -169,7 +170,7 @@
           data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
-          placeholder="Value (optional)"
+          placeholder={$t('declare.valueOptional')}
         />
         {#if entry.varValue}
           <!-- Beginner mode has no type <select> to show this in while a
@@ -178,7 +179,7 @@
           <span
             class="shrink-0 rounded px-1 text-[10px] uppercase"
             style="color: var(--color-text-secondary); border: 1px solid var(--color-border);"
-            title="Type inferred from the value"
+            title={$t('declare.inferredTitle')}
           >
             {entry.varType}
           </span>
@@ -194,11 +195,11 @@
             onchange={(event) => handleBeginnerTypeChange(index, event)}
             class="nodrag rounded border bg-transparent px-1 py-0.5 text-[10px]"
             style="border-color: var(--color-border);"
-            title="No value given — choose this variable's type"
+            title={$t('declare.typeTitle')}
           >
-            <option value="int">Whole number</option>
-            <option value="double">Decimal number</option>
-            <option value="String">Text</option>
+            <option value="int">{$t('declare.typeWhole')}</option>
+            <option value="double">{$t('declare.typeDecimal')}</option>
+            <option value="String">{$t('declare.typeText')}</option>
           </select>
         {/if}
       {:else if entry.varType === 'boolean'}
@@ -229,7 +230,7 @@
           data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
-          placeholder="Value"
+          placeholder={$t('shared.value')}
         />
         <span class="select-none" style="color: var(--color-text-secondary);">{quote}</span>
       {:else}
@@ -240,7 +241,7 @@
           data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
-          placeholder="Value"
+          placeholder={$t('shared.value')}
         />
       {/if}
 
@@ -249,7 +250,7 @@
           type="button"
           class="nodrag px-1 leading-none hover:opacity-70"
           style="color: var(--color-text-secondary);"
-          title="Remove this variable"
+          title={$t('declare.remove')}
           onclick={() => handleRemove(index)}
         >
           ×
@@ -264,7 +265,7 @@
     style="color: var(--color-accent);"
     onclick={handleAdd}
   >
-    + Add variable
+    {$t('declare.add')}
   </button>
 
   <Handle type="source" position={Position.Bottom} />

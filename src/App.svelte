@@ -10,6 +10,7 @@
   import { isFlowchartDirty } from './stores/flowchart';
   import { toggleTheme } from './stores/theme';
   import { isCodePanelHidden, toggleCodePanel } from './stores/layout';
+  import { t } from './stores/i18n';
 
   function handleBeforeUnload(event: BeforeUnloadEvent) {
     if (!$isFlowchartDirty) return;
@@ -114,7 +115,7 @@
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-label="Resize flowchart and code panels"
+      aria-label={$t('app.resizeColumnsAriaLabel')}
       class="resizer hidden shrink-0 md:block"
       onpointerdown={$isCodePanelHidden ? undefined : beginColumnResize}
     >
@@ -126,7 +127,7 @@
       <button
         type="button"
         class="btn-panel absolute left-1/2 top-1/2 z-10 flex h-9 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded border text-xs shadow-sm hover:opacity-80"
-        title={$isCodePanelHidden ? 'Show the code panel' : 'Hide the code panel'}
+        title={$isCodePanelHidden ? $t('app.showCodePanel') : $t('app.hideCodePanel')}
         onpointerdown={(event) => event.stopPropagation()}
         onclick={(event) => {
           event.stopPropagation();
@@ -146,7 +147,7 @@
         <div
           role="separator"
           aria-orientation="horizontal"
-          aria-label="Resize output panel"
+          aria-label={$t('app.resizeRowAriaLabel')}
           class="resizer resizer-horizontal shrink-0"
           onpointerdown={beginRowResize}
         ></div>

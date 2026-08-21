@@ -2,6 +2,7 @@
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
   import ShapeFrame from './ShapeFrame.svelte';
   import { nodes, updateDecisionCondition, DIAMOND_CLIP_PATH, type DecisionNodeData } from '../../stores/flowchart';
+  import { t } from '../../stores/i18n';
 
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as DecisionNodeData);
@@ -27,7 +28,7 @@
         oninput={handleInput}
         class="nodrag w-full rounded border bg-transparent px-1 py-0.5 text-center"
         style="border-color: var(--color-border);"
-        placeholder="Condition"
+        placeholder={$t('flow.condition')}
       />
     </div>
   </ShapeFrame>

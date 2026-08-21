@@ -45,6 +45,8 @@
   } from '../../stores/flowchart';
   import { stepCurrentNodeId, stepCurrentLine } from '../../stores/stepRunner';
   import { showToast } from '../../stores/toast';
+  import { t } from '../../stores/i18n';
+  import type { TranslationKey } from '../../lib/i18n/translations';
 
   // "userInput" (not "input") — xyflow's own built-in node type is called
   // "input" (used by Start blocks, see stores/flowchart.ts's
@@ -96,7 +98,7 @@
       placeBlock(type, clientX, clientY);
     } catch (err) {
       console.error('Failed to place block on canvas:', err);
-      showToast(`Couldn't place that block: ${err instanceof Error ? err.message : String(err)}`);
+      showToast($t('toast.couldNotPlaceBlock', { error: err instanceof Error ? err.message : String(err) }));
     }
   }
 
@@ -212,13 +214,13 @@
     // target, which is easy to miss since the block itself still looks fine
     // sitting on the canvas. Never fires for Input once the auto-select above
     // has already found a variable to default to.
-    const NEEDS_DECLARED_VARIABLE: Partial<Record<BlockType, string>> = {
-      input: 'Declare a variable before adding an Input block — it needs an existing variable to read a value into.',
-      assign: 'Declare a variable before adding an Assign block — it needs an existing variable to assign a value to.',
+    const NEEDS_DECLARED_VARIABLE: Partial<Record<BlockType, TranslationKey>> = {
+      input: 'toast.needsDeclaredVariableInput',
+      assign: 'toast.needsDeclaredVariableAssign',
     };
-    const warning = NEEDS_DECLARED_VARIABLE[type];
-    if (warning && declaredVariableNamesUpstreamOf(newNode.id, $nodes, $edges).length === 0) {
-      showToast(warning);
+    const warningKey = NEEDS_DECLARED_VARIABLE[type];
+    if (warningKey && declaredVariableNamesUpstreamOf(newNode.id, $nodes, $edges).length === 0) {
+      showToast($t(warningKey));
     }
   }
 
@@ -298,7 +300,7 @@
   });
 </script>
 
-<div bind:this={wrapperEl} role="region" aria-label="Flowchart canvas — drop blocks here" class="relative h-full w-full">
+<div bind:this={wrapperEl} role="region" aria-label={$t('flowchart.canvasAriaLabel')} class="relative h-full w-full">
   <BlockPalette onPlaceBlock={handlePlaceBlock} />
 
   <SvelteFlow

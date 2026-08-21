@@ -12,6 +12,7 @@
     type InputNodeData,
   } from '../../stores/flowchart';
   import { stepCurrentRow } from '../../stores/stepRunner';
+  import { t } from '../../stores/i18n';
 
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as InputNodeData);
@@ -52,7 +53,7 @@
                stepCurrentRow) — reserved width so other rows don't shift
                when one of them lights up. -->
           <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
-          <span style="color: var(--color-text-secondary);">Input</span>
+          <span style="color: var(--color-text-secondary);">{$t('input.label')}</span>
           <select
             value={entry.varName}
             onchange={(event) => handleVarSelect(index, event)}
@@ -60,7 +61,7 @@
             class="nodrag min-w-[4.5rem] rounded border bg-transparent px-1 py-0.5"
             style="border-color: var(--color-border);"
           >
-            <option value="" disabled>{variables.length === 0 ? 'No variables' : 'Choose'}</option>
+            <option value="" disabled>{variables.length === 0 ? $t('shared.noVariables') : $t('shared.choose')}</option>
             {#each variables as varName (varName)}
               <option value={varName}>{varName}</option>
             {/each}
@@ -71,7 +72,7 @@
             oninput={(event) => handlePromptInput(index, event)}
             class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
             style="border-color: var(--color-border);"
-            placeholder="Prompt (optional)"
+            placeholder={$t('input.prompt')}
           />
 
           {#if entries.length > 1}
@@ -79,7 +80,7 @@
               type="button"
               class="nodrag px-1 leading-none hover:opacity-70"
               style="color: var(--color-text-secondary);"
-              title="Remove this input"
+              title={$t('input.remove')}
               onclick={() => handleRemove(index)}
             >
               ×
@@ -94,7 +95,7 @@
         style="color: var(--color-accent);"
         onclick={handleAdd}
       >
-        + Add input
+        {$t('input.add')}
       </button>
     </div>
   </ShapeFrame>

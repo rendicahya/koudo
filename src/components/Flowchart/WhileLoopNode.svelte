@@ -2,6 +2,7 @@
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
   import ShapeFrame from './ShapeFrame.svelte';
   import { nodes, updateWhileLoopCondition, DIAMOND_CLIP_PATH, type WhileLoopNodeData } from '../../stores/flowchart';
+  import { t } from '../../stores/i18n';
 
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as WhileLoopNodeData);
@@ -27,8 +28,8 @@
         oninput={handleInput}
         class="nodrag w-full rounded border bg-transparent px-1 py-0.5 text-center"
         style="border-color: var(--color-border);"
-        placeholder="Condition"
-        title="Condition — checked before every iteration"
+        placeholder={$t('flow.condition')}
+        title={$t('flow.conditionTitle')}
       />
     </div>
   </ShapeFrame>
@@ -38,7 +39,7 @@
     class="pointer-events-none absolute text-[10px]"
     style="left: 54%; bottom: -14px; color: var(--color-text-secondary);"
   >
-    loop
+    {$t('flow.loopLabel')}
   </span>
 
   <Handle type="source" position={Position.Right} id="exit" />
@@ -46,6 +47,6 @@
     class="pointer-events-none absolute text-[10px]"
     style="right: -30px; top: 46%; color: var(--color-text-secondary);"
   >
-    exit
+    {$t('flow.exitLabel')}
   </span>
 </div>

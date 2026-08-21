@@ -12,24 +12,46 @@
   import { flowchartToPngDataUrl } from '../../lib/flowchart/exportPng';
   import { stopStepRun } from '../../stores/stepRunner';
   import { variableMode, setVariableMode, type VariableMode } from '../../stores/settings';
+  import { t, language, setLanguage, type Language } from '../../stores/i18n';
+  import type { TranslationKey } from '../../lib/i18n/translations';
 
   // New/Open/Save all act on the same thing — the flowchart project — so
   // they live under one "Project" menu; Export Java joins them there too,
   // even though it produces something different (a Java source file, not a
   // project), since it's still a whole-project action rather than a
-  // canvas-editing one.
-  const projectActions = ['New', 'Open Project', 'Save Project', 'Export Java', 'Export Pseudocode'] as const;
+  // canvas-editing one. Ids (not the displayed label) drive the switch in
+  // handleProjectAction below, so the label can be translated without
+  // touching the dispatch logic.
+  type ProjectAction = 'new' | 'open' | 'save' | 'exportJava' | 'exportPseudocode';
+  const PROJECT_ACTIONS: { id: ProjectAction; labelKey: TranslationKey }[] = [
+    { id: 'new', labelKey: 'nav.new' },
+    { id: 'open', labelKey: 'nav.open' },
+    { id: 'save', labelKey: 'nav.save' },
+    { id: 'exportJava', labelKey: 'nav.exportJava' },
+    { id: 'exportPseudocode', labelKey: 'nav.exportPseudocode' },
+  ];
   // Arrange/PNG both act on the canvas as a whole (not any one block), so
   // they get their own menu rather than crowding the toolbar as standalone
   // buttons.
-  const canvasActions = ['Arrange', 'Download PNG'] as const;
+  type CanvasAction = 'arrange' | 'downloadPng';
+  const CANVAS_ACTIONS: { id: CanvasAction; labelKey: TranslationKey; titleKey: TranslationKey }[] = [
+    { id: 'arrange', labelKey: 'nav.arrange', titleKey: 'nav.arrangeTitle' },
+    { id: 'downloadPng', labelKey: 'nav.downloadPng', titleKey: 'nav.downloadPngTitle' },
+  ];
   // Also lives in the Project menu, as a second group below the actions
   // above — it's a project-wide setting (persisted, see stores/settings.ts),
   // not a one-off action, but there's no other menu it fits better than this
   // one.
-  const variableModeOptions: { mode: VariableMode; label: string; hint: string }[] = [
-    { mode: 'inferred', label: 'Beginner Mode', hint: 'Declare a variable with just a value — its type is inferred automatically' },
-    { mode: 'explicit', label: 'Standard Mode', hint: 'Declare a variable by choosing its data type explicitly' },
+  const variableModeOptions: { mode: VariableMode; labelKey: TranslationKey; hintKey: TranslationKey }[] = [
+    { mode: 'inferred', labelKey: 'nav.variableModeBeginner', hintKey: 'nav.variableModeBeginnerHint' },
+    { mode: 'explicit', labelKey: 'nav.variableModeStandard', hintKey: 'nav.variableModeStandardHint' },
+  ];
+  // A third group, same menu, same reasoning as variableModeOptions above.
+  // Native names (not translated) — a language picker conventionally shows
+  // each option in its own language, not the currently active one.
+  const languageOptions: { lang: Language; label: string }[] = [
+    { lang: 'en', label: 'English' },
+    { lang: 'id', label: 'Bahasa Indonesia' },
   ];
 
   let projectMenuOpen = $state(false);
@@ -45,7 +67,7 @@
   const { getNodesBounds } = useSvelteFlow();
 
   function handleNew() {
-    if (!confirm('Clear the canvas and start a new flowchart? This cannot be undone.')) return;
+    if (!confirm($t('nav.confirmNew'))) return;
     stopStepRun();
     resetFlowchart();
   }
@@ -90,7 +112,7 @@
   }
 
   function handleOpen() {
-    if (!confirm('Clear the canvas and open a different flowchart? This cannot be undone.')) return;
+    if (!confirm($t('nav.confirmOpen'))) return;
     fileInputEl.click();
   }
 
@@ -111,19 +133,19 @@
     }
   }
 
-  function handleProjectAction(action: (typeof projectActions)[number]) {
+  function handleProjectAction(action: ProjectAction) {
     projectMenuOpen = false;
-    if (action === 'New') return handleNew();
-    if (action === 'Open Project') return handleOpen();
-    if (action === 'Save Project') return handleSave();
-    if (action === 'Export Java') return handleExport();
-    if (action === 'Export Pseudocode') return handleExportPseudocode();
+    if (action === 'new') return handleNew();
+    if (action === 'open') return handleOpen();
+    if (action === 'save') return handleSave();
+    if (action === 'exportJava') return handleExport();
+    if (action === 'exportPseudocode') return handleExportPseudocode();
   }
 
-  function handleCanvasAction(action: (typeof canvasActions)[number]) {
+  function handleCanvasAction(action: CanvasAction) {
     canvasMenuOpen = false;
-    if (action === 'Arrange') return handleArrange();
-    if (action === 'Download PNG') return handleDownloadPng();
+    if (action === 'arrange') return handleArrange();
+    if (action === 'downloadPng') return handleDownloadPng();
   }
 
   function handleGlobalKeydown(event: KeyboardEvent) {
@@ -177,7 +199,7 @@
           aria-expanded={projectMenuOpen}
           onclick={() => (projectMenuOpen = !projectMenuOpen)}
         >
-          Project ▾
+          {$t('nav.project')} ▾
         </button>
         {#if projectMenuOpen}
           <div
@@ -185,14 +207,14 @@
             class="absolute right-0 top-full z-20 mt-1 flex w-52 flex-col overflow-hidden rounded-md border text-sm shadow-md"
             style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
           >
-            {#each projectActions as action (action)}
+            {#each PROJECT_ACTIONS as action (action.id)}
               <button
                 type="button"
                 role="menuitem"
                 class="px-3 py-1.5 text-left hover:opacity-80"
-                onclick={() => handleProjectAction(action)}
+                onclick={() => handleProjectAction(action.id)}
               >
-                {action}
+                {$t(action.labelKey)}
               </button>
             {/each}
 
@@ -204,14 +226,34 @@
                 role="menuitemradio"
                 aria-checked={$variableMode === option.mode}
                 class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
-                title={option.hint}
+                title={$t(option.hintKey)}
                 onclick={() => {
                   projectMenuOpen = false;
                   setVariableMode(option.mode);
                 }}
               >
-                <span>{option.label}</span>
+                <span>{$t(option.labelKey)}</span>
                 {#if $variableMode === option.mode}
+                  <span style="color: var(--color-accent);">✓</span>
+                {/if}
+              </button>
+            {/each}
+
+            <div class="border-t" style="border-color: var(--color-border);"></div>
+
+            {#each languageOptions as option (option.lang)}
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={$language === option.lang}
+                class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
+                onclick={() => {
+                  projectMenuOpen = false;
+                  setLanguage(option.lang);
+                }}
+              >
+                <span>{option.label}</span>
+                {#if $language === option.lang}
                   <span style="color: var(--color-accent);">✓</span>
                 {/if}
               </button>
@@ -228,7 +270,7 @@
           aria-expanded={canvasMenuOpen}
           onclick={() => (canvasMenuOpen = !canvasMenuOpen)}
         >
-          Canvas ▾
+          {$t('nav.canvas')} ▾
         </button>
         {#if canvasMenuOpen}
           <div
@@ -236,17 +278,15 @@
             class="absolute right-0 top-full z-20 mt-1 flex w-44 flex-col overflow-hidden rounded-md border text-sm shadow-md"
             style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
           >
-            {#each canvasActions as action (action)}
+            {#each CANVAS_ACTIONS as action (action.id)}
               <button
                 type="button"
                 role="menuitem"
                 class="px-3 py-1.5 text-left hover:opacity-80"
-                title={action === 'Arrange'
-                  ? 'Arrange blocks into a straight vertical line (Alt+Shift+A)'
-                  : 'Download the flowchart as a PNG image'}
-                onclick={() => handleCanvasAction(action)}
+                title={$t(action.titleKey)}
+                onclick={() => handleCanvasAction(action.id)}
               >
-                {action}
+                {$t(action.labelKey)}
               </button>
             {/each}
           </div>
@@ -258,7 +298,7 @@
         class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
         onclick={() => (helpOpen = true)}
       >
-        Help
+        {$t('nav.help')}
       </button>
     </nav>
 

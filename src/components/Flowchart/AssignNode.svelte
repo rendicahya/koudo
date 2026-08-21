@@ -11,6 +11,7 @@
     type AssignmentEntry,
   } from '../../stores/flowchart';
   import { stepCurrentRow } from '../../stores/stepRunner';
+  import { t } from '../../stores/i18n';
 
   const OPERATORS: AssignmentEntry['operator'][] = ['=', '+=', '-=', '*=', '/='];
 
@@ -101,7 +102,7 @@
         class="nodrag min-w-[4.5rem] rounded border bg-transparent px-1 py-0.5"
         style="border-color: var(--color-border);"
       >
-        <option value="" disabled>{variables.length === 0 ? 'No variables' : 'Choose'}</option>
+        <option value="" disabled>{variables.length === 0 ? $t('shared.noVariables') : $t('shared.choose')}</option>
         {#each variables as varName (varName)}
           <option value={varName}>{varName}</option>
         {/each}
@@ -127,7 +128,7 @@
         {#each variables as varName (varName)}
           <option value={varName}>{varName}</option>
         {/each}
-        <option value={CUSTOM_VALUE}>✎ value</option>
+        <option value={CUSTOM_VALUE}>{$t('assign.customValue')}</option>
       </select>
 
       {#if kind === 'custom'}
@@ -155,7 +156,7 @@
             maxlength={targetType === 'char' ? 1 : undefined}
             class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
             style="border-color: var(--color-border);"
-            placeholder="Value"
+            placeholder={$t('shared.value')}
           />
           <span class="select-none" style="color: var(--color-text-secondary);">{quote}</span>
         {:else}
@@ -164,7 +165,7 @@
             oninput={(event) => handleValueText(index, event)}
             class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
             style="border-color: var(--color-border);"
-            placeholder={'"text" or 5'}
+            placeholder={$t('assign.valueOrLiteral')}
           />
         {/if}
       {/if}
@@ -174,7 +175,7 @@
           type="button"
           class="nodrag px-1 leading-none hover:opacity-70"
           style="color: var(--color-text-secondary);"
-          title="Remove this assignment"
+          title={$t('assign.remove')}
           onclick={() => handleRemove(index)}
         >
           ×
@@ -189,7 +190,7 @@
     style="color: var(--color-accent);"
     onclick={handleAdd}
   >
-    + Add assignment
+    {$t('assign.add')}
   </button>
 
   <Handle type="source" position={Position.Bottom} />

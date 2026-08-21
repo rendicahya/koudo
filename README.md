@@ -31,6 +31,10 @@ Dragging a new block auto-connects it to whatever's currently at the bottom of t
 
 Typing directly into the Monaco editor parses back into the flowchart live (variable declarations and simple statements), without fighting your cursor position or losing focus mid-keystroke. A second **Pseudocode** tab next to Java shows the same program as plain structured-English pseudocode (`DECLARE`/`INPUT`/`OUTPUT`/`IF...THEN...ELSE`/`FOR`/`WHILE`) — generated straight from the flowchart, read-only.
 
+### Language
+
+Switchable from the **Project** menu (a third group, below the variable-mode switch), persisted locally: **English** (default) or **Bahasa Indonesia**. Translates the app's UI chrome — menus, buttons, tooltips, the Help guide, and every block's own field labels/placeholders. Left untranslated on purpose: Java type keywords, `true`/`false`, generated Java/Pseudocode output, and Start/End's own on-canvas text (a fixed label baked in at creation time, not read reactively — see `stores/i18n.ts`'s comment for why).
+
 ### Two variable modes, for different levels of beginner
 
 Switchable from the **Project** menu, persisted locally:
@@ -130,7 +134,8 @@ src/
 │   ├── stepRunner.ts      the step-by-step runner + Variable Watcher state
 │   ├── settings.ts        Beginner/Standard variable-mode setting, persisted
 │   ├── toast.ts           non-blocking warning messages
-│   ├── layout.ts          hide/show code panel state, active code tab (persisted)
+│   ├── layout.ts          hide/show code panel state, active code tab + font size (persisted)
+│   ├── i18n.ts            language setting (persisted) + the reactive $t() lookup
 │   └── theme.ts
 └── lib/
     ├── flowchart/
@@ -146,6 +151,8 @@ src/
     ├── execution/
     │   ├── tokenizer.ts, parser.ts   the interpreter's own small lexer/parser
     │   └── interpreter.ts            the real (small) Java interpreter, run-all and step-by-step
+    ├── i18n/
+    │   └── translations.ts        English/Indonesian UI text, keyed the same in both
     ├── storage/
     │   ├── layoutPrefs.ts         persisted panel sizes
     │   └── flowchartFile.ts       flowchart <-> Save/Open Project JSON
