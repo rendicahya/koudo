@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
   import {
     nodes,
@@ -98,8 +99,16 @@
     $nodes = $nodes.map((node) => (node.id === id ? removeDeclarationEntryAt(node, index) : node));
   }
 
-  function handleAdd() {
+  // Unlike pendingFocusNodeId's store-driven focus above (which targets the
+  // *value* field, for a block just dropped from the palette), clicking
+  // "+ Add variable" targets the new row's *name* field instead — there's no
+  // drag gesture to race against here, so tick() (wait for the new row to
+  // actually render) is enough, no setTimeout needed.
+  async function handleAdd() {
     $nodes = $nodes.map((node) => (node.id === id ? addDeclarationEntry(node) : node));
+    await tick();
+    const lastIndex = entries.length - 1;
+    rootEl.querySelector<HTMLElement>(`[data-declare-name][data-entry-index="${lastIndex}"]`)?.focus();
   }
 </script>
 
@@ -107,7 +116,7 @@
      corners (that's reserved for the Start/End terminal blocks). -->
 <div
   bind:this={rootEl}
-  class="flex flex-col gap-1 border px-2 py-1.5 text-xs"
+  class="flex flex-col items-center gap-1 border px-2 py-1.5 text-xs"
   style="border-color: var(--color-node-border); background: var(--color-node-bg); color: var(--color-text);"
 >
   <Handle type="target" position={Position.Top} />
@@ -140,6 +149,8 @@
       <input
         value={entry.varName}
         oninput={(event) => handleInput(index, 'varName', event)}
+        data-declare-name
+        data-entry-index={index}
         class="nodrag w-14 rounded border bg-transparent px-1 py-0.5"
         style="border-color: {nameIsValid ? 'var(--color-border)' : 'var(--color-error)'};"
         style:outline={nameIsValid ? 'none' : '1px solid var(--color-error)'}
@@ -186,8 +197,8 @@
             title="No value given — choose this variable's type"
           >
             <option value="int">Whole number</option>
-            <option value="String">Text</option>
             <option value="double">Decimal number</option>
+            <option value="String">Text</option>
           </select>
         {/if}
       {:else if entry.varType === 'boolean'}
@@ -249,7 +260,7 @@
 
   <button
     type="button"
-    class="nodrag self-start rounded px-1 py-0.5 text-left hover:opacity-70"
+    class="nodrag rounded px-1 py-0.5 hover:opacity-70"
     style="color: var(--color-accent);"
     onclick={handleAdd}
   >
