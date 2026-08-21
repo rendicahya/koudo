@@ -37,6 +37,7 @@
     nodeWidthForType,
     declaredVariableNamesUpstreamOf,
     DEFAULT_BLOCK_HEIGHT,
+    pendingFocusNodeId,
     type BlockType,
   } from '../../stores/flowchart';
   import { stepCurrentNodeId, stepCurrentLine } from '../../stores/stepRunner';
@@ -62,20 +63,45 @@
   let wrapperEl: HTMLDivElement;
   let contextMenu = $state<{ kind: 'node' | 'edge'; id: string; x: number; y: number } | null>(null);
 
-  function handleDragOver(event: DragEvent) {
-    event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+  // BlockPalette drags a block with pointer events (see its own
+  // handlePointerDown) rather than native HTML5 drag-and-drop — dataTransfer
+  // and native dragstart/dragover/drop turned out not to fire reliably for
+  // at least one real user, silently, with nothing to debug. Pointer events
+  // route through the same mouse/touch/pen path uniformly, and this app
+  // already leans on the identical pointer-capture technique for the panel
+  // resizers (see App.svelte's trackDrag). onPlaceBlock is called with the
+  // pointer's release position; anything the palette itself decided not to
+  // start a drag for (a singleton block already on the canvas) never gets
+  // here at all.
+  function handlePlaceBlock(type: BlockType, clientX: number, clientY: number) {
+    if (!wrapperEl) return;
+    const rect = wrapperEl.getBoundingClientRect();
+    // Released outside the canvas area entirely (over the navbar, the code
+    // panel, ...) — the user changed their mind, not a real drop.
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
+    // Released back onto the palette itself — also a cancel, not a drop
+    // (see BlockPalette's own data-block-palette marker on its root).
+    const targetEl = document.elementFromPoint(clientX, clientY);
+    if (targetEl?.closest('[data-block-palette]')) return;
+
+    // Wrapped in try/catch — a block failing to land used to fail completely
+    // silently (any exception here would just vanish into the browser's own
+    // unhandled-error log, with nothing visible in the UI at all). Surfacing
+    // it as a toast turns "nothing happened" into an actual, reportable
+    // error message instead.
+    try {
+      placeBlock(type, clientX, clientY);
+    } catch (err) {
+      console.error('Failed to place block on canvas:', err);
+      showToast(`Couldn't place that block: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
-  function handleDrop(event: DragEvent) {
-    event.preventDefault();
-    const type = event.dataTransfer?.getData('application/koudo-node-type') as BlockType | '';
-    if (!type) return;
-
+  function placeBlock(type: BlockType, clientX: number, clientY: number) {
     // xyflow positions a node by its top-left corner, but a drop should
     // land where the cursor is relative to the block's center — otherwise
     // the block appears shifted down-right of where the user actually let go.
-    const dropCenter = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    const dropCenter = screenToFlowPosition({ x: clientX, y: clientY });
 
     // Dropping into the visual gap between two already-connected blocks —
     // say A → B, with B dragged down to leave room — splices the new block
@@ -109,6 +135,7 @@
       // mid-chain gap — that always creates a distinct block, never merges.
       if (type === 'declare' && bottomNode?.data?.blockType === 'declare') {
         $nodes = $nodes.map((node) => (node.id === bottomNode.id ? addDeclarationEntry(node) : node));
+        pendingFocusNodeId.set(bottomNode.id);
         return;
       }
     }
@@ -120,6 +147,7 @@
     const newNode = type === 'declare' ? createDeclareNode(position) : createBlockNode(type, position);
 
     $nodes = [...$nodes, newNode];
+    if (type === 'declare') pendingFocusNodeId.set(newNode.id);
 
     if (insertionEdge) {
       const edgesWithoutInsertionPoint = $edges.filter((edge) => edge.id !== insertionEdge.id);
@@ -249,15 +277,8 @@
   });
 </script>
 
-<div
-  bind:this={wrapperEl}
-  role="region"
-  aria-label="Flowchart canvas — drop blocks here"
-  class="relative h-full w-full"
-  ondragover={handleDragOver}
-  ondrop={handleDrop}
->
-  <BlockPalette />
+<div bind:this={wrapperEl} role="region" aria-label="Flowchart canvas — drop blocks here" class="relative h-full w-full">
+  <BlockPalette onPlaceBlock={handlePlaceBlock} />
 
   <SvelteFlow
     bind:nodes={$nodes}

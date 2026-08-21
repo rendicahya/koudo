@@ -6,6 +6,7 @@
     updateDeclarationEntryAt,
     removeDeclarationEntryAt,
     renameDeclaredVariable,
+    pendingFocusNodeId,
     type DeclareNodeData,
   } from '../../stores/flowchart';
   import { isValidJavaIdentifier } from '../../lib/flowchart/declarationParser';
@@ -19,6 +20,20 @@
   // Beginner mode (see stores/settings.ts): no type <select> — the type
   // tracks the value instead (see handleInput below).
   let inferred = $derived($variableMode === 'inferred');
+  let rootEl: HTMLDivElement;
+
+  // FlowchartBoard's handleDrop points this at whichever Declare node just
+  // received a freshly added entry (new block or merged into this one) —
+  // put the cursor straight into that entry's own value field, scoped by
+  // [data-entry-index] since a merge can land on a node that already has
+  // several rows. Cleared immediately so it only ever fires once.
+  $effect(() => {
+    if ($pendingFocusNodeId !== id || !rootEl) return;
+    pendingFocusNodeId.set(null);
+    const lastIndex = entries.length - 1;
+    const target = rootEl.querySelector<HTMLElement>(`[data-declare-value][data-entry-index="${lastIndex}"]`);
+    target?.focus();
+  });
 
   function handleInput(index: number, field: 'varName' | 'varValue', event: Event) {
     const value = (event.currentTarget as HTMLInputElement | HTMLSelectElement).value;
@@ -66,6 +81,7 @@
 <!-- Standard flowchart Process symbol: a plain rectangle, no rounded
      corners (that's reserved for the Start/End terminal blocks). -->
 <div
+  bind:this={rootEl}
   class="flex flex-col gap-1 border px-2 py-1.5 text-xs"
   style="border-color: var(--color-node-border); background: var(--color-node-bg); color: var(--color-text);"
 >
@@ -114,6 +130,8 @@
         <input
           value={entry.varValue}
           oninput={(event) => handleInput(index, 'varValue', event)}
+          data-declare-value
+          data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: {valueIsMissing ? 'var(--color-error)' : 'var(--color-border)'};"
           style:outline={valueIsMissing ? '1px solid var(--color-error)' : 'none'}
@@ -136,6 +154,8 @@
         <select
           value={entry.varValue}
           onchange={(event) => handleInput(index, 'varValue', event)}
+          data-declare-value
+          data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
         >
@@ -154,6 +174,8 @@
           value={entry.varValue}
           oninput={(event) => handleInput(index, 'varValue', event)}
           maxlength={entry.varType === 'char' ? 1 : undefined}
+          data-declare-value
+          data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
           placeholder="value"
@@ -163,6 +185,8 @@
         <input
           value={entry.varValue}
           oninput={(event) => handleInput(index, 'varValue', event)}
+          data-declare-value
+          data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
           placeholder="value"

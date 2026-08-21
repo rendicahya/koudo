@@ -15,6 +15,7 @@
   import { downloadTextFile, downloadDataUrl } from '../../lib/download';
   import { serializeFlowchart, parseFlowchartFile } from '../../lib/storage/flowchartFile';
   import { wrapAsJavaFile } from '../../lib/flowchart/exportJava';
+  import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
   import { flowchartToPngDataUrl } from '../../lib/flowchart/exportPng';
   import { blockTypeOf } from '../../lib/flowchart/graphWalk';
   import { isStepping, isStepFinished, startStepRun, stepOnce, stopStepRun } from '../../stores/stepRunner';
@@ -25,7 +26,7 @@
   // even though it produces something different (a Java source file, not a
   // project), since it's still a whole-project action rather than a
   // canvas-editing one.
-  const projectActions = ['New', 'Open Project', 'Save Project', 'Export Java'] as const;
+  const projectActions = ['New', 'Open Project', 'Save Project', 'Export Java', 'Export Pseudocode'] as const;
   // Arrange/PNG both act on the canvas as a whole (not any one block), so
   // they get their own menu rather than crowding the toolbar as standalone
   // buttons.
@@ -71,6 +72,10 @@
 
   function handleExport() {
     downloadTextFile('Main.java', wrapAsJavaFile($codeContent), 'text/x-java-source');
+  }
+
+  function handleExportPseudocode() {
+    downloadTextFile('flowchart.pseudocode.txt', generatePseudocode($nodes, $edges), 'text/plain');
   }
 
   function handleArrange() {
@@ -128,6 +133,7 @@
     if (action === 'Open Project') return handleOpen();
     if (action === 'Save Project') return handleSave();
     if (action === 'Export Java') return handleExport();
+    if (action === 'Export Pseudocode') return handleExportPseudocode();
   }
 
   function handleCanvasAction(action: (typeof canvasActions)[number]) {

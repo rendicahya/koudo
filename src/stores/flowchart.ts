@@ -694,6 +694,15 @@ function createDefaultNodes(): Node[] {
 export const nodes = writable<Node[]>(createDefaultNodes());
 export const edges = writable<Edge[]>([]);
 
+// UI-only playhead, not flowchart data — same idea as stepRunner.ts's
+// stepCurrentNodeId. Set by FlowchartBoard's handleDrop right after a
+// Variable block lands (whether as a brand new Declare node or merged into
+// an existing one), so DeclareNode.svelte can put the cursor straight into
+// that freshly added entry's value field instead of making the user click
+// into it themselves. Consumed (and cleared) the moment that node's own
+// effect sees it, so it never re-fires on an unrelated re-render.
+export const pendingFocusNodeId = writable<string | null>(null);
+
 // Powers the "New" button — wipes the canvas back to a single fresh Start
 // block. The code panel clears itself too, since it's just a reactive
 // projection of the node list (see stores/sync.ts). Also resets nodeCounter,
