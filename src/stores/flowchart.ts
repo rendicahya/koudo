@@ -139,6 +139,12 @@ const XYFLOW_NODE_TYPE: Partial<Record<BlockType, string>> = {
 // share a column (Arrange, the code-sync auto-connect) has to align by
 // *center*, not shared x, to account for this — see nodeWidthFor below.
 export const BLOCK_WIDTH = 260;
+// Declare's own, wider width — its row can carry a type <select>/badge
+// alongside the name and value fields (more so in Beginner mode, whose
+// blank-value type picker needs its own room too), which crowds BLOCK_WIDTH
+// more than Process/Input's single field does. Same +100 bump as Assign
+// below, for the same "more fields packed into one row" reason.
+export const DECLARE_WIDTH = BLOCK_WIDTH + 100;
 export const TERMINAL_WIDTH = 140;
 export const DIAMOND_WIDTH = 200;
 const DIAMOND_HEIGHT = 110;
@@ -165,7 +171,7 @@ const NODE_WIDTH: Record<BlockType, number> = {
   start: TERMINAL_WIDTH,
   end: TERMINAL_WIDTH,
   process: BLOCK_WIDTH,
-  declare: BLOCK_WIDTH,
+  declare: DECLARE_WIDTH,
   assign: ASSIGN_WIDTH,
   input: BLOCK_WIDTH,
   forLoop: FORLOOP_WIDTH,
@@ -201,6 +207,7 @@ export const DIAMOND_CLIP_PATH = 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)';
 export const PREPARATION_CLIP_PATH = 'polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%)';
 
 const BASE_NODE_STYLE = `width: ${BLOCK_WIDTH}px;`;
+const DECLARE_NODE_STYLE = `width: ${DECLARE_WIDTH}px;`;
 const ASSIGN_NODE_STYLE = `width: ${ASSIGN_WIDTH}px;`;
 const TERMINAL_NODE_STYLE = `width: ${TERMINAL_WIDTH}px;`;
 // Decision is a custom component (diamond via clip-path, see
@@ -221,7 +228,7 @@ const XYFLOW_NODE_STYLE: Record<BlockType, string> = {
   start: PILL_STYLE,
   end: PILL_STYLE,
   process: BASE_NODE_STYLE,
-  declare: BASE_NODE_STYLE,
+  declare: DECLARE_NODE_STYLE,
   assign: ASSIGN_NODE_STYLE,
   input: BASE_NODE_STYLE,
   forLoop: FORLOOP_NODE_STYLE,
@@ -467,7 +474,12 @@ export function entriesLabel(entries: DeclarationEntry[]): string {
   return entries.map((e) => declareLabel(e.varType, e.varName, e.varValue)).join('; ');
 }
 
-const DECLARE_LIST: ListBlockConfig<DeclarationEntry> = { blockType: 'declare', dataKey: 'entries', label: entriesLabel };
+const DECLARE_LIST: ListBlockConfig<DeclarationEntry> = {
+  blockType: 'declare',
+  dataKey: 'entries',
+  label: entriesLabel,
+  style: DECLARE_NODE_STYLE,
+};
 
 function defaultDeclarationEntry(overrides?: { varType?: string; varName?: string; varValue?: string }): DeclarationEntry {
   return {

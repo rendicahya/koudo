@@ -11,8 +11,10 @@ import {
   bottomMostNodeId,
   pruneOutgoingEdge,
   nodeWidthFor,
+  nodeWidthForType,
   DEFAULT_CANVAS_X,
   BLOCK_WIDTH,
+  DECLARE_WIDTH,
   type DeclareNodeData,
   type ProcessNodeData,
   type DeclarationEntry,
@@ -143,14 +145,16 @@ export function syncCodeToFlowchart(code: string) {
       .map((entry) => entry.varName),
   );
 
-  // New declare/process nodes are always BLOCK_WIDTH wide, but the anchor
-  // (often Start) may not be — align by center, not shared x, so a
-  // Declare block chained under the narrower Start still looks centered
+  // New declare/process nodes are always BLOCK_WIDTH/DECLARE_WIDTH wide (they
+  // don't exist yet to measure), but the anchor (often Start) may not share
+  // that width — align each by its own center, not a shared x, so a Declare
+  // or Process block chained under the narrower Start still looks centered
   // under it rather than shifted right.
   const anchorId = bottomMostNodeId(result);
   const anchorNode = result.find((node) => node.id === anchorId) ?? null;
   const anchorCenterX = anchorNode ? anchorNode.position.x + nodeWidthFor(anchorNode) / 2 : DEFAULT_CANVAS_X + BLOCK_WIDTH / 2;
-  const anchorX = anchorCenterX - BLOCK_WIDTH / 2;
+  const declareAnchorX = anchorCenterX - DECLARE_WIDTH / 2;
+  const processAnchorX = anchorCenterX - nodeWidthForType('process') / 2;
   let nextY = anchorNode ? anchorNode.position.y + 90 : 50;
 
   let previousId = anchorId;
@@ -178,14 +182,14 @@ export function syncCodeToFlowchart(code: string) {
       continue;
     }
 
-    const node = createDeclareNode({ x: anchorX, y: nextY }, decl);
+    const node = createDeclareNode({ x: declareAnchorX, y: nextY }, decl);
     nextY += 90;
     result.push(node);
     connectChain(node.id);
   }
 
   for (const text of statements.slice(statementSlot)) {
-    const node = createProcessNode({ x: anchorX, y: nextY }, text);
+    const node = createProcessNode({ x: processAnchorX, y: nextY }, text);
     nextY += 90;
     result.push(node);
     connectChain(node.id);

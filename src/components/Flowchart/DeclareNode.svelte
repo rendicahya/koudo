@@ -116,7 +116,7 @@
      corners (that's reserved for the Start/End terminal blocks). -->
 <div
   bind:this={rootEl}
-  class="flex min-w-[260px] flex-col items-center gap-1 border px-3 py-1.5 text-xs"
+  class="flex flex-col items-center gap-1 border px-3 py-1.5 text-xs"
   style="border-color: var(--color-node-border); background: var(--color-node-bg); color: var(--color-text);"
 >
   <Handle type="target" position={Position.Top} />
