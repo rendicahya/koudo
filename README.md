@@ -35,8 +35,8 @@ Typing directly into the Monaco editor parses back into the flowchart live (vari
 
 Switchable from the **Project** menu, persisted locally:
 
-- **Beginner Mode** (default) — declaring a variable just needs a value; its type (`int`/`double`/`boolean`/`String`) is inferred from what's typed, so a first-time learner never has to know Java's type names before they can use a variable
-- **Standard Mode** — the traditional way: pick a type explicitly, value optional
+- **Standard Mode** (default) — the traditional way: pick a type explicitly, value optional
+- **Beginner Mode** — declaring a variable just needs a value; its type (`int`/`double`/`boolean`/`String`) is inferred from what's typed, so a first-time learner never has to know Java's type names before they can use a variable. A value isn't required either — leave it blank and pick the type from a plain-language picker (Whole number / Text / Decimal number) instead
 
 ### Real execution, not mocked
 

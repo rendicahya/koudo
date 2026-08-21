@@ -112,9 +112,10 @@
         <section class="mb-4">
           <h3 class="mb-1 font-semibold">Variable modes</h3>
           <p style="color: var(--color-text-secondary);">
-            Switch modes from the <strong>Project</strong> menu. <strong>Beginner Mode</strong> (the default) infers a
-            variable's type from the value you give it — no type names to learn yet. <strong>Standard Mode</strong> is the
-            traditional way: you pick the type yourself, and a value is optional.
+            Switch modes from the <strong>Project</strong> menu. <strong>Standard Mode</strong> (the default) is the
+            traditional way: you pick the type yourself, and a value is optional. <strong>Beginner Mode</strong> infers a
+            variable's type from the value you give it — no type names to learn yet. A value isn't required there either;
+            leave it blank and pick Whole number / Text / Decimal number instead.
           </p>
         </section>
 

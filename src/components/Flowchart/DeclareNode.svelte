@@ -82,6 +82,18 @@
     $nodes = $nodes.map((node) => (node.id === id ? updateDeclarationEntryAt(node, index, { varType, varValue: '' }) : node));
   }
 
+  // Beginner mode's own type <select> — only reachable while the value field
+  // is empty (see template below), so there's no leftover value to clear
+  // like handleTypeChange above does. Restricted to the three types a
+  // beginner can pick without a value to infer from — int/String/double,
+  // named in plain language rather than Java's type words, matching
+  // typeInference.ts's own restriction to the types a raw value can
+  // unambiguously suggest.
+  function handleBeginnerTypeChange(index: number, event: Event) {
+    const varType = (event.currentTarget as HTMLSelectElement).value;
+    $nodes = $nodes.map((node) => (node.id === id ? updateDeclarationEntryAt(node, index, { varType }) : node));
+  }
+
   function handleRemove(index: number) {
     $nodes = $nodes.map((node) => (node.id === id ? removeDeclarationEntryAt(node, index) : node));
   }
@@ -102,7 +114,6 @@
 
   {#each entries as entry, index (index)}
     {@const nameIsValid = isValidJavaIdentifier(entry.varName ?? '')}
-    {@const valueIsMissing = inferred && !entry.varValue}
     {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
     <div class="flex items-center gap-1">
       <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
@@ -146,23 +157,39 @@
           data-declare-value
           data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
-          style="border-color: {valueIsMissing ? 'var(--color-error)' : 'var(--color-border)'};"
-          style:outline={valueIsMissing ? '1px solid var(--color-error)' : 'none'}
-          aria-invalid={valueIsMissing}
-          title={valueIsMissing ? 'A value is required in Beginner mode — it determines this variable’s type' : undefined}
-          placeholder="value"
+          style="border-color: var(--color-border);"
+          placeholder="value (optional)"
         />
-        <!-- Beginner mode has no type <select> to show this in — the
-             inferred type (see typeInference.ts) is surfaced here instead,
-             read-only, so it's still visible without asking the user to
-             pick it. -->
-        <span
-          class="shrink-0 rounded px-1 text-[10px] uppercase"
-          style="color: var(--color-text-secondary); border: 1px solid var(--color-border);"
-          title="Type inferred from the value"
-        >
-          {entry.varValue ? entry.varType : '?'}
-        </span>
+        {#if entry.varValue}
+          <!-- Beginner mode has no type <select> to show this in while a
+               value is present — the inferred type (see typeInference.ts)
+               is surfaced here instead, read-only. -->
+          <span
+            class="shrink-0 rounded px-1 text-[10px] uppercase"
+            style="color: var(--color-text-secondary); border: 1px solid var(--color-border);"
+            title="Type inferred from the value"
+          >
+            {entry.varType}
+          </span>
+        {:else}
+          <!-- No value to infer a type from — declaring without an initial
+               value is allowed, but the type still has to come from
+               somewhere, so it's picked explicitly here instead. Restricted
+               to the three types a beginner can name in plain language
+               (matching typeInference.ts's own value-inferable set, minus
+               boolean, which only shows up via an actual true/false value). -->
+          <select
+            value={entry.varType}
+            onchange={(event) => handleBeginnerTypeChange(index, event)}
+            class="nodrag rounded border bg-transparent px-1 py-0.5 text-[10px]"
+            style="border-color: var(--color-border);"
+            title="No value given — choose this variable's type"
+          >
+            <option value="int">Whole number</option>
+            <option value="String">Text</option>
+            <option value="double">Decimal number</option>
+          </select>
+        {/if}
       {:else if entry.varType === 'boolean'}
         <select
           value={entry.varValue}

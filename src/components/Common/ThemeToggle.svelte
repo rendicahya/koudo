@@ -10,5 +10,5 @@
   aria-label="Toggle dark/light mode (Alt+Shift+T)"
   title="Toggle dark/light mode (Alt+Shift+T)"
 >
-  {$theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
+  {$theme === 'dark' ? '🌙' : '☀️'}
 </button>

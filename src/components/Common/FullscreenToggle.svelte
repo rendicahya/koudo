@@ -36,5 +36,5 @@
   aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
   title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
 >
-  {isFullscreen ? '⛶ Exit Fullscreen' : '⛶ Fullscreen'}
+  ⛶
 </button>
