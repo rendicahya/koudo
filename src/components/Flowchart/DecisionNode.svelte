@@ -27,7 +27,7 @@
         oninput={handleInput}
         class="nodrag w-full rounded border bg-transparent px-1 py-0.5 text-center"
         style="border-color: var(--color-border);"
-        placeholder="condition"
+        placeholder="Condition"
       />
     </div>
   </ShapeFrame>

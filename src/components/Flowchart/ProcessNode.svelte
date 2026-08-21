@@ -95,14 +95,14 @@
               {info.statement}
             </span>
           {:else}
-            <span style="color: var(--color-text-secondary);">print</span>
+            <span style="color: var(--color-text-secondary);">Print</span>
             <select
               value={info.kind === 'variable' ? info.varName : info.kind === 'value' ? CUSTOM_VALUE : ''}
               onchange={(event) => handleSelect(index, event)}
               class="nodrag min-w-[5rem] rounded border bg-transparent px-1 py-0.5"
               style="border-color: var(--color-border);"
             >
-              <option value="" disabled>{variables.length === 0 ? 'no variables' : 'choose'}</option>
+              <option value="" disabled>{variables.length === 0 ? 'No variables' : 'Choose'}</option>
               {#each variables as varName (varName)}
                 <option value={varName}>{varName}</option>
               {/each}

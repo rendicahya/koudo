@@ -156,7 +156,7 @@
         style:outline={nameIsValid ? 'none' : '1px solid var(--color-error)'}
         aria-invalid={!nameIsValid}
         title={nameIsValid ? undefined : `'${entry.varName}' is not a valid Java variable name`}
-        placeholder="name"
+        placeholder="Name"
       />
 
       <span>=</span>
@@ -229,7 +229,7 @@
           data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
-          placeholder="value"
+          placeholder="Value"
         />
         <span class="select-none" style="color: var(--color-text-secondary);">{quote}</span>
       {:else}
@@ -240,7 +240,7 @@
           data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
-          placeholder="value"
+          placeholder="Value"
         />
       {/if}
 

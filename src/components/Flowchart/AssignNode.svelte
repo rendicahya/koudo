@@ -101,7 +101,7 @@
         class="nodrag min-w-[4.5rem] rounded border bg-transparent px-1 py-0.5"
         style="border-color: var(--color-border);"
       >
-        <option value="" disabled>{variables.length === 0 ? 'no variables' : 'choose'}</option>
+        <option value="" disabled>{variables.length === 0 ? 'No variables' : 'Choose'}</option>
         {#each variables as varName (varName)}
           <option value={varName}>{varName}</option>
         {/each}
@@ -155,7 +155,7 @@
             maxlength={targetType === 'char' ? 1 : undefined}
             class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
             style="border-color: var(--color-border);"
-            placeholder="value"
+            placeholder="Value"
           />
           <span class="select-none" style="color: var(--color-text-secondary);">{quote}</span>
         {:else}

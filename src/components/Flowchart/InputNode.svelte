@@ -52,7 +52,7 @@
                stepCurrentRow) — reserved width so other rows don't shift
                when one of them lights up. -->
           <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
-          <span style="color: var(--color-text-secondary);">input</span>
+          <span style="color: var(--color-text-secondary);">Input</span>
           <select
             value={entry.varName}
             onchange={(event) => handleVarSelect(index, event)}
@@ -60,7 +60,7 @@
             class="nodrag min-w-[4.5rem] rounded border bg-transparent px-1 py-0.5"
             style="border-color: var(--color-border);"
           >
-            <option value="" disabled>{variables.length === 0 ? 'no variables' : 'choose'}</option>
+            <option value="" disabled>{variables.length === 0 ? 'No variables' : 'Choose'}</option>
             {#each variables as varName (varName)}
               <option value={varName}>{varName}</option>
             {/each}
