@@ -10,6 +10,10 @@
     MAX_CODE_FONT_SIZE,
   } from '../../stores/layout';
   import { t } from '../../stores/i18n';
+  import { codeContent } from '../../stores/code';
+  import { nodes, edges } from '../../stores/flowchart';
+  import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
+  import { showToast } from '../../stores/toast';
 
   const TABS: CodeTab[] = ['Pseudocode', 'Java'];
 
@@ -18,6 +22,20 @@
   $effect(() => {
     if ($activeCodeTab === 'Java') javaEditorRef?.refreshLayout();
   });
+
+  // Same source each tab already renders from — Java from its own synced
+  // store, Pseudocode derived fresh off the flowchart (see PseudocodeView.svelte)
+  // — so Copy always matches what's currently on screen.
+  let currentTabCode = $derived($activeCodeTab === 'Java' ? $codeContent : generatePseudocode($nodes, $edges));
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(currentTabCode);
+      showToast($t('code.copied'), 2000);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : $t('code.copyFailed'));
+    }
+  }
 </script>
 
 <div class="flex h-full w-full flex-col">
@@ -43,34 +61,47 @@
       {/each}
     </div>
 
-    <!-- Shared zoom for both tabs (see stores/layout.ts's codeFontSize) —
-         one control instead of each tab needing its own, since a beginner
-         adjusting text size cares about readability generally, not just
-         whichever tab happens to be open right now. -->
-    <div class="mr-2 flex items-center gap-1 text-xs" style="color: var(--color-text-secondary);">
+    <div class="mr-2 flex items-center gap-2 text-xs" style="color: var(--color-text-secondary);">
       <button
         type="button"
-        class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
+        class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70"
         style="border-color: var(--color-border);"
-        disabled={$codeFontSize <= MIN_CODE_FONT_SIZE}
-        title={$t('code.decreaseTextSize')}
-        aria-label={$t('code.decreaseTextSize')}
-        onclick={() => zoomCodeFontSize(-1)}
+        title={$t('code.copy')}
+        aria-label={$t('code.copy')}
+        onclick={handleCopy}
       >
-        −
+        📋
       </button>
-      <span class="w-8 text-center tabular-nums">{$codeFontSize}px</span>
-      <button
-        type="button"
-        class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
-        style="border-color: var(--color-border);"
-        disabled={$codeFontSize >= MAX_CODE_FONT_SIZE}
-        title={$t('code.increaseTextSize')}
-        aria-label={$t('code.increaseTextSize')}
-        onclick={() => zoomCodeFontSize(1)}
-      >
-        +
-      </button>
+
+      <!-- Shared zoom for both tabs (see stores/layout.ts's codeFontSize) —
+           one control instead of each tab needing its own, since a beginner
+           adjusting text size cares about readability generally, not just
+           whichever tab happens to be open right now. -->
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
+          style="border-color: var(--color-border);"
+          disabled={$codeFontSize <= MIN_CODE_FONT_SIZE}
+          title={$t('code.decreaseTextSize')}
+          aria-label={$t('code.decreaseTextSize')}
+          onclick={() => zoomCodeFontSize(-1)}
+        >
+          −
+        </button>
+        <span class="w-8 text-center tabular-nums">{$codeFontSize}px</span>
+        <button
+          type="button"
+          class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
+          style="border-color: var(--color-border);"
+          disabled={$codeFontSize >= MAX_CODE_FONT_SIZE}
+          title={$t('code.increaseTextSize')}
+          aria-label={$t('code.increaseTextSize')}
+          onclick={() => zoomCodeFontSize(1)}
+        >
+          +
+        </button>
+      </div>
     </div>
   </div>
 

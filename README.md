@@ -33,11 +33,11 @@ Typing directly into the Monaco editor parses back into the flowchart live (vari
 
 ### Language
 
-Switchable from the **Project** menu (a third group, below the variable-mode switch), persisted locally: **English** (default) or **Bahasa Indonesia**. Translates the app's UI chrome — menus, buttons, tooltips, the Help guide, and every block's own field labels/placeholders. Left untranslated on purpose: Java type keywords, `true`/`false`, generated Java/Pseudocode output, and Start/End's own on-canvas text (a fixed label baked in at creation time, not read reactively — see `stores/i18n.ts`'s comment for why).
+Switchable from the **Preferences** menu, persisted locally: **English** (default) or **Bahasa Indonesia**. Translates the app's UI chrome — menus, buttons, tooltips, the Help guide, and every block's own field labels/placeholders. Left untranslated on purpose: Java type keywords, `true`/`false`, generated Java/Pseudocode output, and Start/End's own on-canvas text (a fixed label baked in at creation time, not read reactively — see `stores/i18n.ts`'s comment for why).
 
 ### Two variable modes, for different levels of beginner
 
-Switchable from the **Project** menu, persisted locally:
+Switchable from the **Preferences** menu, persisted locally:
 
 - **Standard Mode** (default) — the traditional way: pick a type explicitly, value optional
 - **Beginner Mode** — declaring a variable just needs a value; its type (`int`/`double`/`boolean`/`String`) is inferred from what's typed, so a first-time learner never has to know Java's type names before they can use a variable. A value isn't required either — leave it blank and pick the type from a plain-language picker (Whole number / Text / Decimal number) instead
@@ -53,11 +53,13 @@ A small hand-written interpreter (`src/lib/execution/interpreter.ts`) actually r
 ### Everything else
 
 - **Help** menu — an in-app usage guide covering blocks, running, the code panel, variable modes, and keyboard shortcuts, for anyone who doesn't want to leave the app to find this README
-- **Project** menu — New / Open Project / Save Project, **Export Java** (downloads the generated code as a real, compilable `Main.java`), **Export Pseudocode** (downloads the same program as a `.txt`), and the variable-mode switch above. Save Project downloads the flowchart as `.koudo.json`; Open Project loads one back onto the canvas, behind the same confirmation as New
+- **Project** menu — New / Open Project / Save Project, **Export Java** (downloads the generated code as a real, compilable `Main.java`), and **Export Pseudocode** (downloads the same program as a `.txt`). Save Project, Export Pseudocode, and Download PNG all name their download after the current **project name** (see below); Save Project downloads the flowchart as `.koudo.json`, Open Project loads one back onto the canvas, behind the same confirmation as New
+- **Preferences** menu — the variable-mode and language switches above
 - **Canvas** menu — Arrange, and Download PNG (rasterizes the flowchart as-is)
+- An editable **project name** next to the KOUDO logo (defaults to "Untitled Project"), click to rename. Carried through Save/Open (round-trips in the `.koudo.json` file) and used to name Save/Export Pseudocode/Download PNG's downloaded files; reset to the default on New. Export Java always stays `Main.java`, since a compilable file's public class name has to match its filename
 - Input and Output blocks default their dropdown to the topmost declared variable as soon as they're placed, instead of an unset "choose" placeholder
 - The code panel remembers which tab (Java or Pseudocode) you last had open, persisted to `localStorage` — Pseudocode is the default for a first-time visitor
-- A shared zoom control (−/+, top-right of the code panel) resizes both the Java and Pseudocode text together, persisted to `localStorage`
+- A shared zoom control (−/+, top-right of the code panel) resizes both the Java and Pseudocode text together, persisted to `localStorage`, plus a **Copy** button (📋) that copies whichever tab is currently open to the clipboard
 - A fullscreen toggle (⛶, top-right)
 - Non-blocking toast warnings — e.g. dropping an Input or Assign block before any variable's been declared — instead of a blocking `alert()`
 - A hover "lift" effect on every block, not just Start/End
@@ -121,7 +123,7 @@ src/
 │   ├── Output/
 │   │   └── OutputPanel.svelte           Run/Step/Stop, output, Variable Watcher, Clear
 │   └── Common/
-│       ├── TopNavbar.svelte             Project/Canvas menus, Help
+│       ├── TopNavbar.svelte             project name, Project/Preferences/Canvas menus, Help
 │       ├── HelpModal.svelte             in-app usage guide
 │       ├── Toast.svelte                 non-blocking warning banner
 │       ├── ThemeToggle.svelte
@@ -136,6 +138,7 @@ src/
 │   ├── toast.ts           non-blocking warning messages
 │   ├── layout.ts          hide/show code panel state, active code tab + font size (persisted)
 │   ├── i18n.ts            language setting (persisted) + the reactive $t() lookup
+│   ├── project.ts         the editable project name (not persisted — see New/Open/Save)
 │   └── theme.ts
 └── lib/
     ├── flowchart/

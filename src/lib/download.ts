@@ -1,3 +1,11 @@
+// Turns the user-editable project name (see stores/project.ts) into
+// something safe to hand to `anchor.download` — strips characters that are
+// illegal (or awkward) in a filename on Windows/macOS/Linux alike.
+export function sanitizeFilename(name: string): string {
+  const cleaned = name.trim().replace(/[\\/:*?"<>|]+/g, '_');
+  return cleaned || 'Untitled Project';
+}
+
 // Shared by Save (flowchart JSON) and Export (generated Java source) — both
 // are just "hand the browser some text under a filename," no backend to
 // post to.

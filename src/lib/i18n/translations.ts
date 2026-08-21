@@ -27,6 +27,7 @@ const en = {
   'nav.arrangeTitle': 'Arrange blocks into a straight vertical line (Alt+Shift+A)',
   'nav.downloadPng': 'Download PNG',
   'nav.downloadPngTitle': 'Download the flowchart as a PNG image',
+  'nav.preferences': 'Preferences',
   'nav.help': 'Help',
   'nav.variableModeBeginner': 'Beginner Mode',
   'nav.variableModeBeginnerHint': "Declare a variable with just a value — its type is inferred automatically",
@@ -35,6 +36,7 @@ const en = {
   'nav.language': 'Language',
   'nav.confirmNew': 'Clear the canvas and start a new flowchart? This cannot be undone.',
   'nav.confirmOpen': 'Clear the canvas and open a different flowchart? This cannot be undone.',
+  'nav.projectNameLabel': 'Project name',
 
   // ThemeToggle / FullscreenToggle
   'toggle.themeTitle': 'Toggle dark/light mode (Alt+Shift+T)',
@@ -76,7 +78,7 @@ const en = {
     'Switch modes from the Project menu. Standard Mode (the default) is the traditional way: you pick the type yourself, and a value is optional. Beginner Mode infers a variable\'s type from the value you give it — no type names to learn yet. A value isn\'t required there either; leave it blank and pick Whole number / Text / Decimal number instead.',
   'help.menus.heading': 'Menus',
   'help.menus.body':
-    'Project — New, Open/Save Project, Export Java (a compilable Main.java), and the variable-mode switch above. Canvas — Arrange (tidy the layout into columns) and Download PNG.',
+    'Project — New, Open/Save Project, Export Java (a compilable Main.java), and Export Pseudocode. Preferences — variable mode and language. Canvas — Arrange (tidy the layout into columns) and Download PNG.',
   'help.shortcuts.heading': 'Keyboard shortcuts',
   'help.shortcuts.run': 'Run',
   'help.shortcuts.step': 'Step / Next Step',
@@ -115,6 +117,9 @@ const en = {
   'code.javaTab': 'Java',
   'code.decreaseTextSize': 'Decrease text size',
   'code.increaseTextSize': 'Increase text size',
+  'code.copy': 'Copy code',
+  'code.copied': 'Copied to clipboard',
+  'code.copyFailed': "Couldn't copy to clipboard",
 
   // Toast
   'toast.dismiss': 'Dismiss',
@@ -219,6 +224,7 @@ const id: Record<TranslationKey, string> = {
   'nav.arrangeTitle': 'Susun blok menjadi satu baris vertikal lurus (Alt+Shift+A)',
   'nav.downloadPng': 'Unduh PNG',
   'nav.downloadPngTitle': 'Unduh flowchart sebagai gambar PNG',
+  'nav.preferences': 'Preferensi',
   'nav.help': 'Bantuan',
   'nav.variableModeBeginner': 'Mode Pemula',
   'nav.variableModeBeginnerHint': 'Deklarasikan variabel hanya dengan nilai — tipenya disimpulkan secara otomatis',
@@ -227,6 +233,7 @@ const id: Record<TranslationKey, string> = {
   'nav.language': 'Bahasa',
   'nav.confirmNew': 'Bersihkan kanvas dan mulai flowchart baru? Tindakan ini tidak bisa dibatalkan.',
   'nav.confirmOpen': 'Bersihkan kanvas dan buka flowchart lain? Tindakan ini tidak bisa dibatalkan.',
+  'nav.projectNameLabel': 'Nama proyek',
 
   // ThemeToggle / FullscreenToggle
   'toggle.themeTitle': 'Ganti mode gelap/terang (Alt+Shift+T)',
@@ -269,7 +276,7 @@ const id: Record<TranslationKey, string> = {
     'Ganti mode dari menu Project. Mode Standar (default) adalah cara tradisional: Anda memilih tipenya sendiri, dan nilai bersifat opsional. Mode Pemula menyimpulkan tipe variabel dari nilai yang Anda berikan — belum perlu belajar nama-nama tipe. Nilai juga tidak wajib di sana; biarkan kosong dan pilih Bilangan bulat / Teks / Bilangan pecahan sebagai gantinya.',
   'help.menus.heading': 'Menu',
   'help.menus.body':
-    'Project — New, Open/Save Project, Export Java (Main.java yang siap dikompilasi), dan pengaturan mode variabel di atas. Canvas — Arrange (merapikan tata letak menjadi kolom-kolom) dan Download PNG.',
+    'Project — New, Open/Save Project, Export Java (Main.java yang siap dikompilasi), dan Export Pseudocode. Preferences — mode variabel dan bahasa. Canvas — Arrange (merapikan tata letak menjadi kolom-kolom) dan Download PNG.',
   'help.shortcuts.heading': 'Pintasan keyboard',
   'help.shortcuts.run': 'Run',
   'help.shortcuts.step': 'Step / Step Berikutnya',
@@ -308,6 +315,9 @@ const id: Record<TranslationKey, string> = {
   'code.javaTab': 'Java',
   'code.decreaseTextSize': 'Perkecil ukuran teks',
   'code.increaseTextSize': 'Perbesar ukuran teks',
+  'code.copy': 'Salin kode',
+  'code.copied': 'Disalin ke clipboard',
+  'code.copyFailed': 'Gagal menyalin ke clipboard',
 
   // Toast
   'toast.dismiss': 'Tutup',

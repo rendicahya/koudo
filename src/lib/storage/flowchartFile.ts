@@ -2,6 +2,7 @@ import type { Edge, Node } from '@xyflow/svelte';
 
 export interface FlowchartFile {
   version: 1;
+  name?: string;
   nodes: Node[];
   edges: Edge[];
 }
@@ -15,8 +16,8 @@ function toSavedNode(node: Node): Node {
   return rest as Node;
 }
 
-export function serializeFlowchart(nodes: Node[], edges: Edge[]): string {
-  const payload: FlowchartFile = { version: 1, nodes: nodes.map(toSavedNode), edges };
+export function serializeFlowchart(nodes: Node[], edges: Edge[], name: string): string {
+  const payload: FlowchartFile = { version: 1, name, nodes: nodes.map(toSavedNode), edges };
   return JSON.stringify(payload, null, 2);
 }
 
@@ -61,5 +62,6 @@ export function parseFlowchartFile(raw: string): FlowchartFile {
     throw new Error('This project file looks corrupted.');
   }
 
-  return { version: 1, nodes: parsed.nodes, edges: parsed.edges };
+  const name = typeof parsed.name === 'string' ? parsed.name : undefined;
+  return { version: 1, name, nodes: parsed.nodes, edges: parsed.edges };
 }

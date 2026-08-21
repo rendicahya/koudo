@@ -5,7 +5,7 @@
   import HelpModal from './HelpModal.svelte';
   import { codeContent } from '../../stores/code';
   import { resetFlowchart, loadFlowchart, arrangeNodesVertically, nodes, edges } from '../../stores/flowchart';
-  import { downloadTextFile, downloadDataUrl } from '../../lib/download';
+  import { downloadTextFile, downloadDataUrl, sanitizeFilename } from '../../lib/download';
   import { serializeFlowchart, parseFlowchartFile } from '../../lib/storage/flowchartFile';
   import { wrapAsJavaFile } from '../../lib/flowchart/exportJava';
   import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
@@ -13,6 +13,7 @@
   import { stopStepRun } from '../../stores/stepRunner';
   import { variableMode, setVariableMode, type VariableMode } from '../../stores/settings';
   import { t, language, setLanguage, type Language } from '../../stores/i18n';
+  import { projectName, setProjectName, DEFAULT_PROJECT_NAME } from '../../stores/project';
   import type { TranslationKey } from '../../lib/i18n/translations';
 
   // New/Open/Save all act on the same thing — the flowchart project — so
@@ -58,6 +59,8 @@
   let projectMenuEl: HTMLDivElement;
   let canvasMenuOpen = $state(false);
   let canvasMenuEl: HTMLDivElement;
+  let preferencesMenuOpen = $state(false);
+  let preferencesMenuEl: HTMLDivElement;
   let helpOpen = $state(false);
   let fileInputEl: HTMLInputElement;
 
@@ -70,18 +73,27 @@
     if (!confirm($t('nav.confirmNew'))) return;
     stopStepRun();
     resetFlowchart();
+    setProjectName(DEFAULT_PROJECT_NAME);
   }
 
   function handleSave() {
-    downloadTextFile('flowchart.koudo.json', serializeFlowchart($nodes, $edges), 'application/json');
+    downloadTextFile(
+      `${sanitizeFilename($projectName)}.koudo.json`,
+      serializeFlowchart($nodes, $edges, $projectName),
+      'application/json',
+    );
   }
 
+  // Java's public-class-name-must-match-filename rule means this can't
+  // follow the project name the way Save/Export Pseudocode/Download PNG
+  // do — the generated class is always `Main` (see exportJava.ts), so the
+  // file stays Main.java regardless of what the project is called.
   function handleExport() {
     downloadTextFile('Main.java', wrapAsJavaFile($codeContent), 'text/x-java-source');
   }
 
   function handleExportPseudocode() {
-    downloadTextFile('flowchart.pseudocode.txt', generatePseudocode($nodes, $edges), 'text/plain');
+    downloadTextFile(`${sanitizeFilename($projectName)}.pseudocode.txt`, generatePseudocode($nodes, $edges), 'text/plain');
   }
 
   function handleArrange() {
@@ -101,7 +113,7 @@
     try {
       const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--color-canvas').trim();
       const dataUrl = await flowchartToPngDataUrl(viewportEl, $nodes, backgroundColor, getNodesBounds);
-      downloadDataUrl('flowchart.png', dataUrl);
+      downloadDataUrl(`${sanitizeFilename($projectName)}.png`, dataUrl);
     } catch (err) {
       // html-to-image's toPng() rejects (rather than resolving to a broken
       // image) on things like a cross-origin/tainted canvas — surface it
@@ -128,6 +140,7 @@
       const project = parseFlowchartFile(await file.text());
       stopStepRun();
       loadFlowchart(project.nodes, project.edges);
+      setProjectName(project.name ?? DEFAULT_PROJECT_NAME);
     } catch (err) {
       alert(err instanceof Error ? err.message : String(err));
     }
@@ -152,6 +165,7 @@
     if (event.key === 'Escape') {
       projectMenuOpen = false;
       canvasMenuOpen = false;
+      preferencesMenuOpen = false;
       helpOpen = false;
     }
     if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
@@ -174,6 +188,13 @@
     if (canvasMenuOpen && canvasMenuEl && !canvasMenuEl.contains(event.target as globalThis.Node)) {
       canvasMenuOpen = false;
     }
+    if (
+      preferencesMenuOpen &&
+      preferencesMenuEl &&
+      !preferencesMenuEl.contains(event.target as globalThis.Node)
+    ) {
+      preferencesMenuOpen = false;
+    }
   }
 </script>
 
@@ -187,6 +208,16 @@
     <span>💻</span>
     <span>KOUDO</span>
     <span class="text-sm font-normal" style="color: var(--color-text-secondary);">コウド</span>
+    <input
+      type="text"
+      class="ml-1 max-w-[12rem] truncate rounded border border-transparent bg-transparent px-1.5 py-0.5 text-sm font-normal hover:border-[var(--color-border)] focus:border-[var(--color-border)] focus:outline-none"
+      style="color: var(--color-text-secondary);"
+      aria-label={$t('nav.projectNameLabel')}
+      title={$t('nav.projectNameLabel')}
+      value={$projectName}
+      onblur={(event) => setProjectName(event.currentTarget.value)}
+      onkeydown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
+    />
   </div>
 
   <div class="flex items-center gap-2">
@@ -215,47 +246,6 @@
                 onclick={() => handleProjectAction(action.id)}
               >
                 {$t(action.labelKey)}
-              </button>
-            {/each}
-
-            <div class="border-t" style="border-color: var(--color-border);"></div>
-
-            {#each variableModeOptions as option (option.mode)}
-              <button
-                type="button"
-                role="menuitemradio"
-                aria-checked={$variableMode === option.mode}
-                class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
-                title={$t(option.hintKey)}
-                onclick={() => {
-                  projectMenuOpen = false;
-                  setVariableMode(option.mode);
-                }}
-              >
-                <span>{$t(option.labelKey)}</span>
-                {#if $variableMode === option.mode}
-                  <span style="color: var(--color-accent);">✓</span>
-                {/if}
-              </button>
-            {/each}
-
-            <div class="border-t" style="border-color: var(--color-border);"></div>
-
-            {#each languageOptions as option (option.lang)}
-              <button
-                type="button"
-                role="menuitemradio"
-                aria-checked={$language === option.lang}
-                class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
-                onclick={() => {
-                  projectMenuOpen = false;
-                  setLanguage(option.lang);
-                }}
-              >
-                <span>{option.label}</span>
-                {#if $language === option.lang}
-                  <span style="color: var(--color-accent);">✓</span>
-                {/if}
               </button>
             {/each}
           </div>
@@ -287,6 +277,64 @@
                 onclick={() => handleCanvasAction(action.id)}
               >
                 {$t(action.labelKey)}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <div class="relative" bind:this={preferencesMenuEl}>
+        <button
+          type="button"
+          class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
+          aria-haspopup="menu"
+          aria-expanded={preferencesMenuOpen}
+          onclick={() => (preferencesMenuOpen = !preferencesMenuOpen)}
+        >
+          {$t('nav.preferences')} ▾
+        </button>
+        {#if preferencesMenuOpen}
+          <div
+            role="menu"
+            class="absolute right-0 top-full z-20 mt-1 flex w-52 flex-col overflow-hidden rounded-md border text-sm shadow-md"
+            style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
+          >
+            {#each variableModeOptions as option (option.mode)}
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={$variableMode === option.mode}
+                class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
+                title={$t(option.hintKey)}
+                onclick={() => {
+                  preferencesMenuOpen = false;
+                  setVariableMode(option.mode);
+                }}
+              >
+                <span>{$t(option.labelKey)}</span>
+                {#if $variableMode === option.mode}
+                  <span style="color: var(--color-accent);">✓</span>
+                {/if}
+              </button>
+            {/each}
+
+            <div class="border-t" style="border-color: var(--color-border);"></div>
+
+            {#each languageOptions as option (option.lang)}
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={$language === option.lang}
+                class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
+                onclick={() => {
+                  preferencesMenuOpen = false;
+                  setLanguage(option.lang);
+                }}
+              >
+                <span>{option.label}</span>
+                {#if $language === option.lang}
+                  <span style="color: var(--color-accent);">✓</span>
+                {/if}
               </button>
             {/each}
           </div>
