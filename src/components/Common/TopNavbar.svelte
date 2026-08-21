@@ -3,22 +3,13 @@
   import ThemeToggle from './ThemeToggle.svelte';
   import HelpModal from './HelpModal.svelte';
   import { codeContent } from '../../stores/code';
-  import { runCode } from '../../stores/run';
-  import {
-    hasConnectedEndBlock,
-    resetFlowchart,
-    loadFlowchart,
-    arrangeNodesVertically,
-    nodes,
-    edges,
-  } from '../../stores/flowchart';
+  import { resetFlowchart, loadFlowchart, arrangeNodesVertically, nodes, edges } from '../../stores/flowchart';
   import { downloadTextFile, downloadDataUrl } from '../../lib/download';
   import { serializeFlowchart, parseFlowchartFile } from '../../lib/storage/flowchartFile';
   import { wrapAsJavaFile } from '../../lib/flowchart/exportJava';
   import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
   import { flowchartToPngDataUrl } from '../../lib/flowchart/exportPng';
-  import { blockTypeOf } from '../../lib/flowchart/graphWalk';
-  import { isStepping, isStepFinished, startStepRun, stepOnce, stopStepRun } from '../../stores/stepRunner';
+  import { stopStepRun } from '../../stores/stepRunner';
   import { variableMode, setVariableMode, type VariableMode } from '../../stores/settings';
 
   // New/Open/Save all act on the same thing — the flowchart project — so
@@ -51,14 +42,6 @@
   // sit inside a SvelteFlowProvider (hoisted up to App.svelte for exactly
   // this reason, since TopNavbar and FlowchartCanvas are siblings there).
   const { getNodesBounds } = useSvelteFlow();
-
-  let hasStart = $derived($nodes.some((node) => blockTypeOf(node) === 'start'));
-
-  function handleRun() {
-    if (!$hasConnectedEndBlock) return;
-    stopStepRun();
-    runCode($codeContent);
-  }
 
   function handleNew() {
     if (!confirm('Clear the canvas and start a new flowchart? This cannot be undone.')) return;
@@ -142,18 +125,6 @@
     if (action === 'Download PNG') return handleDownloadPng();
   }
 
-  // Starts a step run if none is active yet; otherwise advances the one
-  // already running — one line at a time inside a multi-line block, one hop
-  // otherwise (see stores/stepRunner.ts) — same as clicking whichever of
-  // ⏭ Step Through / ⏭ Next Step is currently showing.
-  function handleStepShortcut() {
-    if (!$isStepping) {
-      if (!hasStart || !$hasConnectedEndBlock) return;
-      return startStepRun();
-    }
-    if (!$isStepFinished) stepOnce();
-  }
-
   function handleGlobalKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
       projectMenuOpen = false;
@@ -164,15 +135,10 @@
 
     // Alt+Shift+<letter>, matching the pattern already used for the theme
     // toggle — avoids Ctrl combos, which Monaco and the browser both claim
-    // heavily.
+    // heavily. Run/Step's own Alt+Shift+R/S live with their buttons now (see
+    // OutputPanel.svelte).
     const key = event.key.toLowerCase();
-    if (key === 'r') {
-      event.preventDefault();
-      handleRun();
-    } else if (key === 's') {
-      event.preventDefault();
-      handleStepShortcut();
-    } else if (key === 'a') {
+    if (key === 'a') {
       event.preventDefault();
       handleArrange();
     }
@@ -201,56 +167,6 @@
   </div>
 
   <div class="flex items-center gap-2">
-    <button
-      type="button"
-      class="btn btn-accent rounded-md border px-3 py-1.5 text-sm font-medium"
-      disabled={!$hasConnectedEndBlock}
-      onclick={handleRun}
-      title={$hasConnectedEndBlock
-        ? 'Run the code (Alt+Shift+R) — output appears in the panel below'
-        : 'Connect an End block to the flowchart before running'}
-    >
-      ▶ Run
-    </button>
-
-    {#if !$isStepping}
-      <button
-        type="button"
-        class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
-        disabled={!hasStart || !$hasConnectedEndBlock}
-        onclick={startStepRun}
-        title={!hasStart
-          ? 'Add a Start block first'
-          : !$hasConnectedEndBlock
-            ? 'Connect an End block to the flowchart before stepping through'
-            : 'Run one line at a time, highlighting each block on the canvas (Alt+Shift+S)'}
-      >
-        ⏭ Step Through
-      </button>
-    {:else}
-      <button
-        type="button"
-        class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
-        disabled={$isStepFinished}
-        onclick={stepOnce}
-        title="Run the next line (Alt+Shift+S)"
-      >
-        ⏭ Next Step
-      </button>
-    {/if}
-
-    <!-- Always shown (not just once stepping starts), just disabled until
-         then — so its place in the toolbar is predictable instead of
-         buttons shifting around it as a step run starts/stops. -->
-    <button
-      type="button"
-      class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
-      disabled={!$isStepping}
-      onclick={stopStepRun}
-    >
-      ⏹ Stop
-    </button>
-
     <nav class="flex items-center gap-2">
       <div class="relative" bind:this={projectMenuEl}>
         <button

@@ -22,17 +22,28 @@
   let inferred = $derived($variableMode === 'inferred');
   let rootEl: HTMLDivElement;
 
-  // FlowchartBoard's handleDrop points this at whichever Declare node just
+  // FlowchartBoard's placeBlock points this at whichever Declare node just
   // received a freshly added entry (new block or merged into this one) —
   // put the cursor straight into that entry's own value field, scoped by
   // [data-entry-index] since a merge can land on a node that already has
   // several rows. Cleared immediately so it only ever fires once.
+  //
+  // The focus() call is deferred a tick (setTimeout, not called inline) —
+  // the drop itself comes from BlockPalette's pointerdown/pointerup gesture
+  // (see its own handlePointerDown), which the browser follows with its own
+  // synthetic focus/click handling once the pointer is released. Focusing
+  // synchronously here lost that race and got overridden right back out;
+  // running after the current event's synchronous work (and any compatibility
+  // events queued alongside it) finishes wins it instead.
   $effect(() => {
     if ($pendingFocusNodeId !== id || !rootEl) return;
     pendingFocusNodeId.set(null);
     const lastIndex = entries.length - 1;
-    const target = rootEl.querySelector<HTMLElement>(`[data-declare-value][data-entry-index="${lastIndex}"]`);
-    target?.focus();
+    const node = rootEl;
+    setTimeout(() => {
+      const target = node.querySelector<HTMLElement>(`[data-declare-value][data-entry-index="${lastIndex}"]`);
+      target?.focus();
+    }, 0);
   });
 
   function handleInput(index: number, field: 'varName' | 'varValue', event: Event) {

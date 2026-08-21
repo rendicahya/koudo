@@ -44,7 +44,7 @@ A small hand-written interpreter (`src/lib/execution/interpreter.ts`) actually r
 
 ### Step-by-step execution and the Variable Watcher
 
-**Step Through** (or `Alt+Shift+S`) runs the program one line at a time instead of all at once, highlighting whichever block is currently executing on the canvas. Each line gets its own click and stays on that block — a print's output, or a newly declared/assigned variable, shows up *while its block is still highlighted*, not only after the playhead has already moved on. A Declare/Assign/Output/Input block holding several lines gets a small **▶** arrow next to whichever of its rows is currently running, plus a floating badge on the canvas and a line indicator in the Output panel (`Line 2/3: ...`); a Decision evaluates its condition and follows whichever branch is actually taken. **⏹ Stop** sits next to Step Through at all times (disabled until a run is active), and a live **Variable Watcher** table sits next to the Output panel throughout, showing every variable currently in scope and its value, updated after every single step.
+**⏭ Step** (or `Alt+Shift+S`) runs the program one line at a time instead of all at once, highlighting whichever block is currently executing on the canvas. Each line gets its own click and stays on that block — a print's output, or a newly declared/assigned variable, shows up *while its block is still highlighted*, not only after the playhead has already moved on. A Declare/Assign/Output/Input block holding several lines gets a small **▶** arrow next to whichever of its rows is currently running, plus a floating badge on the canvas and a line indicator in the Output panel (`Line 2/3: ...`); a Decision evaluates its condition and follows whichever branch is actually taken. **▶ Run**, **⏭ Step**, and **⏹ Stop** all live in a toolbar above the Output panel (Stop disabled until a run is active), and a live **Variable Watcher** table sits next to the Output panel throughout, showing every variable currently in scope and its value, updated after every single step.
 
 ### Everything else
 
@@ -111,9 +111,9 @@ src/
 │   │   ├── JavaCodeEditor.svelte        Monaco wrapper, two-way synced
 │   │   └── PseudocodeView.svelte        read-only pseudocode, derived from the flowchart
 │   ├── Output/
-│   │   └── OutputPanel.svelte           Run/Step Through output, Variable Watcher, Clear
+│   │   └── OutputPanel.svelte           Run/Step/Stop, output, Variable Watcher, Clear
 │   └── Common/
-│       ├── TopNavbar.svelte             Run/Step Through, Project/Canvas menus, Help
+│       ├── TopNavbar.svelte             Project/Canvas menus, Help
 │       ├── HelpModal.svelte             in-app usage guide
 │       ├── Toast.svelte                 non-blocking warning banner
 │       └── ThemeToggle.svelte

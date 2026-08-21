@@ -91,6 +91,12 @@
     }
     function handleUp(upEvent: PointerEvent) {
       if (upEvent.pointerId !== pointerId) return;
+      // Suppresses the browser's own compatibility click (and the focus
+      // that can follow it) from firing on the chip once capture releases —
+      // otherwise it can steal focus right back out of a newly dropped
+      // Variable block's value field (see DeclareNode.svelte's own deferred
+      // focus() for the other half of this).
+      upEvent.preventDefault();
       cleanup();
       onPlaceBlock(block.type, upEvent.clientX, upEvent.clientY);
     }

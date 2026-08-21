@@ -2,7 +2,7 @@
   import JavaCodeEditor from './JavaCodeEditor.svelte';
   import PseudocodeView from './PseudocodeView.svelte';
 
-  const TABS = ['Java', 'Pseudocode'] as const;
+  const TABS = ['Pseudocode', 'Java'] as const;
   type Tab = (typeof TABS)[number];
 
   let activeTab = $state<Tab>('Java');

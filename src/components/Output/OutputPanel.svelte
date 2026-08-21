@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { runOutput, runError, runVariables, hasRun, clearRunOutput } from '../../stores/run';
+  import { runOutput, runError, runVariables, hasRun, clearRunOutput, runCode } from '../../stores/run';
   import {
     isStepping,
     isStepFinished,
@@ -8,21 +8,116 @@
     stepStatus,
     stepVariables,
     stepCurrentLine,
+    startStepRun,
+    stepOnce,
+    stopStepRun,
   } from '../../stores/stepRunner';
+  import { hasConnectedEndBlock, nodes } from '../../stores/flowchart';
+  import { blockTypeOf } from '../../lib/flowchart/graphWalk';
+  import { codeContent } from '../../stores/code';
 
   // While a step run is active it takes over the panel — Start/Next/Stop
-  // live next to ▶ Run in the top bar (see TopNavbar.svelte). Stopping just
-  // switches this back; the last full ▶ Run's output/error underneath is
-  // untouched.
+  // live next to ▶ Run, right here above the panel. Stopping just switches
+  // this back; the last full ▶ Run's output/error underneath is untouched.
   let displayOutput = $derived($isStepping ? $stepOutput : $runOutput);
   let displayError = $derived($isStepping ? $stepError : $runError);
-  // The Variable Watcher stays visible at all times (not just mid-Step
-  // Through) — live values while stepping, the last ▶ Run's final values
-  // otherwise, so it's still useful right after a normal Run finishes.
+  // The Variable Watcher stays visible at all times (not just mid-Step) —
+  // live values while stepping, the last ▶ Run's final values otherwise, so
+  // it's still useful right after a normal Run finishes.
   let displayVariables = $derived($isStepping ? $stepVariables : $runVariables);
+
+  let hasStart = $derived($nodes.some((node) => blockTypeOf(node) === 'start'));
+
+  function handleRun() {
+    if (!$hasConnectedEndBlock) return;
+    stopStepRun();
+    runCode($codeContent);
+  }
+
+  // Starts a step run if none is active yet; otherwise advances the one
+  // already running — one line at a time inside a multi-line block, one hop
+  // otherwise (see stores/stepRunner.ts) — same as clicking whichever of
+  // ⏭ Step / ⏭ Next Step is currently showing.
+  function handleStepShortcut() {
+    if (!$isStepping) {
+      if (!hasStart || !$hasConnectedEndBlock) return;
+      return startStepRun();
+    }
+    if (!$isStepFinished) stepOnce();
+  }
+
+  function handleGlobalKeydown(event: KeyboardEvent) {
+    if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
+
+    // Alt+Shift+<letter>, matching the pattern used throughout the app (see
+    // TopNavbar.svelte/App.svelte) — avoids Ctrl combos, which Monaco and
+    // the browser both claim heavily.
+    const key = event.key.toLowerCase();
+    if (key === 'r') {
+      event.preventDefault();
+      handleRun();
+    } else if (key === 's') {
+      event.preventDefault();
+      handleStepShortcut();
+    }
+  }
 </script>
 
+<svelte:window onkeydown={handleGlobalKeydown} />
+
 <div class="flex h-full flex-col gap-3 p-4 text-sm" style="color: var(--color-text);">
+  <div class="flex shrink-0 items-center gap-2">
+    <button
+      type="button"
+      class="btn btn-accent rounded-md border px-3 py-1.5 text-sm font-medium"
+      disabled={!$hasConnectedEndBlock}
+      onclick={handleRun}
+      title={$hasConnectedEndBlock
+        ? 'Run the code (Alt+Shift+R) — output appears below'
+        : 'Connect an End block to the flowchart before running'}
+    >
+      ▶ Run
+    </button>
+
+    {#if !$isStepping}
+      <button
+        type="button"
+        class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
+        disabled={!hasStart || !$hasConnectedEndBlock}
+        onclick={startStepRun}
+        title={!hasStart
+          ? 'Add a Start block first'
+          : !$hasConnectedEndBlock
+            ? 'Connect an End block to the flowchart before stepping'
+            : 'Run one line at a time, highlighting each block on the canvas (Alt+Shift+S)'}
+      >
+        ⏭ Step
+      </button>
+    {:else}
+      <button
+        type="button"
+        class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
+        disabled={$isStepFinished}
+        onclick={stepOnce}
+        title="Run the next line (Alt+Shift+S)"
+      >
+        ⏭ Next Step
+      </button>
+    {/if}
+
+    <!-- Always shown (not just once stepping starts), just disabled until
+         then — so its place in the toolbar is predictable instead of
+         buttons shifting around it as a step run starts/stops. -->
+    <button
+      type="button"
+      class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
+      disabled={!$isStepping}
+      onclick={stopStepRun}
+    >
+      ⏹ Stop
+    </button>
+  </div>
+
   <div class="flex shrink-0 items-center justify-between">
     <p class="text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">Output</p>
     <button
@@ -60,9 +155,7 @@
       style="border-color: var(--color-border); background: var(--color-editor-bg);"
     >
       {#if !$isStepping && !$hasRun}
-        <p style="color: var(--color-text-secondary);">
-          Click ▶ Run, or ⏭ Step Through, in the top bar to see output here.
-        </p>
+        <p style="color: var(--color-text-secondary);">Click ▶ Run, or ⏭ Step, above to see output here.</p>
       {:else}
         {#each displayOutput as line, i (i)}
           <p class="whitespace-pre-wrap">{line}</p>

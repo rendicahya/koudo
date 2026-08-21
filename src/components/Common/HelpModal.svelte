@@ -23,7 +23,7 @@
 
   const shortcuts: { keys: string; action: string }[] = [
     { keys: 'Alt+Shift+R', action: 'Run' },
-    { keys: 'Alt+Shift+S', action: 'Step Through / Next Step' },
+    { keys: 'Alt+Shift+S', action: 'Step / Next Step' },
     { keys: 'Alt+Shift+A', action: 'Arrange' },
     { keys: 'Alt+Shift+T', action: 'Toggle dark / light mode' },
   ];
@@ -93,9 +93,10 @@
         <section class="mb-4">
           <h3 class="mb-1 font-semibold">Running your program</h3>
           <p style="color: var(--color-text-secondary);">
-            <strong>▶ Run</strong> executes the whole program at once — the Output panel shows what it prints. <strong>⏭ Step
-            Through</strong> runs it one line at a time instead, highlighting the block currently executing and updating a
-            live <strong>Variable Watcher</strong> table after every step. Both need a connected End block first.
+            <strong>▶ Run</strong>, <strong>⏭ Step</strong>, and <strong>⏹ Stop</strong> live above the Output panel. Run
+            executes the whole program at once — the Output panel shows what it prints. Step runs it one line at a time
+            instead, highlighting the block currently executing and updating a live <strong>Variable Watcher</strong> table
+            after every step. Both need a connected End block first.
           </p>
         </section>
 
