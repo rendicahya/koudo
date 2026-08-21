@@ -139,12 +139,13 @@ const XYFLOW_NODE_TYPE: Partial<Record<BlockType, string>> = {
 // share a column (Arrange, the code-sync auto-connect) has to align by
 // *center*, not shared x, to account for this — see nodeWidthFor below.
 export const BLOCK_WIDTH = 260;
-// Declare's own, wider width — its row can carry a type <select>/badge
-// alongside the name and value fields (more so in Beginner mode, whose
-// blank-value type picker needs its own room too), which crowds BLOCK_WIDTH
-// more than Process/Input's single field does. Same +100 bump as Assign
-// below, for the same "more fields packed into one row" reason.
-export const DECLARE_WIDTH = BLOCK_WIDTH + 100;
+// Declare's own, slightly wider width — its row can carry a type
+// <select>/badge alongside the name and value fields (more so in Beginner
+// mode, whose blank-value type picker needs its own room too), which
+// crowds BLOCK_WIDTH a bit more than Process/Input's single field does. A
+// much smaller bump than Assign's own +100 (see ASSIGN_WIDTH) — Declare's
+// extra content is one compact badge/select, not a whole second editor.
+export const DECLARE_WIDTH = BLOCK_WIDTH + 40;
 export const TERMINAL_WIDTH = 140;
 export const DIAMOND_WIDTH = 200;
 const DIAMOND_HEIGHT = 110;
