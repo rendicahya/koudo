@@ -1,6 +1,7 @@
 <script lang="ts">
   import { nodes, edges } from '../../stores/flowchart';
   import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
+  import { codeFontSize } from '../../stores/layout';
 
   // Read-only, one-directional projection of the flowchart — unlike the Java
   // tab (see JavaCodeEditor.svelte + stores/sync.ts), there's no editor to
@@ -11,5 +12,5 @@
 </script>
 
 <div class="h-full w-full overflow-auto p-4">
-  <pre class="font-mono text-sm whitespace-pre-wrap" style="color: var(--color-text);">{pseudocode}</pre>
+  <pre class="font-mono whitespace-pre-wrap" style="color: var(--color-text); font-size: {$codeFontSize}px;">{pseudocode}</pre>
 </div>

@@ -1,7 +1,14 @@
 <script lang="ts">
   import JavaCodeEditor from './JavaCodeEditor.svelte';
   import PseudocodeView from './PseudocodeView.svelte';
-  import { activeCodeTab, type CodeTab } from '../../stores/layout';
+  import {
+    activeCodeTab,
+    type CodeTab,
+    codeFontSize,
+    zoomCodeFontSize,
+    MIN_CODE_FONT_SIZE,
+    MAX_CODE_FONT_SIZE,
+  } from '../../stores/layout';
 
   const TABS: CodeTab[] = ['Pseudocode', 'Java'];
 
@@ -15,23 +22,55 @@
 <div class="flex h-full w-full flex-col">
   <div
     role="tablist"
-    class="flex shrink-0 border-b"
+    class="flex shrink-0 items-center justify-between border-b"
     style="border-color: var(--color-border); background: var(--color-panel);"
   >
-    {#each TABS as tab (tab)}
+    <div class="flex">
+      {#each TABS as tab (tab)}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={$activeCodeTab === tab}
+          class="border-b-2 px-4 py-1.5 text-sm font-medium"
+          style="border-color: {$activeCodeTab === tab
+            ? 'var(--color-accent)'
+            : 'transparent'}; color: {$activeCodeTab === tab ? 'var(--color-text)' : 'var(--color-text-secondary)'};"
+          onclick={() => ($activeCodeTab = tab)}
+        >
+          {tab}
+        </button>
+      {/each}
+    </div>
+
+    <!-- Shared zoom for both tabs (see stores/layout.ts's codeFontSize) —
+         one control instead of each tab needing its own, since a beginner
+         adjusting text size cares about readability generally, not just
+         whichever tab happens to be open right now. -->
+    <div class="mr-2 flex items-center gap-1 text-xs" style="color: var(--color-text-secondary);">
       <button
         type="button"
-        role="tab"
-        aria-selected={$activeCodeTab === tab}
-        class="border-b-2 px-4 py-1.5 text-sm font-medium"
-        style="border-color: {$activeCodeTab === tab
-          ? 'var(--color-accent)'
-          : 'transparent'}; color: {$activeCodeTab === tab ? 'var(--color-text)' : 'var(--color-text-secondary)'};"
-        onclick={() => ($activeCodeTab = tab)}
+        class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
+        style="border-color: var(--color-border);"
+        disabled={$codeFontSize <= MIN_CODE_FONT_SIZE}
+        title="Decrease text size"
+        aria-label="Decrease text size"
+        onclick={() => zoomCodeFontSize(-1)}
       >
-        {tab}
+        −
       </button>
-    {/each}
+      <span class="w-8 text-center tabular-nums">{$codeFontSize}px</span>
+      <button
+        type="button"
+        class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
+        style="border-color: var(--color-border);"
+        disabled={$codeFontSize >= MAX_CODE_FONT_SIZE}
+        title="Increase text size"
+        aria-label="Increase text size"
+        onclick={() => zoomCodeFontSize(1)}
+      >
+        +
+      </button>
+    </div>
   </div>
 
   <!-- Both views stay mounted (just hidden) rather than being torn down on

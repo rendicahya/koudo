@@ -27,3 +27,30 @@ export const activeCodeTab = writable<CodeTab>(getInitialCodeTab());
 activeCodeTab.subscribe((value) => {
   localStorage.setItem(CODE_TAB_STORAGE_KEY, value);
 });
+
+// Shared by both code tabs (CodeEditorPanel.svelte's zoom buttons) — Monaco
+// reads it for the Java tab's fontSize option, PseudocodeView applies it as
+// a plain CSS font-size, so the two stay in sync under one control instead
+// of each tab having its own separate zoom level.
+const CODE_FONT_SIZE_STORAGE_KEY = 'koudo-code-font-size';
+const DEFAULT_CODE_FONT_SIZE = 14;
+export const MIN_CODE_FONT_SIZE = 10;
+export const MAX_CODE_FONT_SIZE = 24;
+
+function getInitialCodeFontSize(): number {
+  const stored = Number(localStorage.getItem(CODE_FONT_SIZE_STORAGE_KEY));
+  if (!Number.isFinite(stored) || stored < MIN_CODE_FONT_SIZE || stored > MAX_CODE_FONT_SIZE) {
+    return DEFAULT_CODE_FONT_SIZE;
+  }
+  return stored;
+}
+
+export const codeFontSize = writable<number>(getInitialCodeFontSize());
+
+codeFontSize.subscribe((value) => {
+  localStorage.setItem(CODE_FONT_SIZE_STORAGE_KEY, String(value));
+});
+
+export function zoomCodeFontSize(delta: number) {
+  codeFontSize.update((size) => Math.min(MAX_CODE_FONT_SIZE, Math.max(MIN_CODE_FONT_SIZE, size + delta)));
+}

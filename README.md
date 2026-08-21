@@ -53,6 +53,7 @@ A small hand-written interpreter (`src/lib/execution/interpreter.ts`) actually r
 - **Canvas** menu — Arrange, and Download PNG (rasterizes the flowchart as-is)
 - Input and Output blocks default their dropdown to the topmost declared variable as soon as they're placed, instead of an unset "choose" placeholder
 - The code panel remembers which tab (Java or Pseudocode) you last had open, persisted to `localStorage` — Pseudocode is the default for a first-time visitor
+- A shared zoom control (−/+, top-right of the code panel) resizes both the Java and Pseudocode text together, persisted to `localStorage`
 - A fullscreen toggle (⛶, top-right)
 - Non-blocking toast warnings — e.g. dropping an Input or Assign block before any variable's been declared — instead of a blocking `alert()`
 - A hover "lift" effect on every block, not just Start/End

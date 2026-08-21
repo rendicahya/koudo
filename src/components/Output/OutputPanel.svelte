@@ -118,7 +118,7 @@
     </button>
   </div>
 
-  <div class="flex shrink-0 items-center justify-between">
+  <div class="flex shrink-0 items-center gap-2">
     <p class="text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">Output</p>
     <button
       type="button"

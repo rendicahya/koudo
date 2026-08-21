@@ -4,6 +4,7 @@
   import { codeContent } from '../../stores/code';
   import { theme } from '../../stores/theme';
   import { syncCodeToFlowchart } from '../../stores/sync';
+  import { codeFontSize } from '../../stores/layout';
 
   let container: HTMLDivElement;
   let editor: monaco.editor.IStandaloneCodeEditor | undefined;
@@ -15,7 +16,7 @@
       language: 'java',
       automaticLayout: true,
       minimap: { enabled: false },
-      fontSize: 14,
+      fontSize: $codeFontSize,
       theme: $theme === 'dark' ? 'vs-dark' : 'vs',
       // Monaco defaults to padding roughly a screen's worth of blank space
       // below the last line (so it can scroll to the top), which shows a
@@ -46,6 +47,10 @@
 
   $effect(() => {
     monaco.editor.setTheme($theme === 'dark' ? 'vs-dark' : 'vs');
+  });
+
+  $effect(() => {
+    editor?.updateOptions({ fontSize: $codeFontSize });
   });
 
   $effect(() => {
