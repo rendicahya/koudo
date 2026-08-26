@@ -7,6 +7,7 @@
   import { reindent } from '../../lib/codeIndent';
   import { codeIndentStyle } from '../../stores/layout';
   import { stopStepRun } from '../../stores/stepRunner';
+  import { resetHistory } from '../../stores/history';
   import { t } from '../../stores/i18n';
   import { codeContent } from '../../stores/code';
   import { projectName, setProjectName, DEFAULT_PROJECT_NAME } from '../../stores/project';
@@ -37,6 +38,7 @@
     stopStepRun();
     resetFlowchart();
     setProjectName(DEFAULT_PROJECT_NAME);
+    resetHistory();
   }
 
   function handleSave() {
@@ -81,6 +83,7 @@
       stopStepRun();
       loadFlowchart(project.nodes, project.edges);
       setProjectName(project.name ?? DEFAULT_PROJECT_NAME);
+      resetHistory();
     } catch (err) {
       alert(err instanceof Error ? err.message : String(err));
     }

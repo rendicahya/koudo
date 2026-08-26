@@ -16,6 +16,10 @@
 // type keywords.
 const en = {
   // TopNavbar
+  'nav.undo': 'Undo',
+  'nav.undoTitle': 'Undo (Ctrl+Z)',
+  'nav.redo': 'Redo',
+  'nav.redoTitle': 'Redo (Ctrl+Shift+Z)',
   'nav.project': 'Project',
   'nav.new': 'New',
   'nav.open': 'Open Project',
@@ -269,6 +273,10 @@ export type TranslationKey = keyof typeof en;
 
 const id: Record<TranslationKey, string> = {
   // TopNavbar
+  'nav.undo': 'Urungkan',
+  'nav.undoTitle': 'Urungkan (Ctrl+Z)',
+  'nav.redo': 'Ulangi',
+  'nav.redoTitle': 'Ulangi (Ctrl+Shift+Z)',
   'nav.project': 'Proyek',
   'nav.new': 'Baru',
   'nav.open': 'Buka Proyek',

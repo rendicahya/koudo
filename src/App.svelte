@@ -8,6 +8,7 @@
   import OutputPanel from './components/Output/OutputPanel.svelte';
   import { loadLayoutPrefs, saveLayoutPrefs } from './lib/storage/layoutPrefs';
   import { isFlowchartDirty } from './stores/flowchart';
+  import { undo, redo } from './stores/history';
   import { toggleTheme } from './stores/theme';
   import { isCodePanelHidden, toggleCodePanel } from './stores/layout';
   import { t } from './stores/i18n';
@@ -22,10 +23,32 @@
   // Monaco editor has focus. Deliberately not a Ctrl/Cmd combo — Monaco
   // claims most of those by default (e.g. Ctrl+Shift+L is "select all
   // occurrences"), and Ctrl+letter often collides with browser shortcuts.
+  // Ctrl/Cmd+Z (Shift held = redo) and Ctrl/Cmd+Y, the conventional
+  // undo/redo shortcuts — but only when focus isn't inside a text field, so
+  // this doesn't hijack a browser-native text undo mid-edit in one of the
+  // canvas blocks' own <input>s (see isEditableTarget below).
+  function isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    const tag = target.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+  }
+
   function handleGlobalKeydown(event: KeyboardEvent) {
     if (event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === 't') {
       event.preventDefault();
       toggleTheme();
+      return;
+    }
+
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || isEditableTarget(event.target)) return;
+    const key = event.key.toLowerCase();
+    if (key === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) redo();
+      else undo();
+    } else if (key === 'y') {
+      event.preventDefault();
+      redo();
     }
   }
 

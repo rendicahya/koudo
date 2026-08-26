@@ -7,6 +7,7 @@
   import PreferencesMenu from './PreferencesMenu.svelte';
   import { t } from '../../stores/i18n';
   import { projectName, setProjectName, setProjectNameLive } from '../../stores/project';
+  import { undo, redo, canUndo, canRedo } from '../../stores/history';
 
   let helpOpen = $state(false);
 </script>
@@ -34,6 +35,29 @@
 
   <div class="flex items-center gap-2">
     <nav class="flex items-center gap-2">
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          class="btn-ghost rounded-md px-2 py-1.5 text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!$canUndo}
+          title={$t('nav.undoTitle')}
+          aria-label={$t('nav.undo')}
+          onclick={() => undo()}
+        >
+          ↶
+        </button>
+        <button
+          type="button"
+          class="btn-ghost rounded-md px-2 py-1.5 text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!$canRedo}
+          title={$t('nav.redoTitle')}
+          aria-label={$t('nav.redo')}
+          onclick={() => redo()}
+        >
+          ↷
+        </button>
+      </div>
+
       <ProjectMenu />
       <CanvasMenu />
       <PreferencesMenu />

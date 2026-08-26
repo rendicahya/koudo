@@ -44,6 +44,7 @@
     type BlockType,
   } from '../../stores/flowchart';
   import { stepCurrentNodeId, stepCurrentLine } from '../../stores/stepRunner';
+  import { beginBatch, endBatch } from '../../stores/history';
   import { showToast } from '../../stores/toast';
   import { t } from '../../stores/i18n';
   import type { TranslationKey } from '../../lib/i18n/translations';
@@ -314,6 +315,8 @@
     onnodecontextmenu={handleNodeContextMenu}
     onedgecontextmenu={handleEdgeContextMenu}
     onpaneclick={closeContextMenu}
+    onnodedragstart={() => beginBatch()}
+    onnodedragstop={() => endBatch()}
   >
     <Background />
     <Controls />
