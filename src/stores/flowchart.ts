@@ -125,34 +125,49 @@ export interface SubroutineParam {
 // its own Java method (see generator.ts's subroutineMethods) — the flowchart
 // notation for a Predefined Process/Subroutine, split across a matching
 // Subroutine Start/Subroutine Call/Subroutine End trio the same way this
-// app's main program is split across Start/blocks/End. Void-only for now:
-// no return-value modeling (see SubroutineCallNodeData below).
+// app's main program is split across Start/blocks/End. returnType is 'void'
+// or one of the same primitive/String types Declare's own type <select>
+// offers — the actual return *value* lives on whichever Subroutine End(s)
+// this Start's body reaches (see SubroutineEndNodeData), not here, since a
+// branching body can have more than one.
 export interface SubroutineStartNodeData extends Record<string, unknown> {
   blockType: 'subroutineStart';
   label: string;
   name: string;
   params: SubroutineParam[];
+  returnType: string;
 }
 
-// No extra data of its own — same role as the main flow's End block (just
-// marks where this subroutine's body stops), but a distinct blockType so it
-// isn't caught by the main flow's own End-specific checks (singleton,
-// hasConnectedEndBlock — see stores/flowchart.ts and FlowchartBoard.svelte).
+// Same role as the main flow's End block (just marks where this
+// subroutine's body stops), but a distinct blockType so it isn't caught by
+// the main flow's own End-specific checks (singleton, hasConnectedEndBlock
+// — see stores/flowchart.ts and FlowchartBoard.svelte). returnValue is a
+// free-typed expression, only shown/meaningful when the owning Subroutine
+// Start's own returnType isn't 'void' (see SubroutineEndNode.svelte, which
+// resolves that ownership via graphWalk.ts's subroutineStartUpstreamOf) —
+// left blank for a void subroutine's End, same "not every field applies"
+// convention as e.g. Declare's blank-value "declare only" state.
 export interface SubroutineEndNodeData extends Record<string, unknown> {
   blockType: 'subroutineEnd';
   label: string;
+  returnValue: string;
 }
 
 // A call site — placed in any flow (main's, or another subroutine's own
 // body) to invoke a Subroutine Start elsewhere on the canvas. References its
 // target by node id, not by name (see updateSubroutineCallTarget below) —
 // renaming the target's method name shouldn't silently orphan every call to
-// it the way name-string matching would.
+// it the way name-string matching would. resultVar optionally captures a
+// non-void call's return value into an already-declared variable (same
+// "target must already exist, no inline declaring" convention as Assign) —
+// blank discards the return value, same as calling a Java method as a bare
+// statement.
 export interface SubroutineCallNodeData extends Record<string, unknown> {
   blockType: 'subroutineCall';
   label: string;
   targetId: string;
   args: string[];
+  resultVar: string;
 }
 
 export interface BlockDefinition {
@@ -559,20 +574,21 @@ function nextDefaultMethodName(): string {
   return `method${n}`;
 }
 
-export function subroutineSignatureLabel(name: string, params: SubroutineParam[]): string {
+export function subroutineSignatureLabel(name: string, params: SubroutineParam[], returnType: string): string {
   const paramList = params.map((p) => `${p.paramType} ${p.paramName}`).join(', ');
-  return `${name || '?'}(${paramList})`;
+  return `${returnType || 'void'} ${name || '?'}(${paramList})`;
 }
 
 export function createSubroutineStartNode(position: { x: number; y: number }): Node {
   nodeCounter += 1;
   const name = nextDefaultMethodName();
   const params: SubroutineParam[] = [];
+  const returnType = 'void';
 
   return {
     id: `subroutineStart-${nodeCounter}`,
     type: 'subroutineStart',
-    data: { blockType: 'subroutineStart', label: subroutineSignatureLabel(name, params), name, params },
+    data: { blockType: 'subroutineStart', label: subroutineSignatureLabel(name, params, returnType), name, params, returnType },
     position,
     style: SUBROUTINE_START_NODE_STYLE,
   };
@@ -581,13 +597,19 @@ export function createSubroutineStartNode(position: { x: number; y: number }): N
 export function updateSubroutineName(node: Node, name: string): Node {
   const data = node.data as Partial<SubroutineStartNodeData>;
   const params = data.params ?? [];
-  return { ...node, data: { ...node.data, name, label: subroutineSignatureLabel(name, params) } };
+  const returnType = data.returnType ?? 'void';
+  return { ...node, data: { ...node.data, name, label: subroutineSignatureLabel(name, params, returnType) } };
+}
+
+export function updateSubroutineReturnType(node: Node, returnType: string): Node {
+  const data = node.data as Partial<SubroutineStartNodeData>;
+  return { ...node, data: { ...node.data, returnType, label: subroutineSignatureLabel(data.name ?? '', data.params ?? [], returnType) } };
 }
 
 export function addSubroutineParam(node: Node): Node {
   const data = node.data as Partial<SubroutineStartNodeData>;
   const params = [...(data.params ?? []), { paramType: 'int', paramName: `p${(data.params?.length ?? 0) + 1}` }];
-  return { ...node, data: { ...node.data, params, label: subroutineSignatureLabel(data.name ?? '', params) } };
+  return { ...node, data: { ...node.data, params, label: subroutineSignatureLabel(data.name ?? '', params, data.returnType ?? 'void') } };
 }
 
 export function updateSubroutineParamAt(node: Node, index: number, fields: Partial<SubroutineParam>): Node {
@@ -595,13 +617,13 @@ export function updateSubroutineParamAt(node: Node, index: number, fields: Parti
   const params = [...(data.params ?? [])];
   const current = params[index] ?? { paramType: 'int', paramName: '' };
   params[index] = { ...current, ...fields };
-  return { ...node, data: { ...node.data, params, label: subroutineSignatureLabel(data.name ?? '', params) } };
+  return { ...node, data: { ...node.data, params, label: subroutineSignatureLabel(data.name ?? '', params, data.returnType ?? 'void') } };
 }
 
 export function removeSubroutineParamAt(node: Node, index: number): Node {
   const data = node.data as Partial<SubroutineStartNodeData>;
   const params = (data.params ?? []).filter((_, i) => i !== index);
-  return { ...node, data: { ...node.data, params, label: subroutineSignatureLabel(data.name ?? '', params) } };
+  return { ...node, data: { ...node.data, params, label: subroutineSignatureLabel(data.name ?? '', params, data.returnType ?? 'void') } };
 }
 
 export function createSubroutineEndNode(position: { x: number; y: number }): Node {
@@ -609,10 +631,18 @@ export function createSubroutineEndNode(position: { x: number; y: number }): Nod
   return {
     id: `subroutineEnd-${nodeCounter}`,
     type: 'subroutineEnd',
-    data: { blockType: 'subroutineEnd', label: 'End' },
+    data: { blockType: 'subroutineEnd', label: 'End', returnValue: '' },
     position,
-    style: PILL_STYLE,
+    // Same rounded-rectangle sizing as Subroutine Start (not the fixed-width
+    // PILL_STYLE main End uses) — this one may need to grow to fit an
+    // optional return-value field (see SubroutineEndNode.svelte), and a
+    // Node's style is fixed at creation time, so it needs the room up front.
+    style: SUBROUTINE_START_NODE_STYLE,
   };
+}
+
+export function updateSubroutineEndReturnValue(node: Node, returnValue: string): Node {
+  return { ...node, data: { ...node.data, returnValue } };
 }
 
 // All Subroutine Start nodes currently on the canvas — the pool a Subroutine
@@ -625,8 +655,9 @@ export function subroutineStartNodes(nodeList: Node[]): Node[] {
   return nodeList.filter((node) => node.data?.blockType === 'subroutineStart');
 }
 
-export function subroutineCallLabel(targetName: string, args: string[]): string {
-  return `${targetName || '?'}(${args.join(', ')})`;
+export function subroutineCallLabel(targetName: string, args: string[], resultVar: string): string {
+  const call = `${targetName || '?'}(${args.join(', ')})`;
+  return resultVar ? `${resultVar} = ${call}` : call;
 }
 
 export function createSubroutineCallNode(position: { x: number; y: number }): Node {
@@ -634,7 +665,7 @@ export function createSubroutineCallNode(position: { x: number; y: number }): No
   return {
     id: `subroutineCall-${nodeCounter}`,
     type: 'subroutineCall',
-    data: { blockType: 'subroutineCall', label: subroutineCallLabel('', []), targetId: '', args: [] },
+    data: { blockType: 'subroutineCall', label: subroutineCallLabel('', [], ''), targetId: '', args: [], resultVar: '' },
     position,
     style: BASE_NODE_STYLE,
   };
@@ -642,21 +673,28 @@ export function createSubroutineCallNode(position: { x: number; y: number }): No
 
 // Switching a Call block's target resets its argument list to match the new
 // target's parameter count — an argument list sized for the previous
-// target's signature has no meaningful mapping onto a different one.
+// target's signature has no meaningful mapping onto a different one — and
+// clears resultVar, since it may no longer even apply (the new target could
+// be void) or may no longer be the right type for it.
 // targetName is passed in (rather than looked up here) since this function
 // only ever sees the one node being updated, not the full node list its
 // target actually lives in — same reason renameDeclaredVariable's callers
 // resolve names before calling in, see that function's own comment.
 export function updateSubroutineCallTarget(node: Node, targetId: string, targetName: string, paramCount: number): Node {
   const args = Array.from({ length: paramCount }, () => '');
-  return { ...node, data: { ...node.data, targetId, args, label: subroutineCallLabel(targetName, args) } };
+  return { ...node, data: { ...node.data, targetId, args, resultVar: '', label: subroutineCallLabel(targetName, args, '') } };
 }
 
 export function updateSubroutineCallArgAt(node: Node, index: number, value: string, targetName: string): Node {
   const data = node.data as Partial<SubroutineCallNodeData>;
   const args = [...(data.args ?? [])];
   args[index] = value;
-  return { ...node, data: { ...node.data, args, label: subroutineCallLabel(targetName, args) } };
+  return { ...node, data: { ...node.data, args, label: subroutineCallLabel(targetName, args, data.resultVar ?? '') } };
+}
+
+export function updateSubroutineCallResultVar(node: Node, resultVar: string, targetName: string): Node {
+  const data = node.data as Partial<SubroutineCallNodeData>;
+  return { ...node, data: { ...node.data, resultVar, label: subroutineCallLabel(targetName, data.args ?? [], resultVar) } };
 }
 
 export function declareLabel(varType: string, varName: string, varValue: string): string {

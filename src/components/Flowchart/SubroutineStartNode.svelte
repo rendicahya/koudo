@@ -3,6 +3,7 @@
   import {
     nodes,
     updateSubroutineName,
+    updateSubroutineReturnType,
     addSubroutineParam,
     updateSubroutineParamAt,
     removeSubroutineParamAt,
@@ -15,11 +16,17 @@
   let nodeData = $derived(data as SubroutineStartNodeData);
   let name = $derived(nodeData.name ?? '');
   let params = $derived(nodeData.params ?? []);
+  let returnType = $derived(nodeData.returnType ?? 'void');
   let nameIsValid = $derived(isValidJavaIdentifier(name));
 
   function handleNameInput(event: Event) {
     const value = (event.currentTarget as HTMLInputElement).value;
     $nodes = $nodes.map((node) => (node.id === id ? updateSubroutineName(node, value) : node));
+  }
+
+  function handleReturnTypeChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    $nodes = $nodes.map((node) => (node.id === id ? updateSubroutineReturnType(node, value) : node));
   }
 
   function handleParamType(index: number, event: Event) {
@@ -61,6 +68,25 @@
       title={nameIsValid ? undefined : $t('subroutineStart.invalidName', { name })}
       placeholder={$t('subroutineStart.namePlaceholder')}
     />
+  </div>
+
+  <div class="flex items-center gap-1">
+    <span style="color: var(--color-text-secondary);">{$t('subroutineStart.returnsLabel')}</span>
+    <select
+      value={returnType}
+      onchange={handleReturnTypeChange}
+      class="nodrag rounded border bg-transparent px-1 py-0.5"
+      style="border-color: var(--color-border);"
+    >
+      <option value="void">void</option>
+      <option value="int">int</option>
+      <option value="long">long</option>
+      <option value="double">double</option>
+      <option value="float">float</option>
+      <option value="boolean">boolean</option>
+      <option value="char">char</option>
+      <option value="String">String</option>
+    </select>
   </div>
 
   {#each params as param, index (index)}

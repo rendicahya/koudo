@@ -135,6 +135,8 @@ const en = {
   'help.pseudocodeTutorial.keyword.subroutine.desc':
     'Defines a separate, named block of steps that can be called from elsewhere — like a method in Java.',
   'help.pseudocodeTutorial.keyword.call.desc': 'Runs a SUBROUTINE defined elsewhere, then continues right after this line.',
+  'help.pseudocodeTutorial.keyword.return.desc':
+    "Ends a non-void SUBROUTINE's run and sends this value back to wherever it was called from.",
   'help.pseudocodeTutorial.example.heading': 'Example',
 
   // HelpModal — Java tutorial tab (sub-tabs)
@@ -225,12 +227,15 @@ const en = {
   'subroutineStart.label': 'Sub',
   'subroutineStart.namePlaceholder': 'name',
   'subroutineStart.invalidName': '"{name}" is not a valid Java method name',
+  'subroutineStart.returnsLabel': 'Returns',
   'subroutineStart.paramPlaceholder': 'param',
   'subroutineStart.addParam': '+ Add parameter',
   'subroutineStart.removeParam': 'Remove parameter',
   'subroutineEnd.label': 'End',
+  'subroutineEnd.returnLabel': 'Return',
   'subroutineCall.label': 'Call',
   'subroutineCall.noSubroutines': 'No subroutines yet',
+  'subroutineCall.discardResult': '(discard result)',
 
   // Shared "no variables yet" / "choose" dropdown prompt (Input/Output/Assign)
   'shared.noVariables': 'No variables',
@@ -412,6 +417,8 @@ const id: Record<TranslationKey, string> = {
   'help.pseudocodeTutorial.keyword.subroutine.desc':
     'Mendefinisikan sekelompok langkah terpisah dan bernama yang bisa dipanggil dari tempat lain — seperti method di Java.',
   'help.pseudocodeTutorial.keyword.call.desc': 'Menjalankan SUBROUTINE yang didefinisikan di tempat lain, lalu lanjut tepat setelah baris ini.',
+  'help.pseudocodeTutorial.keyword.return.desc':
+    'Mengakhiri jalannya SUBROUTINE yang bukan void dan mengirim nilai ini kembali ke tempat ia dipanggil.',
   'help.pseudocodeTutorial.example.heading': 'Contoh',
 
   // HelpModal — Java tutorial tab (sub-tabs)
@@ -502,12 +509,15 @@ const id: Record<TranslationKey, string> = {
   'subroutineStart.label': 'Sub',
   'subroutineStart.namePlaceholder': 'nama',
   'subroutineStart.invalidName': '"{name}" bukan nama method Java yang valid',
+  'subroutineStart.returnsLabel': 'Kembalikan',
   'subroutineStart.paramPlaceholder': 'param',
   'subroutineStart.addParam': '+ Tambah parameter',
   'subroutineStart.removeParam': 'Hapus parameter',
   'subroutineEnd.label': 'Akhir',
+  'subroutineEnd.returnLabel': 'Nilai balik',
   'subroutineCall.label': 'Panggil',
   'subroutineCall.noSubroutines': 'Belum ada subroutine',
+  'subroutineCall.discardResult': '(abaikan hasil)',
 
   // Shared "no variables yet" / "choose" dropdown prompt
   'shared.noVariables': 'Tidak ada variabel',

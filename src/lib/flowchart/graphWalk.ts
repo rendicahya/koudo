@@ -196,3 +196,28 @@ export function declaredVariableEntriesUpstreamOf(nodeId: string, nodeList: Node
 export function declaredVariableNamesUpstreamOf(nodeId: string, nodeList: Node[], edgeList: Edge[]): string[] {
   return declaredVariableEntriesUpstreamOf(nodeId, nodeList, edgeList).map((entry) => entry.varName);
 }
+
+// The Subroutine Start (if any) whose body reaches nodeId — found by
+// walking backward through incoming edges, same traversal shape as
+// declaredVariableEntriesUpstreamOf above, just stopping the moment one is
+// found rather than collecting every declaration along the way. Used by
+// SubroutineEndNode.svelte to know whether (and what return type) to show
+// its own return-value field for — a subroutine's own End has no direct
+// link back to its Start otherwise (see SubroutineEndNodeData).
+export function subroutineStartUpstreamOf(nodeId: string, nodeList: Node[], edgeList: Edge[]): Node | null {
+  const nodesById = new Map(nodeList.map((node) => [node.id, node]));
+  const visited = new Set<string>([nodeId]);
+  const stack = [nodeId];
+
+  while (stack.length > 0) {
+    const currentId = stack.pop()!;
+    for (const edge of edgeList) {
+      if (edge.target !== currentId || visited.has(edge.source)) continue;
+      visited.add(edge.source);
+      const sourceNode = nodesById.get(edge.source);
+      if (blockTypeOf(sourceNode) === 'subroutineStart') return sourceNode ?? null;
+      stack.push(edge.source);
+    }
+  }
+  return null;
+}

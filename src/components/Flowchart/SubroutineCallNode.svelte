@@ -2,9 +2,12 @@
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
   import {
     nodes,
+    edges,
     subroutineStartNodes,
+    declaredVariableNamesUpstreamOf,
     updateSubroutineCallTarget,
     updateSubroutineCallArgAt,
+    updateSubroutineCallResultVar,
     type SubroutineCallNodeData,
     type SubroutineStartNodeData,
   } from '../../stores/flowchart';
@@ -15,12 +18,17 @@
   let nodeData = $derived(data as SubroutineCallNodeData);
   let targetId = $derived(nodeData.targetId ?? '');
   let args = $derived(nodeData.args ?? []);
+  let resultVar = $derived(nodeData.resultVar ?? '');
   let isCurrentRow = $derived($stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === 0);
 
   let subroutines = $derived(subroutineStartNodes($nodes));
   let targetNode = $derived(subroutines.find((node) => node.id === targetId));
   let targetData = $derived(targetNode?.data as Partial<SubroutineStartNodeData> | undefined);
   let targetParams = $derived(targetData?.params ?? []);
+  // A void target has nothing to capture — same "only show what applies"
+  // convention as SubroutineEndNode's own return-value field.
+  let targetReturnsValue = $derived(!!targetData?.returnType && targetData.returnType !== 'void');
+  let variables = $derived(declaredVariableNamesUpstreamOf(id, $nodes, $edges));
 
   function handleTargetSelect(event: Event) {
     const nextId = (event.currentTarget as HTMLSelectElement).value;
@@ -33,6 +41,11 @@
   function handleArgInput(index: number, event: Event) {
     const value = (event.currentTarget as HTMLInputElement).value;
     $nodes = $nodes.map((node) => (node.id === id ? updateSubroutineCallArgAt(node, index, value, targetData?.name ?? '') : node));
+  }
+
+  function handleResultVarSelect(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    $nodes = $nodes.map((node) => (node.id === id ? updateSubroutineCallResultVar(node, value, targetData?.name ?? '') : node));
   }
 </script>
 
@@ -48,6 +61,21 @@
 
   <div class="flex flex-wrap items-center gap-1 px-2">
     <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
+    {#if targetReturnsValue}
+      <select
+        value={resultVar}
+        onchange={handleResultVarSelect}
+        disabled={variables.length === 0}
+        class="nodrag min-w-[3.5rem] rounded border bg-transparent px-1 py-0.5"
+        style="border-color: var(--color-border);"
+      >
+        <option value="">{$t('subroutineCall.discardResult')}</option>
+        {#each variables as varName (varName)}
+          <option value={varName}>{varName}</option>
+        {/each}
+      </select>
+      <span style="color: var(--color-text-secondary);">=</span>
+    {/if}
     <span style="color: var(--color-text-secondary);">{$t('subroutineCall.label')}</span>
     <select
       value={targetId}

@@ -51,21 +51,28 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
     case 'start':
     case 'end':
     case 'subroutineStart': // its own body is walked separately as a method, never inline (see subroutineMethods)
-    case 'subroutineEnd':
     case 'decision': // handled separately in walk() — branches, not a single statement
     case 'forLoop': // handled separately in walk() — branches (and loops back), not a single statement
     case 'whileLoop': // handled separately in walk() — branches (and loops back), not a single statement
       return [];
+    case 'subroutineEnd': {
+      // Blank for a void subroutine's End (see SubroutineEndNodeData) — no
+      // `return` at all, matching a void method's own bare `}` close.
+      const returnValue = ((node.data?.returnValue as string | undefined) ?? '').trim();
+      return returnValue ? [{ text: `return ${returnValue};`, rowIndex: 0 }] : [];
+    }
     case 'subroutineCall': {
       // References its target by node id, not name (see
       // SubroutineCallNodeData) — the target's current name is looked up
       // fresh here rather than trusted from stale label text.
-      const data = node.data as { targetId?: string; args?: string[] } | undefined;
+      const data = node.data as { targetId?: string; args?: string[]; resultVar?: string } | undefined;
       const targetNode = data?.targetId ? nodesById.get(data.targetId) : undefined;
       const name = (targetNode?.data as { name?: string } | undefined)?.name;
       if (!name) return [];
       const args = data?.args ?? [];
-      return [{ text: `${name}(${args.join(', ')});`, rowIndex: 0 }];
+      const call = `${name}(${args.join(', ')})`;
+      const text = data?.resultVar ? `${data.resultVar} = ${call};` : `${call};`;
+      return [{ text, rowIndex: 0 }];
     }
     case 'process': {
       // One block can hold several print statements (see
@@ -280,16 +287,19 @@ export function generateJavaMethods(nodes: Node[], edges: Edge[]): string {
   const starts = nodes.filter((node) => blockTypeOf(node) === 'subroutineStart');
 
   const methods = starts.map((startNode) => {
-    const data = startNode.data as { name?: string; params?: { paramType: string; paramName: string }[] } | undefined;
+    const data = startNode.data as
+      | { name?: string; params?: { paramType: string; paramName: string }[]; returnType?: string }
+      | undefined;
     const name = data?.name || 'method';
     const params = data?.params ?? [];
+    const returnType = data?.returnType || 'void';
     const bodyLines = walk(startNode.id, null, nodesById, edges, new Set());
     if (bodyLines.some((line) => SCANNER_CALL_PATTERN.test(line))) {
       bodyLines.unshift('Scanner scanner = new Scanner(System.in);');
     }
     const paramList = params.map((p) => `${p.paramType} ${p.paramName}`).join(', ');
     const body = indent(bodyLines).join('\n');
-    return `private static void ${name}(${paramList}) {\n${body}\n}`;
+    return `private static ${returnType} ${name}(${paramList}) {\n${body}\n}`;
   });
 
   return methods.join('\n\n');

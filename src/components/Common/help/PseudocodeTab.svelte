@@ -13,8 +13,12 @@
     { keyword: 'IF ... THEN ... ELSE ... END IF', descKey: 'help.pseudocodeTutorial.keyword.if.desc' },
     { keyword: 'FOR init; cond; update ... END FOR', descKey: 'help.pseudocodeTutorial.keyword.for.desc' },
     { keyword: 'WHILE cond ... END WHILE', descKey: 'help.pseudocodeTutorial.keyword.while.desc' },
-    { keyword: 'SUBROUTINE name(params) ... END SUBROUTINE', descKey: 'help.pseudocodeTutorial.keyword.subroutine.desc' },
-    { keyword: 'CALL name(args)', descKey: 'help.pseudocodeTutorial.keyword.call.desc' },
+    {
+      keyword: 'SUBROUTINE name(params) [RETURNS TYPE] ... END SUBROUTINE',
+      descKey: 'help.pseudocodeTutorial.keyword.subroutine.desc',
+    },
+    { keyword: 'x = CALL name(args)', descKey: 'help.pseudocodeTutorial.keyword.call.desc' },
+    { keyword: 'RETURN value', descKey: 'help.pseudocodeTutorial.keyword.return.desc' },
   ];
 
   const EXAMPLE = `START

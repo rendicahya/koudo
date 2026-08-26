@@ -49,18 +49,22 @@ function statementLinesFor(node: Node, nodesById: Map<string, Node>, edges: Edge
     case 'start':
     case 'end':
     case 'subroutineStart':
-    case 'subroutineEnd':
     case 'decision':
     case 'forLoop':
     case 'whileLoop':
       return [];
+    case 'subroutineEnd': {
+      const returnValue = ((node.data?.returnValue as string | undefined) ?? '').trim();
+      return returnValue ? [`RETURN ${returnValue}`] : [];
+    }
     case 'subroutineCall': {
-      const data = node.data as { targetId?: string; args?: string[] } | undefined;
+      const data = node.data as { targetId?: string; args?: string[]; resultVar?: string } | undefined;
       const targetNode = data?.targetId ? nodesById.get(data.targetId) : undefined;
       const name = (targetNode?.data as { name?: string } | undefined)?.name;
       if (!name) return [];
       const args = data?.args ?? [];
-      return [`CALL ${name}(${args.join(', ')})`];
+      const call = `CALL ${name}(${args.join(', ')})`;
+      return [data?.resultVar ? `${data.resultVar} = ${call}` : call];
     }
     case 'process': {
       const statements = (node.data?.statements as string[] | undefined) ?? [];
@@ -203,11 +207,15 @@ export function generatePseudocode(nodes: Node[], edges: Edge[]): string {
 
   const subroutineStarts = nodes.filter((node) => blockTypeOf(node) === 'subroutineStart');
   const subroutineBlocks = subroutineStarts.map((subNode) => {
-    const data = subNode.data as { name?: string; params?: { paramType: string; paramName: string }[] } | undefined;
+    const data = subNode.data as
+      | { name?: string; params?: { paramType: string; paramName: string }[]; returnType?: string }
+      | undefined;
     const name = data?.name || 'method';
     const paramList = (data?.params ?? []).map((p) => p.paramName).join(', ');
+    const returnType = data?.returnType || 'void';
+    const header = returnType === 'void' ? `SUBROUTINE ${name}(${paramList})` : `SUBROUTINE ${name}(${paramList}) RETURNS ${typeWord(returnType)}`;
     const bodyLines = walk(subNode.id, null, nodesById, edges, new Set());
-    return `SUBROUTINE ${name}(${paramList})\n${indent(bodyLines).join('\n')}\nEND SUBROUTINE`;
+    return `${header}\n${indent(bodyLines).join('\n')}\nEND SUBROUTINE`;
   });
 
   return [mainBlock, ...subroutineBlocks].join('\n\n') + '\n';
