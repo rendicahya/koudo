@@ -8,21 +8,24 @@
   import { t } from '../../stores/i18n';
   import { projectName, setProjectName, setProjectNameLive } from '../../stores/project';
   import { undo, redo, canUndo, canRedo } from '../../stores/history';
+  import { isCodePanelHidden, toggleCodePanel } from '../../stores/layout';
 
   let helpOpen = $state(false);
 </script>
 
 <header
-  class="flex items-center justify-between border-b px-4 py-2"
+  class="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b px-3 py-2 sm:px-4"
   style="border-color: var(--color-border); background: var(--color-panel);"
 >
-  <div class="flex items-center gap-2 font-semibold" style="color: var(--color-text);">
+  <div class="flex min-w-0 items-center gap-2 font-semibold" style="color: var(--color-text);">
     <span>💻</span>
     <span>KOUDO</span>
-    <span class="text-sm font-normal" style="color: var(--color-text-secondary);">コウド</span>
+    <!-- Dropped below `sm` — the katakana subtitle is decorative, and the
+         project name input needs the room more on a narrow screen. -->
+    <span class="hidden text-sm font-normal sm:inline" style="color: var(--color-text-secondary);">コウド</span>
     <input
       type="text"
-      class="ml-1 max-w-[12rem] truncate rounded border border-transparent bg-transparent px-1.5 py-0.5 text-sm font-normal hover:border-[var(--color-border)] focus:border-[var(--color-border)] focus:outline-none"
+      class="ml-1 w-24 min-w-0 truncate rounded border border-transparent bg-transparent px-1.5 py-0.5 text-sm font-normal hover:border-[var(--color-border)] focus:border-[var(--color-border)] focus:outline-none sm:w-auto sm:max-w-[12rem]"
       style="color: var(--color-text-secondary);"
       aria-label={$t('nav.projectNameLabel')}
       title={$t('nav.projectNameLabel')}
@@ -33,46 +36,64 @@
     />
   </div>
 
-  <div class="flex items-center gap-2">
-    <nav class="flex items-center gap-2">
-      <div class="flex items-center gap-1">
-        <button
-          type="button"
-          class="btn-ghost rounded-md px-2 py-1.5 text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
-          disabled={!$canUndo}
-          title={$t('nav.undoTitle')}
-          aria-label={$t('nav.undo')}
-          onclick={() => undo()}
-        >
-          ↶
-        </button>
-        <button
-          type="button"
-          class="btn-ghost rounded-md px-2 py-1.5 text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
-          disabled={!$canRedo}
-          title={$t('nav.redoTitle')}
-          aria-label={$t('nav.redo')}
-          onclick={() => redo()}
-        >
-          ↷
-        </button>
-      </div>
-
-      <ProjectMenu />
-      <CanvasMenu />
-      <PreferencesMenu />
-
+  <!-- flex-1 so this claims whatever room is left on the title's own row
+       before wrapping to its own row(s) below — same flex-wrap the header
+       itself uses, just scoped to this group of buttons so a narrow screen
+       wraps them without also breaking the title row's own layout. -->
+  <nav class="flex flex-1 flex-wrap items-center gap-2">
+    <div class="flex items-center gap-1">
       <button
         type="button"
-        class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
-        onclick={() => (helpOpen = true)}
+        class="btn-ghost rounded-md px-2 py-1.5 text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+        disabled={!$canUndo}
+        title={$t('nav.undoTitle')}
+        aria-label={$t('nav.undo')}
+        onclick={() => undo()}
       >
-        {$t('nav.help')}
+        ↶
       </button>
-    </nav>
-  </div>
+      <button
+        type="button"
+        class="btn-ghost rounded-md px-2 py-1.5 text-sm hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+        disabled={!$canRedo}
+        title={$t('nav.redoTitle')}
+        aria-label={$t('nav.redo')}
+        onclick={() => redo()}
+      >
+        ↷
+      </button>
+    </div>
+
+    <ProjectMenu />
+    <CanvasMenu />
+    <PreferencesMenu />
+
+    <button
+      type="button"
+      class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
+      onclick={() => (helpOpen = true)}
+    >
+      {$t('nav.help')}
+    </button>
+  </nav>
 
   <div class="flex items-center gap-2">
+    <!-- App.svelte's own hide/show toggle lives on the flowchart/code
+         divider, which only renders (and thus only shows this button) at
+         `md` and above — the panels still stack full-width below that (see
+         App.svelte), so a mobile visitor otherwise has no way to reclaim the
+         other half of a short screen for whichever panel they need right
+         now. Same store/behavior, just a reachable trigger on a narrow
+         viewport. -->
+    <button
+      type="button"
+      class="btn-panel rounded-md border px-2 py-1.5 text-xs md:hidden"
+      title={$isCodePanelHidden ? $t('app.showCodePanel') : $t('app.hideCodePanel')}
+      aria-label={$isCodePanelHidden ? $t('app.showCodePanel') : $t('app.hideCodePanel')}
+      onclick={() => toggleCodePanel()}
+    >
+      {$isCodePanelHidden ? '⏷' : '⏶'}
+    </button>
     <ThemeToggle />
     <FullscreenToggle />
   </div>

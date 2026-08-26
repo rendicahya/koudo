@@ -162,7 +162,7 @@
 
 <div
   data-block-palette
-  class="absolute left-2 top-2 z-10 flex flex-col gap-2 rounded-md border p-3 text-sm shadow-sm"
+  class="absolute left-2 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 overflow-y-auto rounded-md border p-3 text-sm shadow-sm"
   style="background: var(--color-panel); border-color: var(--color-border);"
 >
   <div class="mb-1 flex items-center justify-between gap-3 px-1">

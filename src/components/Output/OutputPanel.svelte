@@ -150,7 +150,7 @@
     <p class="shrink-0" style="color: var(--color-text-secondary);">{$stepStatus}</p>
   {/if}
 
-  <div class="flex min-h-0 flex-1 gap-3">
+  <div class="flex min-h-0 flex-1 flex-col gap-3 sm:flex-row">
     <div
       class="min-h-0 flex-1 overflow-y-auto rounded-md border p-3 font-mono text-xs"
       style="border-color: var(--color-border); background: var(--color-editor-bg);"
@@ -175,7 +175,7 @@
          step run is active (refreshed by stepRunner.ts on every
          stepOnce()), otherwise the last ▶ Run's final values. -->
     <div
-      class="flex w-56 shrink-0 flex-col overflow-hidden rounded-md border"
+      class="flex max-h-40 w-full shrink-0 flex-col overflow-hidden rounded-md border sm:max-h-none sm:w-56"
       style="border-color: var(--color-border);"
     >
       <p

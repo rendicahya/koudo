@@ -56,7 +56,7 @@
   {#if open}
     <div
       role="menu"
-      class="absolute right-0 top-full z-20 mt-1 flex max-h-[80vh] w-60 flex-col overflow-y-auto rounded-md border text-sm shadow-md"
+      class="absolute left-0 top-full z-20 mt-1 flex max-h-[80vh] w-60 max-w-[calc(100vw-1.5rem)] flex-col overflow-y-auto rounded-md border text-sm shadow-md sm:left-auto sm:right-0"
       style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
     >
       {#each variableModeOptions as option (option.mode)}
