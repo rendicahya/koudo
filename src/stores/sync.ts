@@ -47,6 +47,9 @@ function blockTypeOf(node: Node): string | undefined {
   return (node.data as { blockType?: string } | undefined)?.blockType;
 }
 
+// Currently unused — the Java editor is read-only for this development
+// phase (see JavaCodeEditor.svelte), so nothing calls this the other
+// direction right now. Left in place for when editing is re-enabled.
 export function syncCodeToFlowchart(code: string) {
   // A Declare block's String/char entries are edited unquoted in the UI
   // (see DeclareNode.svelte) — code typed/pasted directly into the editor

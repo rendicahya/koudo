@@ -13,6 +13,8 @@
   import { codeContent } from '../../stores/code';
   import { nodes, edges } from '../../stores/flowchart';
   import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
+  import { wrapAsJavaFile, sanitizeJavaClassName } from '../../lib/flowchart/exportJava';
+  import { projectName } from '../../stores/project';
   import { showToast } from '../../stores/toast';
 
   const TABS: CodeTab[] = ['Pseudocode', 'Java'];
@@ -23,10 +25,15 @@
     if ($activeCodeTab === 'Java') javaEditorRef?.refreshLayout();
   });
 
-  // Same source each tab already renders from — Java from its own synced
-  // store, Pseudocode derived fresh off the flowchart (see PseudocodeView.svelte)
-  // — so Copy always matches what's currently on screen.
-  let currentTabCode = $derived($activeCodeTab === 'Java' ? $codeContent : generatePseudocode($nodes, $edges));
+  // Same source each tab already renders from — Java wrapped into a full,
+  // compilable file the same way JavaCodeEditor displays it (class name from
+  // the project name), Pseudocode derived fresh off the flowchart (see
+  // PseudocodeView.svelte) — so Copy always matches what's currently on screen.
+  let currentTabCode = $derived(
+    $activeCodeTab === 'Java'
+      ? wrapAsJavaFile($codeContent, sanitizeJavaClassName($projectName))
+      : generatePseudocode($nodes, $edges),
+  );
 
   async function handleCopy() {
     try {

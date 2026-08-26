@@ -7,7 +7,7 @@
   import { resetFlowchart, loadFlowchart, arrangeNodesVertically, nodes, edges } from '../../stores/flowchart';
   import { downloadTextFile, downloadDataUrl, sanitizeFilename } from '../../lib/download';
   import { serializeFlowchart, parseFlowchartFile } from '../../lib/storage/flowchartFile';
-  import { wrapAsJavaFile } from '../../lib/flowchart/exportJava';
+  import { wrapAsJavaFile, sanitizeJavaClassName } from '../../lib/flowchart/exportJava';
   import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
   import { flowchartToPngDataUrl } from '../../lib/flowchart/exportPng';
   import { stopStepRun } from '../../stores/stepRunner';
@@ -84,12 +84,12 @@
     );
   }
 
-  // Java's public-class-name-must-match-filename rule means this can't
-  // follow the project name the way Save/Export Pseudocode/Download PNG
-  // do — the generated class is always `Main` (see exportJava.ts), so the
-  // file stays Main.java regardless of what the project is called.
+  // Java's public-class-name-must-match-filename rule means the class name
+  // (see sanitizeJavaClassName) and the filename have to agree, so both are
+  // derived from the project name together here.
   function handleExport() {
-    downloadTextFile('Main.java', wrapAsJavaFile($codeContent), 'text/x-java-source');
+    const className = sanitizeJavaClassName($projectName);
+    downloadTextFile(`${className}.java`, wrapAsJavaFile($codeContent, className), 'text/x-java-source');
   }
 
   function handleExportPseudocode() {
