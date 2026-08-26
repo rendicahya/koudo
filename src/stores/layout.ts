@@ -82,11 +82,17 @@ export function setCodeIndentStyle(style: CodeIndentStyle) {
 }
 
 // The code panel's font — a fixed short list of common monospace coding
-// fonts rather than free text, since anything else risks landing on a
-// font the user doesn't actually have installed with no good fallback.
-// Nothing here is fetched over the network (this app runs entirely in the
-// browser — see help.tips.browserOnly): each stack just falls back to a
-// generic monospace font if the named one isn't installed locally.
+// fonts rather than free text, since anything else risks landing on a font
+// the user doesn't actually have with no good fallback. JetBrains
+// Mono/Fira Code/Cascadia Code/Roboto Mono are self-hosted as part of this
+// app's own build (see their @font-face imports in main.ts) — this app
+// still runs entirely client-side with no runtime network calls (see
+// help.tips.browserOnly), but bundling them means the font actually renders
+// for every visitor, not just whoever happens to already have it installed.
+// Consolas is the one exception: it's a proprietary Microsoft font with no
+// redistributable web-font version, so it only renders for a visitor who
+// already has it (effectively Windows) and falls back to generic monospace
+// for everyone else, same as before.
 export interface CodeFontOption {
   id: string;
   label: string;
@@ -100,7 +106,7 @@ export const CODE_FONT_OPTIONS: CodeFontOption[] = [
   { id: 'jetbrains-mono', label: 'JetBrains Mono', stack: `'JetBrains Mono', ${GENERIC_MONOSPACE}` },
   { id: 'fira-code', label: 'Fira Code', stack: `'Fira Code', ${GENERIC_MONOSPACE}` },
   { id: 'cascadia-code', label: 'Cascadia Code', stack: `'Cascadia Code', ${GENERIC_MONOSPACE}` },
-  { id: 'consolas', label: 'Consolas', stack: `Consolas, ${GENERIC_MONOSPACE}` },
+  { id: 'consolas', label: 'Consolas (Windows)', stack: `Consolas, ${GENERIC_MONOSPACE}` },
   { id: 'roboto-mono', label: 'Roboto Mono', stack: `'Roboto Mono', ${GENERIC_MONOSPACE}` },
 ];
 
