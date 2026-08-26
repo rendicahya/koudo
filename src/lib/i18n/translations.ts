@@ -37,6 +37,12 @@ const en = {
   'nav.confirmNew': 'Clear the canvas and start a new flowchart? This cannot be undone.',
   'nav.confirmOpen': 'Clear the canvas and open a different flowchart? This cannot be undone.',
   'nav.projectNameLabel': 'Project name',
+  'nav.codeIndentHeading': 'Code Indent',
+  'nav.codeIndent2': '2 spaces',
+  'nav.codeIndent4': '4 spaces',
+  'nav.codeIndentTab': 'Tab character',
+  'nav.codeFontHeading': 'Code Font',
+  'nav.codeFontDefault': 'Default',
 
   // ThemeToggle / FullscreenToggle
   'toggle.themeTitle': 'Toggle dark/light mode (Alt+Shift+T)',
@@ -72,13 +78,13 @@ const en = {
     'Run, Step, and Stop live above the Output panel. Run executes the whole program at once — the Output panel shows what it prints. Step runs it one line at a time instead, highlighting the block currently executing and updating a live Variable Watcher table after every step. Both need a connected End block first.',
   'help.codePanel.heading': 'Code panel',
   'help.codePanel.body':
-    "The Java tab is a real editor, kept in sync with the flowchart in both directions — edit either one and the other updates. The Pseudocode tab shows the same program in plain structured English, for reading — it's generated from the flowchart, not editable itself.",
+    "The Java tab shows the flowchart translated into a real, compilable Java class, kept up to date automatically as you edit the canvas — it's read-only for now, since the canvas is the only place to edit during this phase. The Pseudocode tab shows the same program in plain structured English, for reading — also generated from the flowchart, not editable.",
   'help.variableModes.heading': 'Variable modes',
   'help.variableModes.body':
     'Switch modes from the Project menu. Standard Mode (the default) is the traditional way: you pick the type yourself, and a value is optional. Beginner Mode infers a variable\'s type from the value you give it — no type names to learn yet. A value isn\'t required there either; leave it blank and pick Whole number / Text / Decimal number instead.',
   'help.menus.heading': 'Menus',
   'help.menus.body':
-    'Project — New, Open/Save Project, Export Java (a compilable Main.java), and Export Pseudocode. Preferences — variable mode and language. Canvas — Arrange (tidy the layout into columns) and Download PNG.',
+    'Project — New, Open/Save Project, Export Java (a compilable .java file named after the project), and Export Pseudocode. Preferences — variable mode and language. Canvas — Arrange (tidy the layout into columns) and Download PNG.',
   'help.shortcuts.heading': 'Keyboard shortcuts',
   'help.shortcuts.run': 'Run',
   'help.shortcuts.step': 'Step / Next Step',
@@ -89,6 +95,75 @@ const en = {
   'help.tips.rightClick': 'Right-click a block or a connecting line to Duplicate or Delete it.',
   'help.tips.fullscreen': 'The ⛶ button, top-right, toggles fullscreen.',
   'help.tips.browserOnly': 'Everything runs entirely in your browser — nothing you build is ever sent anywhere.',
+
+  // HelpModal — top-level tabs
+  'help.tab.koudo': 'Koudo',
+  'help.tab.flowchart': 'Flowchart',
+  'help.tab.pseudocode': 'Pseudocode',
+  'help.tab.java': 'Java',
+
+  // HelpModal — Flowchart tutorial tab
+  'help.flowchartTutorial.intro.heading': 'What is a flowchart?',
+  'help.flowchartTutorial.intro.body':
+    'A flowchart is a diagram that shows the steps of a program as connected shapes, followed from Start to End. Each shape represents one kind of action; arrows show the order they run in.',
+  'help.flowchartTutorial.symbols.heading': 'Symbols',
+  'help.flowchartTutorial.symbol.terminal.name': 'Terminal (Start / End)',
+  'help.flowchartTutorial.symbol.terminal.desc': 'Marks where the program begins and ends — at most one of each.',
+  'help.flowchartTutorial.symbol.process.name': 'Process',
+  'help.flowchartTutorial.symbol.process.desc':
+    'A step that does or changes something — declaring a variable, or updating one that already exists.',
+  'help.flowchartTutorial.symbol.inputOutput.name': 'Input / Output',
+  'help.flowchartTutorial.symbol.inputOutput.desc': 'Reads a value in from the user, or prints one out.',
+  'help.flowchartTutorial.symbol.decision.name': 'Decision',
+  'help.flowchartTutorial.symbol.decision.desc':
+    'Asks a true/false question and sends the flow down one of two paths depending on the answer.',
+  'help.flowchartTutorial.symbol.loop.name': 'Loop',
+  'help.flowchartTutorial.symbol.loop.desc': 'Repeats a group of steps while a condition holds, or a fixed number of times.',
+  'help.flowchartTutorial.symbol.arrow.name': 'Arrow',
+  'help.flowchartTutorial.symbol.arrow.desc': 'Connects two shapes and shows which one runs next.',
+  'help.flowchartTutorial.reading.heading': 'Reading the flow',
+  'help.flowchartTutorial.reading.body':
+    'Follow the arrows one step at a time, starting at Start. Most shapes lead to exactly one next step — a Decision or Loop is the exception, sending the flow down a different path depending on a condition, until it eventually rejoins the main line.',
+  'help.flowchartTutorial.example.heading': 'A simple example',
+  'help.flowchartTutorial.example.body':
+    'A flowchart that reads someone\'s age and says whether they\'re an adult: Start, a step reading age from the user, a Decision asking "age >= 18?", one path printing "Adult" and the other "Minor", both rejoining before End. Building exactly this on the canvas — with the Variable, Input, If, and Output blocks — produces the Java and Pseudocode shown in the Code panel automatically.',
+
+  // HelpModal — Pseudocode tutorial tab
+  'help.pseudocodeTutorial.intro.heading': 'What is pseudocode?',
+  'help.pseudocodeTutorial.intro.body':
+    "Pseudocode writes out a program's logic in plain, structured English instead of a real programming language's exact syntax — useful for planning or explaining a program without worrying about compiler rules. The Pseudocode tab generates it automatically from your flowchart, in one fixed style.",
+  'help.pseudocodeTutorial.keywords.heading': 'Keywords used here',
+  'help.pseudocodeTutorial.keyword.startEnd.desc': 'The boundaries of the whole program.',
+  'help.pseudocodeTutorial.keyword.declare.desc':
+    'Introduces a new variable — add "= value" after the type to give it a starting value.',
+  'help.pseudocodeTutorial.keyword.input.desc': 'Reads a value from the user into x.',
+  'help.pseudocodeTutorial.keyword.output.desc': 'Prints a value.',
+  'help.pseudocodeTutorial.keyword.assign.desc':
+    'Assigns a new value to x — a Java +=, -=, *=, or /= is spelled out the same way, e.g. "x = x + value".',
+  'help.pseudocodeTutorial.keyword.if.desc': 'Branches on a condition; ELSE is optional.',
+  'help.pseudocodeTutorial.keyword.for.desc': 'A counting loop — init, condition, and update, same idea as Java\'s for.',
+  'help.pseudocodeTutorial.keyword.while.desc': 'Repeats the body for as long as the condition holds.',
+  'help.pseudocodeTutorial.example.heading': 'Example',
+
+  // HelpModal — Java tutorial tab (sub-tabs)
+  'help.javaTutorial.dataTypes.label': 'Data Types',
+  'help.javaTutorial.dataTypes.body':
+    "Every variable in Java has a data type, fixed when it's declared. This app supports: int and long for whole numbers, double and float for decimals, boolean for true/false, char for a single character, and String for text.",
+  'help.javaTutorial.variables.label': 'Variables',
+  'help.javaTutorial.variables.body':
+    'A variable is a named box that holds a value of its declared type. Declare it once with `type name = value;` (or just `type name;` to declare without a starting value), then read or change it by name anywhere after that.',
+  'help.javaTutorial.operators.label': 'Operators',
+  'help.javaTutorial.operators.body':
+    'Arithmetic: + - * / % (remainder). Comparison: == != < > <= >= — used in a Decision or loop condition, always producing a boolean. Logical: && (and), || (or), ! (not), for combining conditions. Assignment: = to set a value, and +=, -=, *=, /= as shortcuts for "update based on the current value".',
+  'help.javaTutorial.inputOutput.label': 'Input / Output',
+  'help.javaTutorial.inputOutput.body':
+    'System.out.println(value) prints a value, followed by a new line. Reading input needs a Scanner — Scanner scanner = new Scanner(System.in); — then a method matching the type being read: nextInt() for int, nextDouble() for double, next() for a single word of text, and so on.',
+  'help.javaTutorial.conditionals.label': 'Conditionals',
+  'help.javaTutorial.conditionals.body':
+    "An if statement runs a block only when its condition is true; an optional else runs instead when it's false. Chain more checks with else if.",
+  'help.javaTutorial.loops.label': 'Loops',
+  'help.javaTutorial.loops.body':
+    "A for loop repeats a fixed number of times — its parentheses hold an init (runs once), a condition (checked before every pass), and an update (runs after every pass). A while loop repeats for as long as its condition holds, with no built-in counter.",
 
   // OutputPanel
   'output.run': '▶ Run',
@@ -234,6 +309,12 @@ const id: Record<TranslationKey, string> = {
   'nav.confirmNew': 'Bersihkan kanvas dan mulai flowchart baru? Tindakan ini tidak bisa dibatalkan.',
   'nav.confirmOpen': 'Bersihkan kanvas dan buka flowchart lain? Tindakan ini tidak bisa dibatalkan.',
   'nav.projectNameLabel': 'Nama proyek',
+  'nav.codeIndentHeading': 'Indentasi Kode',
+  'nav.codeIndent2': '2 spasi',
+  'nav.codeIndent4': '4 spasi',
+  'nav.codeIndentTab': 'Karakter tab',
+  'nav.codeFontHeading': 'Font Kode',
+  'nav.codeFontDefault': 'Bawaan',
 
   // ThemeToggle / FullscreenToggle
   'toggle.themeTitle': 'Ganti mode gelap/terang (Alt+Shift+T)',
@@ -270,13 +351,13 @@ const id: Record<TranslationKey, string> = {
     'Run, Step, dan Stop berada di atas panel Output. Run menjalankan seluruh program sekaligus — panel Output menampilkan hasil cetaknya. Step menjalankannya satu baris setiap saat, menyorot blok yang sedang dijalankan dan memperbarui tabel Variable Watcher setelah setiap langkah. Keduanya butuh blok End yang sudah terhubung terlebih dahulu.',
   'help.codePanel.heading': 'Panel kode',
   'help.codePanel.body':
-    'Tab Java adalah editor sungguhan, selalu selaras dengan flowchart di kedua arah — ubah salah satunya dan yang lain ikut diperbarui. Tab Pseudocode menampilkan program yang sama dalam bahasa Inggris terstruktur biasa, hanya untuk dibaca — dihasilkan dari flowchart, tidak bisa diedit langsung.',
+    'Tab Java menampilkan flowchart yang diterjemahkan menjadi kelas Java sungguhan yang siap dikompilasi, selalu diperbarui otomatis saat Anda mengedit kanvas — untuk saat ini sifatnya hanya-baca, karena kanvas adalah satu-satunya tempat untuk mengedit di fase ini. Tab Pseudocode menampilkan program yang sama dalam bahasa Inggris terstruktur biasa, hanya untuk dibaca — juga dihasilkan dari flowchart, tidak bisa diedit.',
   'help.variableModes.heading': 'Mode variabel',
   'help.variableModes.body':
     'Ganti mode dari menu Project. Mode Standar (default) adalah cara tradisional: Anda memilih tipenya sendiri, dan nilai bersifat opsional. Mode Pemula menyimpulkan tipe variabel dari nilai yang Anda berikan — belum perlu belajar nama-nama tipe. Nilai juga tidak wajib di sana; biarkan kosong dan pilih Bilangan bulat / Teks / Bilangan pecahan sebagai gantinya.',
   'help.menus.heading': 'Menu',
   'help.menus.body':
-    'Project — New, Open/Save Project, Export Java (Main.java yang siap dikompilasi), dan Export Pseudocode. Preferences — mode variabel dan bahasa. Canvas — Arrange (merapikan tata letak menjadi kolom-kolom) dan Download PNG.',
+    'Project — New, Open/Save Project, Export Java (berkas .java yang siap dikompilasi, dinamai sesuai proyek), dan Export Pseudocode. Preferences — mode variabel dan bahasa. Canvas — Arrange (merapikan tata letak menjadi kolom-kolom) dan Download PNG.',
   'help.shortcuts.heading': 'Pintasan keyboard',
   'help.shortcuts.run': 'Run',
   'help.shortcuts.step': 'Step / Step Berikutnya',
@@ -287,6 +368,75 @@ const id: Record<TranslationKey, string> = {
   'help.tips.rightClick': 'Klik kanan pada blok atau garis penghubung untuk Duplicate atau Delete.',
   'help.tips.fullscreen': 'Tombol ⛶ di kanan atas mengaktifkan/mematikan layar penuh.',
   'help.tips.browserOnly': 'Semuanya berjalan sepenuhnya di browser Anda — apa pun yang Anda buat tidak pernah dikirim ke mana pun.',
+
+  // HelpModal — top-level tabs
+  'help.tab.koudo': 'Koudo',
+  'help.tab.flowchart': 'Flowchart',
+  'help.tab.pseudocode': 'Pseudokode',
+  'help.tab.java': 'Java',
+
+  // HelpModal — Flowchart tutorial tab
+  'help.flowchartTutorial.intro.heading': 'Apa itu flowchart?',
+  'help.flowchartTutorial.intro.body':
+    'Flowchart adalah diagram yang menampilkan langkah-langkah program sebagai bentuk-bentuk yang saling terhubung, diikuti dari Start hingga End. Setiap bentuk mewakili satu jenis aksi; anak panah menunjukkan urutan menjalankannya.',
+  'help.flowchartTutorial.symbols.heading': 'Simbol',
+  'help.flowchartTutorial.symbol.terminal.name': 'Terminal (Start / End)',
+  'help.flowchartTutorial.symbol.terminal.desc': 'Menandai awal dan akhir program — masing-masing paling banyak satu.',
+  'help.flowchartTutorial.symbol.process.name': 'Process',
+  'help.flowchartTutorial.symbol.process.desc':
+    'Langkah yang melakukan atau mengubah sesuatu — mendeklarasikan variabel, atau memperbarui variabel yang sudah ada.',
+  'help.flowchartTutorial.symbol.inputOutput.name': 'Input / Output',
+  'help.flowchartTutorial.symbol.inputOutput.desc': 'Membaca nilai dari pengguna, atau mencetak sebuah nilai.',
+  'help.flowchartTutorial.symbol.decision.name': 'Decision',
+  'help.flowchartTutorial.symbol.decision.desc':
+    'Mengajukan pertanyaan true/false dan mengirim alur ke salah satu dari dua jalur tergantung jawabannya.',
+  'help.flowchartTutorial.symbol.loop.name': 'Loop',
+  'help.flowchartTutorial.symbol.loop.desc': 'Mengulang sekelompok langkah selama suatu kondisi terpenuhi, atau sejumlah kali tertentu.',
+  'help.flowchartTutorial.symbol.arrow.name': 'Anak panah',
+  'help.flowchartTutorial.symbol.arrow.desc': 'Menghubungkan dua bentuk dan menunjukkan mana yang dijalankan berikutnya.',
+  'help.flowchartTutorial.reading.heading': 'Membaca alur',
+  'help.flowchartTutorial.reading.body':
+    'Ikuti anak panah selangkah demi selangkah, mulai dari Start. Sebagian besar bentuk menuju tepat satu langkah berikutnya — Decision atau Loop adalah pengecualian, mengirim alur ke jalur berbeda tergantung suatu kondisi, hingga akhirnya bergabung kembali ke jalur utama.',
+  'help.flowchartTutorial.example.heading': 'Contoh sederhana',
+  'help.flowchartTutorial.example.body':
+    'Flowchart yang membaca usia seseorang dan menyatakan apakah ia dewasa: Start, langkah membaca usia dari pengguna, Decision yang bertanya "usia >= 18?", satu jalur mencetak "Dewasa" dan jalur lain "Belum dewasa", keduanya bergabung kembali sebelum End. Membangun persis ini di kanvas — dengan blok Variable, Input, If, dan Output — otomatis menghasilkan Java dan Pseudocode yang tampil di panel Code.',
+
+  // HelpModal — Pseudocode tutorial tab
+  'help.pseudocodeTutorial.intro.heading': 'Apa itu pseudocode?',
+  'help.pseudocodeTutorial.intro.body':
+    'Pseudocode menuliskan logika program dalam bahasa Inggris yang terstruktur dan sederhana, bukan sintaks pasti dari bahasa pemrograman sungguhan — berguna untuk merencanakan atau menjelaskan program tanpa perlu memikirkan aturan compiler. Tab Pseudocode menghasilkannya secara otomatis dari flowchart Anda, dengan satu gaya baku.',
+  'help.pseudocodeTutorial.keywords.heading': 'Kata kunci yang digunakan',
+  'help.pseudocodeTutorial.keyword.startEnd.desc': 'Batas awal dan akhir seluruh program.',
+  'help.pseudocodeTutorial.keyword.declare.desc':
+    'Memperkenalkan variabel baru — tambahkan "= nilai" setelah tipe untuk memberi nilai awal.',
+  'help.pseudocodeTutorial.keyword.input.desc': 'Membaca nilai dari pengguna ke dalam x.',
+  'help.pseudocodeTutorial.keyword.output.desc': 'Mencetak sebuah nilai.',
+  'help.pseudocodeTutorial.keyword.assign.desc':
+    'Menetapkan nilai baru ke x — +=, -=, *=, atau /= milik Java dituliskan dengan cara yang sama, misalnya "x = x + nilai".',
+  'help.pseudocodeTutorial.keyword.if.desc': 'Bercabang berdasarkan sebuah kondisi; ELSE bersifat opsional.',
+  'help.pseudocodeTutorial.keyword.for.desc': 'Perulangan dengan penghitung — init, kondisi, dan update, ide yang sama seperti for di Java.',
+  'help.pseudocodeTutorial.keyword.while.desc': 'Mengulang isinya selama kondisinya masih terpenuhi.',
+  'help.pseudocodeTutorial.example.heading': 'Contoh',
+
+  // HelpModal — Java tutorial tab (sub-tabs)
+  'help.javaTutorial.dataTypes.label': 'Tipe Data',
+  'help.javaTutorial.dataTypes.body':
+    'Setiap variabel di Java memiliki tipe data, ditetapkan saat dideklarasikan. Aplikasi ini mendukung: int dan long untuk bilangan bulat, double dan float untuk bilangan pecahan, boolean untuk true/false, char untuk satu karakter, dan String untuk teks.',
+  'help.javaTutorial.variables.label': 'Variabel',
+  'help.javaTutorial.variables.body':
+    'Variabel adalah kotak bernama yang menyimpan nilai sesuai tipe yang dideklarasikan. Deklarasikan sekali dengan `tipe nama = nilai;` (atau cukup `tipe nama;` untuk mendeklarasikan tanpa nilai awal), lalu baca atau ubah nilainya lewat namanya di mana pun setelah itu.',
+  'help.javaTutorial.operators.label': 'Operator',
+  'help.javaTutorial.operators.body':
+    'Aritmetika: + - * / % (sisa bagi). Perbandingan: == != < > <= >= — dipakai dalam kondisi Decision atau perulangan, selalu menghasilkan boolean. Logika: && (dan), || (atau), ! (bukan), untuk menggabungkan kondisi. Penetapan nilai: = untuk menetapkan nilai, dan +=, -=, *=, /= sebagai jalan pintas untuk "perbarui berdasarkan nilai saat ini".',
+  'help.javaTutorial.inputOutput.label': 'Input / Output',
+  'help.javaTutorial.inputOutput.body':
+    'System.out.println(nilai) mencetak sebuah nilai, diikuti baris baru. Membaca input membutuhkan Scanner — Scanner scanner = new Scanner(System.in); — lalu metode yang sesuai dengan tipe yang dibaca: nextInt() untuk int, nextDouble() untuk double, next() untuk satu kata teks, dan seterusnya.',
+  'help.javaTutorial.conditionals.label': 'Percabangan',
+  'help.javaTutorial.conditionals.body':
+    'Pernyataan if menjalankan sebuah blok hanya ketika kondisinya true; else opsional dijalankan sebagai gantinya ketika kondisinya false. Tambahkan pemeriksaan lain dengan else if.',
+  'help.javaTutorial.loops.label': 'Perulangan',
+  'help.javaTutorial.loops.body':
+    'Perulangan for berulang sebanyak jumlah tertentu — tanda kurungnya berisi init (dijalankan sekali), kondisi (diperiksa sebelum setiap putaran), dan update (dijalankan setelah setiap putaran). Perulangan while berulang selama kondisinya masih terpenuhi, tanpa penghitung bawaan.',
 
   // OutputPanel
   'output.run': '▶ Run',

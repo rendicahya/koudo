@@ -8,12 +8,14 @@
     zoomCodeFontSize,
     MIN_CODE_FONT_SIZE,
     MAX_CODE_FONT_SIZE,
+    codeIndentStyle,
   } from '../../stores/layout';
   import { t } from '../../stores/i18n';
   import { codeContent } from '../../stores/code';
   import { nodes, edges } from '../../stores/flowchart';
   import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
   import { wrapAsJavaFile, sanitizeJavaClassName } from '../../lib/flowchart/exportJava';
+  import { reindent } from '../../lib/codeIndent';
   import { projectName } from '../../stores/project';
   import { showToast } from '../../stores/toast';
 
@@ -28,11 +30,15 @@
   // Same source each tab already renders from — Java wrapped into a full,
   // compilable file the same way JavaCodeEditor displays it (class name from
   // the project name), Pseudocode derived fresh off the flowchart (see
-  // PseudocodeView.svelte) — so Copy always matches what's currently on screen.
+  // PseudocodeView.svelte), both reindented to match — so Copy always
+  // matches what's currently on screen.
   let currentTabCode = $derived(
-    $activeCodeTab === 'Java'
-      ? wrapAsJavaFile($codeContent, sanitizeJavaClassName($projectName))
-      : generatePseudocode($nodes, $edges),
+    reindent(
+      $activeCodeTab === 'Java'
+        ? wrapAsJavaFile($codeContent, sanitizeJavaClassName($projectName))
+        : generatePseudocode($nodes, $edges),
+      $codeIndentStyle,
+    ),
   );
 
   async function handleCopy() {

@@ -54,3 +54,74 @@ codeFontSize.subscribe((value) => {
 export function zoomCodeFontSize(delta: number) {
   codeFontSize.update((size) => Math.min(MAX_CODE_FONT_SIZE, Math.max(MIN_CODE_FONT_SIZE, size + delta)));
 }
+
+// How the generated code's indentation is displayed — generator.ts and
+// generatorPseudocode.ts both emit a fixed 4-space step per nesting level
+// (see lib/codeIndent.ts's reindent, which converts that fixed output to
+// whichever of these the user picked), same persisted pattern as the rest
+// of this file. Shared by the Java tab and Pseudocode tab, same reasoning
+// as codeFontSize above — one setting, not two independently-drifting ones.
+export type CodeIndentStyle = '2' | '4' | 'tab';
+
+const CODE_INDENT_STORAGE_KEY = 'koudo-code-indent';
+const DEFAULT_CODE_INDENT: CodeIndentStyle = '4';
+
+function getInitialCodeIndent(): CodeIndentStyle {
+  const stored = localStorage.getItem(CODE_INDENT_STORAGE_KEY);
+  return stored === '2' || stored === '4' || stored === 'tab' ? stored : DEFAULT_CODE_INDENT;
+}
+
+export const codeIndentStyle = writable<CodeIndentStyle>(getInitialCodeIndent());
+
+codeIndentStyle.subscribe((value) => {
+  localStorage.setItem(CODE_INDENT_STORAGE_KEY, value);
+});
+
+export function setCodeIndentStyle(style: CodeIndentStyle) {
+  codeIndentStyle.set(style);
+}
+
+// The code panel's font — a fixed short list of common monospace coding
+// fonts rather than free text, since anything else risks landing on a
+// font the user doesn't actually have installed with no good fallback.
+// Nothing here is fetched over the network (this app runs entirely in the
+// browser — see help.tips.browserOnly): each stack just falls back to a
+// generic monospace font if the named one isn't installed locally.
+export interface CodeFontOption {
+  id: string;
+  label: string;
+  stack: string;
+}
+
+const GENERIC_MONOSPACE = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+
+export const CODE_FONT_OPTIONS: CodeFontOption[] = [
+  { id: 'default', label: 'Default', stack: GENERIC_MONOSPACE },
+  { id: 'jetbrains-mono', label: 'JetBrains Mono', stack: `'JetBrains Mono', ${GENERIC_MONOSPACE}` },
+  { id: 'fira-code', label: 'Fira Code', stack: `'Fira Code', ${GENERIC_MONOSPACE}` },
+  { id: 'cascadia-code', label: 'Cascadia Code', stack: `'Cascadia Code', ${GENERIC_MONOSPACE}` },
+  { id: 'consolas', label: 'Consolas', stack: `Consolas, ${GENERIC_MONOSPACE}` },
+  { id: 'roboto-mono', label: 'Roboto Mono', stack: `'Roboto Mono', ${GENERIC_MONOSPACE}` },
+];
+
+const CODE_FONT_STORAGE_KEY = 'koudo-code-font';
+const DEFAULT_CODE_FONT_ID = 'default';
+
+function getInitialCodeFontId(): string {
+  const stored = localStorage.getItem(CODE_FONT_STORAGE_KEY);
+  return CODE_FONT_OPTIONS.some((font) => font.id === stored) ? (stored as string) : DEFAULT_CODE_FONT_ID;
+}
+
+export const codeFontId = writable<string>(getInitialCodeFontId());
+
+codeFontId.subscribe((value) => {
+  localStorage.setItem(CODE_FONT_STORAGE_KEY, value);
+});
+
+export function setCodeFontId(id: string) {
+  codeFontId.set(id);
+}
+
+export function codeFontStackFor(id: string): string {
+  return CODE_FONT_OPTIONS.find((font) => font.id === id)?.stack ?? CODE_FONT_OPTIONS[0].stack;
+}

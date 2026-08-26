@@ -10,10 +10,19 @@
   import { wrapAsJavaFile, sanitizeJavaClassName } from '../../lib/flowchart/exportJava';
   import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
   import { flowchartToPngDataUrl } from '../../lib/flowchart/exportPng';
+  import { reindent } from '../../lib/codeIndent';
   import { stopStepRun } from '../../stores/stepRunner';
   import { variableMode, setVariableMode, type VariableMode } from '../../stores/settings';
+  import {
+    codeIndentStyle,
+    setCodeIndentStyle,
+    type CodeIndentStyle,
+    codeFontId,
+    setCodeFontId,
+    CODE_FONT_OPTIONS,
+  } from '../../stores/layout';
   import { t, language, setLanguage, type Language } from '../../stores/i18n';
-  import { projectName, setProjectName, DEFAULT_PROJECT_NAME } from '../../stores/project';
+  import { projectName, setProjectName, setProjectNameLive, DEFAULT_PROJECT_NAME } from '../../stores/project';
   import type { TranslationKey } from '../../lib/i18n/translations';
 
   // New/Open/Save all act on the same thing — the flowchart project — so
@@ -54,6 +63,14 @@
     { lang: 'en', label: 'English' },
     { lang: 'id', label: 'Bahasa Indonesia' },
   ];
+  // A fourth group, same menu — how the code panel displays indentation
+  // (see lib/codeIndent.ts; persisted the same way as the rest of
+  // stores/layout.ts).
+  const codeIndentOptions: { style: CodeIndentStyle; labelKey: TranslationKey }[] = [
+    { style: '2', labelKey: 'nav.codeIndent2' },
+    { style: '4', labelKey: 'nav.codeIndent4' },
+    { style: 'tab', labelKey: 'nav.codeIndentTab' },
+  ];
 
   let projectMenuOpen = $state(false);
   let projectMenuEl: HTMLDivElement;
@@ -89,11 +106,15 @@
   // derived from the project name together here.
   function handleExport() {
     const className = sanitizeJavaClassName($projectName);
-    downloadTextFile(`${className}.java`, wrapAsJavaFile($codeContent, className), 'text/x-java-source');
+    downloadTextFile(`${className}.java`, reindent(wrapAsJavaFile($codeContent, className), $codeIndentStyle), 'text/x-java-source');
   }
 
   function handleExportPseudocode() {
-    downloadTextFile(`${sanitizeFilename($projectName)}.pseudocode.txt`, generatePseudocode($nodes, $edges), 'text/plain');
+    downloadTextFile(
+      `${sanitizeFilename($projectName)}.pseudocode.txt`,
+      reindent(generatePseudocode($nodes, $edges), $codeIndentStyle),
+      'text/plain',
+    );
   }
 
   function handleArrange() {
@@ -215,6 +236,7 @@
       aria-label={$t('nav.projectNameLabel')}
       title={$t('nav.projectNameLabel')}
       value={$projectName}
+      oninput={(event) => setProjectNameLive(event.currentTarget.value)}
       onblur={(event) => setProjectName(event.currentTarget.value)}
       onkeydown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
     />
@@ -296,7 +318,7 @@
         {#if preferencesMenuOpen}
           <div
             role="menu"
-            class="absolute right-0 top-full z-20 mt-1 flex w-52 flex-col overflow-hidden rounded-md border text-sm shadow-md"
+            class="absolute right-0 top-full z-20 mt-1 flex max-h-[80vh] w-60 flex-col overflow-y-auto rounded-md border text-sm shadow-md"
             style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
           >
             {#each variableModeOptions as option (option.mode)}
@@ -337,6 +359,48 @@
                 {/if}
               </button>
             {/each}
+
+            <div class="border-t" style="border-color: var(--color-border);"></div>
+
+            <div class="px-3 pt-2 pb-1 text-xs font-semibold" style="color: var(--color-text-secondary);">
+              {$t('nav.codeIndentHeading')}
+            </div>
+            {#each codeIndentOptions as option (option.style)}
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={$codeIndentStyle === option.style}
+                class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
+                onclick={() => {
+                  preferencesMenuOpen = false;
+                  setCodeIndentStyle(option.style);
+                }}
+              >
+                <span>{$t(option.labelKey)}</span>
+                {#if $codeIndentStyle === option.style}
+                  <span style="color: var(--color-accent);">✓</span>
+                {/if}
+              </button>
+            {/each}
+
+            <div class="border-t" style="border-color: var(--color-border);"></div>
+
+            <div class="flex flex-col gap-1 px-3 pt-2 pb-2">
+              <label class="text-xs font-semibold" style="color: var(--color-text-secondary);" for="code-font-select">
+                {$t('nav.codeFontHeading')}
+              </label>
+              <select
+                id="code-font-select"
+                value={$codeFontId}
+                onchange={(event) => setCodeFontId(event.currentTarget.value)}
+                class="rounded border bg-transparent px-1.5 py-1 text-sm"
+                style="border-color: var(--color-border);"
+              >
+                {#each CODE_FONT_OPTIONS as font (font.id)}
+                  <option value={font.id}>{font.id === 'default' ? $t('nav.codeFontDefault') : font.label}</option>
+                {/each}
+              </select>
+            </div>
           </div>
         {/if}
       </div>

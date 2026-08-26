@@ -1,6 +1,10 @@
 <script lang="ts">
   import { t } from '../../stores/i18n';
   import type { TranslationKey } from '../../lib/i18n/translations';
+  import KoudoTab from './help/KoudoTab.svelte';
+  import FlowchartTab from './help/FlowchartTab.svelte';
+  import PseudocodeTab from './help/PseudocodeTab.svelte';
+  import JavaTab from './help/JavaTab.svelte';
 
   interface Props {
     open: boolean;
@@ -9,23 +13,15 @@
 
   let { open, onclose }: Props = $props();
 
-  const blockGuideKeys: { symbol: string; nameKey: TranslationKey; descKey: TranslationKey }[] = [
-    { symbol: '⬭', nameKey: 'help.block.startEnd.name', descKey: 'help.block.startEnd.desc' },
-    { symbol: '▭', nameKey: 'help.block.variable.name', descKey: 'help.block.variable.desc' },
-    { symbol: '▭', nameKey: 'help.block.assign.name', descKey: 'help.block.assign.desc' },
-    { symbol: '▱', nameKey: 'help.block.input.name', descKey: 'help.block.input.desc' },
-    { symbol: '▱', nameKey: 'help.block.output.name', descKey: 'help.block.output.desc' },
-    { symbol: '◇', nameKey: 'help.block.if.name', descKey: 'help.block.if.desc' },
-    { symbol: '⬡', nameKey: 'help.block.for.name', descKey: 'help.block.for.desc' },
-    { symbol: '◇', nameKey: 'help.block.while.name', descKey: 'help.block.while.desc' },
+  type HelpTab = 'koudo' | 'flowchart' | 'pseudocode' | 'java';
+  const TABS: { id: HelpTab; labelKey: TranslationKey }[] = [
+    { id: 'koudo', labelKey: 'help.tab.koudo' },
+    { id: 'flowchart', labelKey: 'help.tab.flowchart' },
+    { id: 'pseudocode', labelKey: 'help.tab.pseudocode' },
+    { id: 'java', labelKey: 'help.tab.java' },
   ];
 
-  const shortcutKeys: { keys: string; actionKey: TranslationKey }[] = [
-    { keys: 'Alt+Shift+R', actionKey: 'help.shortcuts.run' },
-    { keys: 'Alt+Shift+S', actionKey: 'help.shortcuts.step' },
-    { keys: 'Alt+Shift+A', actionKey: 'help.shortcuts.arrange' },
-    { keys: 'Alt+Shift+T', actionKey: 'help.shortcuts.theme' },
-  ];
+  let activeTab = $state<HelpTab>('koudo');
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') onclose();
@@ -49,7 +45,7 @@
       aria-modal="true"
       aria-labelledby="help-modal-title"
       tabindex="-1"
-      class="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-md border shadow-lg"
+      class="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-md border shadow-lg"
       style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
       onclick={(event) => event.stopPropagation()}
       onkeydown={() => {}}
@@ -67,81 +63,33 @@
         </button>
       </div>
 
+      <div role="tablist" class="flex shrink-0 gap-1 border-b px-4" style="border-color: var(--color-border);">
+        {#each TABS as tab (tab.id)}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            class="border-b-2 px-3 py-2 text-sm font-medium"
+            style="border-color: {activeTab === tab.id
+              ? 'var(--color-accent)'
+              : 'transparent'}; color: {activeTab === tab.id ? 'var(--color-text)' : 'var(--color-text-secondary)'};"
+            onclick={() => (activeTab = tab.id)}
+          >
+            {$t(tab.labelKey)}
+          </button>
+        {/each}
+      </div>
+
       <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3 text-sm">
-        <section class="mb-4">
-          <h3 class="mb-1 font-semibold">{$t('help.gettingStarted.heading')}</h3>
-          <p style="color: var(--color-text-secondary);">
-            {$t('help.gettingStarted.body')}
-          </p>
-        </section>
-
-        <section class="mb-4">
-          <h3 class="mb-2 font-semibold">{$t('help.blockTypes.heading')}</h3>
-          <ul class="flex flex-col gap-1.5">
-            {#each blockGuideKeys as block (block.nameKey)}
-              <li class="flex gap-2">
-                <span class="w-5 shrink-0 text-center" style="color: var(--color-accent);">{block.symbol}</span>
-                <span
-                  ><strong>{$t(block.nameKey)}</strong> — <span style="color: var(--color-text-secondary);"
-                    >{$t(block.descKey)}</span
-                  ></span
-                >
-              </li>
-            {/each}
-          </ul>
-        </section>
-
-        <section class="mb-4">
-          <h3 class="mb-1 font-semibold">{$t('help.running.heading')}</h3>
-          <p style="color: var(--color-text-secondary);">
-            {$t('help.running.body')}
-          </p>
-        </section>
-
-        <section class="mb-4">
-          <h3 class="mb-1 font-semibold">{$t('help.codePanel.heading')}</h3>
-          <p style="color: var(--color-text-secondary);">
-            {$t('help.codePanel.body')}
-          </p>
-        </section>
-
-        <section class="mb-4">
-          <h3 class="mb-1 font-semibold">{$t('help.variableModes.heading')}</h3>
-          <p style="color: var(--color-text-secondary);">
-            {$t('help.variableModes.body')}
-          </p>
-        </section>
-
-        <section class="mb-4">
-          <h3 class="mb-1 font-semibold">{$t('help.menus.heading')}</h3>
-          <p style="color: var(--color-text-secondary);">
-            {$t('help.menus.body')}
-          </p>
-        </section>
-
-        <section class="mb-4">
-          <h3 class="mb-1 font-semibold">{$t('help.shortcuts.heading')}</h3>
-          <table class="w-full text-left">
-            <tbody>
-              {#each shortcutKeys as row (row.keys)}
-                <tr style="border-top: 1px solid var(--color-border);">
-                  <td class="py-1 pr-3 font-mono" style="color: var(--color-accent);">{row.keys}</td>
-                  <td class="py-1">{$t(row.actionKey)}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </section>
-
-        <section>
-          <h3 class="mb-1 font-semibold">{$t('help.tips.heading')}</h3>
-          <ul class="list-disc pl-5" style="color: var(--color-text-secondary);">
-            <li>{$t('help.tips.merge')}</li>
-            <li>{$t('help.tips.rightClick')}</li>
-            <li>{$t('help.tips.fullscreen')}</li>
-            <li>{$t('help.tips.browserOnly')}</li>
-          </ul>
-        </section>
+        {#if activeTab === 'koudo'}
+          <KoudoTab />
+        {:else if activeTab === 'flowchart'}
+          <FlowchartTab />
+        {:else if activeTab === 'pseudocode'}
+          <PseudocodeTab />
+        {:else if activeTab === 'java'}
+          <JavaTab />
+        {/if}
       </div>
     </div>
   </div>

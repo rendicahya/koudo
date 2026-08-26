@@ -4,8 +4,9 @@
   import { codeContent } from '../../stores/code';
   import { theme } from '../../stores/theme';
   import { projectName } from '../../stores/project';
-  import { codeFontSize } from '../../stores/layout';
+  import { codeFontSize, codeIndentStyle, codeFontId, codeFontStackFor } from '../../stores/layout';
   import { wrapAsJavaFile, sanitizeJavaClassName } from '../../lib/flowchart/exportJava';
+  import { reindent } from '../../lib/codeIndent';
 
   let container: HTMLDivElement;
   let editor: monaco.editor.IStandaloneCodeEditor | undefined;
@@ -14,7 +15,8 @@
   // view is read-only (see `readOnly` below) and never writes back to it, so
   // there's no two-way sync to guard against here the way JavaCodeEditor's
   // sibling views used to need.
-  let displayedCode = $derived(wrapAsJavaFile($codeContent, sanitizeJavaClassName($projectName)));
+  let displayedCode = $derived(reindent(wrapAsJavaFile($codeContent, sanitizeJavaClassName($projectName)), $codeIndentStyle));
+  let fontFamily = $derived(codeFontStackFor($codeFontId));
 
   onMount(() => {
     editor = monaco.editor.create(container, {
@@ -23,6 +25,7 @@
       automaticLayout: true,
       minimap: { enabled: false },
       fontSize: $codeFontSize,
+      fontFamily,
       theme: $theme === 'dark' ? 'vs-dark' : 'vs',
       // Editing is disabled for now — the canvas is the only place a user
       // edits during this phase, code generation is one-way (flowchart ->
@@ -56,7 +59,7 @@
   });
 
   $effect(() => {
-    editor?.updateOptions({ fontSize: $codeFontSize });
+    editor?.updateOptions({ fontSize: $codeFontSize, fontFamily });
   });
 
   $effect(() => {
