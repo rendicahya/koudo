@@ -2,17 +2,6 @@
   import { t } from '../../../stores/i18n';
   import type { TranslationKey } from '../../../lib/i18n/translations';
 
-  const blockGuideKeys: { symbol: string; nameKey: TranslationKey; descKey: TranslationKey }[] = [
-    { symbol: '⬭', nameKey: 'help.block.startEnd.name', descKey: 'help.block.startEnd.desc' },
-    { symbol: '▭', nameKey: 'help.block.variable.name', descKey: 'help.block.variable.desc' },
-    { symbol: '▭', nameKey: 'help.block.assign.name', descKey: 'help.block.assign.desc' },
-    { symbol: '▱', nameKey: 'help.block.input.name', descKey: 'help.block.input.desc' },
-    { symbol: '▱', nameKey: 'help.block.output.name', descKey: 'help.block.output.desc' },
-    { symbol: '◇', nameKey: 'help.block.if.name', descKey: 'help.block.if.desc' },
-    { symbol: '⬡', nameKey: 'help.block.for.name', descKey: 'help.block.for.desc' },
-    { symbol: '◇', nameKey: 'help.block.while.name', descKey: 'help.block.while.desc' },
-  ];
-
   const shortcutKeys: { keys: string; actionKey: TranslationKey }[] = [
     { keys: 'Alt+Shift+R', actionKey: 'help.shortcuts.run' },
     { keys: 'Alt+Shift+S', actionKey: 'help.shortcuts.step' },
@@ -26,22 +15,6 @@
   <p style="color: var(--color-text-secondary);">
     {$t('help.gettingStarted.body')}
   </p>
-</section>
-
-<section class="mb-4">
-  <h3 class="mb-2 font-semibold">{$t('help.blockTypes.heading')}</h3>
-  <ul class="flex flex-col gap-1.5">
-    {#each blockGuideKeys as block (block.nameKey)}
-      <li class="flex gap-2">
-        <span class="w-5 shrink-0 text-center" style="color: var(--color-accent);">{block.symbol}</span>
-        <span
-          ><strong>{$t(block.nameKey)}</strong> — <span style="color: var(--color-text-secondary);"
-            >{$t(block.descKey)}</span
-          ></span
-        >
-      </li>
-    {/each}
-  </ul>
 </section>
 
 <section class="mb-4">

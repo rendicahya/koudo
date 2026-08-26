@@ -172,18 +172,7 @@
           style="border-color: var(--color-border);"
           placeholder={$t('declare.valueOptional')}
         />
-        {#if entry.varValue}
-          <!-- Beginner mode has no type <select> to show this in while a
-               value is present — the inferred type (see typeInference.ts)
-               is surfaced here instead, read-only. -->
-          <span
-            class="shrink-0 rounded px-1 text-[10px] uppercase"
-            style="color: var(--color-text-secondary); border: 1px solid var(--color-border);"
-            title={$t('declare.inferredTitle')}
-          >
-            {entry.varType}
-          </span>
-        {:else}
+        {#if !entry.varValue}
           <!-- No value to infer a type from — declaring without an initial
                value is allowed, but the type still has to come from
                somewhere, so it's picked explicitly here instead. Restricted
