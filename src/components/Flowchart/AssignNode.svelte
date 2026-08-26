@@ -26,12 +26,54 @@
   let variableEntries = $derived(declaredVariableEntriesUpstreamOf(id, $nodes, $edges));
   let variables = $derived(variableEntries.map((entry) => entry.varName));
 
+  // A row with no target picked yet (a freshly added row, or one placed
+  // before anything upstream was declared) defaults to the first variable
+  // in scope the moment one becomes available — picking a target is the
+  // first thing this block needs anyway, so there's no reason to make the
+  // user open the dropdown and choose it by hand when there's only one (or
+  // an obvious first) option. Only fills in rows still at their blank
+  // starting state; a target the user has since changed (including back to
+  // blank, if that were possible) is never overwritten out from under them.
+  $effect(() => {
+    if (variables.length === 0) return;
+    const blankIndices = entries.reduce<number[]>((acc, entry, index) => {
+      if (!entry.varName) acc.push(index);
+      return acc;
+    }, []);
+    if (blankIndices.length === 0) return;
+
+    $nodes = $nodes.map((node) => {
+      if (node.id !== id) return node;
+      return blankIndices.reduce((n, index) => updateAssignmentEntryAt(n, index, { varName: variables[0] }), node);
+    });
+  });
+
   // A value that names another declared variable is a reference; anything
   // else — including blank, a new row's own starting state — is edited as a
   // custom literal/expression (see the type-aware editor below), same as
   // generator.ts's own reference-vs-literal check for codegen.
   function valueKind(value: string, vars: string[]): 'variable' | 'custom' {
     return vars.includes(value) ? 'variable' : 'custom';
+  }
+
+  // Rows whose custom-value field currently has focus — while typing an
+  // expression (e.g. "usia * 2"), the text passes through a state that
+  // exactly matches a variable name ("usia") the instant that first word is
+  // finished. valueKind alone would flip such a row to 'variable' right
+  // then, swapping the free-text input out for the reference dropdown and
+  // stranding the rest of the keystroke with nowhere to land. Keeping a row
+  // forced to 'custom' while it's focused defers that reclassification
+  // until the user actually leaves the field.
+  let editingIndices = $state(new Set<number>());
+
+  function focusCustomValue(index: number) {
+    editingIndices = new Set(editingIndices).add(index);
+  }
+
+  function blurCustomValue(index: number) {
+    const next = new Set(editingIndices);
+    next.delete(index);
+    editingIndices = next;
   }
 
   // The assignment target's own declared type — a custom value has to match
@@ -48,8 +90,14 @@
     // value left over from the old type (e.g. a numeric '0' after retargeting
     // to a boolean) isn't valid for the new one, so it's cleared alongside
     // the target, same as DeclareNode's type <select>. A "from var" value
-    // isn't type-specific, so it's left alone.
-    if (field === 'varName' && valueKind(entries[index]?.value ?? '', variables) === 'custom') {
+    // isn't type-specific, so it's left alone. Only an actual type change
+    // triggers this: picking a target for the first time (there was no prior
+    // one to have typed against) or retargeting between two variables that
+    // share a type both leave an already-typed custom value — e.g.
+    // "usia * 2" — alone rather than wiping out what the user just typed.
+    const entry = entries[index];
+    const previousType = entry?.varName ? targetTypeOf(entry.varName) : undefined;
+    if (field === 'varName' && entry?.varName && previousType !== targetTypeOf(value) && valueKind(entry.value, variables) === 'custom') {
       $nodes = $nodes.map((node) =>
         node.id === id ? updateAssignmentEntryAt(node, index, { varName: value, value: '' }) : node,
       );
@@ -88,7 +136,7 @@
   <Handle type="target" position={Position.Top} />
 
   {#each entries as entry, index (index)}
-    {@const kind = valueKind(entry.value, variables)}
+    {@const kind = editingIndices.has(index) ? 'custom' : valueKind(entry.value, variables)}
     {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
     <div class="flex flex-wrap items-center gap-1">
       <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
@@ -153,6 +201,8 @@
           <input
             value={entry.value}
             oninput={(event) => handleValueText(index, event)}
+            onfocus={() => focusCustomValue(index)}
+            onblur={() => blurCustomValue(index)}
             maxlength={targetType === 'char' ? 1 : undefined}
             class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
             style="border-color: var(--color-border);"
@@ -163,6 +213,8 @@
           <input
             value={entry.value}
             oninput={(event) => handleValueText(index, event)}
+            onfocus={() => focusCustomValue(index)}
+            onblur={() => blurCustomValue(index)}
             class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
             style="border-color: var(--color-border);"
             placeholder={$t('assign.valueOrLiteral')}
