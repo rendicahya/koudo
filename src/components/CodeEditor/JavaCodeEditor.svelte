@@ -12,6 +12,7 @@
 
   let container: HTMLDivElement;
   let editor: monaco.editor.IStandaloneCodeEditor | undefined;
+  let containerObserver: ResizeObserver | undefined;
 
   // The flowchart is currently the only source of truth for the code — this
   // view is read-only (see `readOnly` below) and never writes back to it, so
@@ -46,17 +47,29 @@
       // scrollbar even when the actual code is short enough to fit.
       scrollBeyondLastLine: false,
     });
+
+    // Monaco sizes itself off its container's actual pixel dimensions —
+    // `automaticLayout: true` above only catches a real window resize, not
+    // an ancestor's CSS `display` flipping from none to visible (this whole
+    // container measures 0x0 while hidden, whether that's Pseudocode/Java's
+    // own toggle just below, the desktop code-panel show/hide toggle, or a
+    // mobile tab switch — see App.svelte's MOBILE_TABS/CodeEditorPanel.svelte).
+    // A ResizeObserver does fire once the container regains a real size, so
+    // this catches all of those uniformly instead of each caller needing to
+    // remember to call refreshLayout() itself.
+    containerObserver = new ResizeObserver(() => editor?.layout());
+    containerObserver.observe(container);
   });
 
   onDestroy(() => {
+    containerObserver?.disconnect();
     editor?.dispose();
   });
 
-  // Monaco sizes itself off its container's actual pixel dimensions —
-  // useless while this tab is hidden behind Pseudocode (display: none, so
-  // the container measures 0x0 — see CodeEditorPanel.svelte). Called once
-  // this tab becomes visible again, so the editor doesn't stay squished to
-  // its last-known (possibly stale, possibly zero) size.
+  // Kept as an explicit, immediate alternative alongside the ResizeObserver
+  // above — CodeEditorPanel's own Pseudocode/Java toggle already called this
+  // the instant activeCodeTab changes, which can land a frame or two earlier
+  // than the observer's own callback.
   export function refreshLayout() {
     editor?.layout();
   }

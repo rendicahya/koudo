@@ -10,8 +10,9 @@
   import { isFlowchartDirty } from './stores/flowchart';
   import { undo, redo } from './stores/history';
   import { toggleTheme } from './stores/theme';
-  import { isCodePanelHidden, toggleCodePanel } from './stores/layout';
+  import { isCodePanelHidden, toggleCodePanel, activeCodeTab, type CodeTab } from './stores/layout';
   import { t } from './stores/i18n';
+  import type { TranslationKey } from './lib/i18n/translations';
 
   function handleBeforeUnload(event: BeforeUnloadEvent) {
     if (!$isFlowchartDirty) return;
@@ -71,6 +72,31 @@
     saveLayoutPrefs({ flowchartPercent, outputHeight });
   });
 
+  // Below md (see the resizable side-by-side layout further down), the
+  // flowchart and code panels no longer share the screen at all — each
+  // mobile tab shows exactly one, full height, so editing a flowchart on a
+  // phone isn't squeezed into half a short screen. Not persisted (unlike
+  // flowchartPercent/outputHeight above) — same "resets on reload" as
+  // BlockPalette's own minimized state, since which one someone last looked
+  // at isn't meaningful to remember across a session.
+  type MobileTab = 'flowchart' | 'pseudocode' | 'java';
+  const MOBILE_TABS: { id: MobileTab; labelKey: TranslationKey; codeTab?: CodeTab }[] = [
+    { id: 'flowchart', labelKey: 'help.tab.flowchart' },
+    { id: 'pseudocode', labelKey: 'code.pseudocodeTab', codeTab: 'Pseudocode' },
+    { id: 'java', labelKey: 'code.javaTab', codeTab: 'Java' },
+  ];
+  let mobileTab = $state<MobileTab>('flowchart');
+
+  // Driving activeCodeTab (not local state of its own) means switching to
+  // the Pseudocode/Java mobile tab shows the exact same view CodeEditorPanel
+  // already renders for that choice on desktop — no separate mobile-only
+  // code path to keep in sync with it.
+  function selectMobileTab(tab: MobileTab) {
+    mobileTab = tab;
+    const codeTab = MOBILE_TABS.find((entry) => entry.id === tab)?.codeTab;
+    if (codeTab) activeCodeTab.set(codeTab);
+  }
+
   // Pointer capture keeps move/up events targeted at the resizer itself even
   // once the cursor crosses into the Monaco editor or SvelteFlow canvas,
   // both of which otherwise intercept pointermove for their own dragging.
@@ -125,9 +151,33 @@
 <div class="flex h-screen flex-col">
   <TopNavbar />
 
+  <!-- Below md, the resizable side-by-side layout further down gives way to
+       one full-height panel at a time — this is what picks which. -->
+  <nav
+    class="flex shrink-0 border-b md:hidden"
+    style="border-color: var(--color-border); background: var(--color-panel);"
+  >
+    {#each MOBILE_TABS as tab (tab.id)}
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mobileTab === tab.id}
+        class="flex-1 border-b-2 px-3 py-2 text-sm font-medium"
+        style="border-color: {mobileTab === tab.id
+          ? 'var(--color-accent)'
+          : 'transparent'}; color: {mobileTab === tab.id ? 'var(--color-text)' : 'var(--color-text-secondary)'};"
+        onclick={() => selectMobileTab(tab.id)}
+      >
+        {$t(tab.labelKey)}
+      </button>
+    {/each}
+  </nav>
+
   <main bind:this={mainEl} class="flex flex-1 flex-col overflow-hidden md:flex-row">
     <section
-      class="flowchart-panel {$isCodePanelHidden ? 'h-full' : 'h-1/2 border-b md:border-b-0'} md:h-full"
+      class="flowchart-panel {mobileTab === 'flowchart' ? '' : 'hidden'} md:block {$isCodePanelHidden
+        ? 'h-full'
+        : 'h-1/2 border-b md:border-b-0'} md:h-full"
       style="border-color: var(--color-border); --flowchart-percent: {flowchartPercent}%; {$isCodePanelHidden
         ? 'width: 100%;'
         : ''}"
@@ -161,30 +211,39 @@
       </button>
     </div>
 
-    {#if !$isCodePanelHidden}
-      <section class="code-column flex h-1/2 flex-1 flex-col overflow-hidden md:h-full">
-        <div class="min-h-0 flex-1" style="background: var(--color-editor-bg);">
-          <CodeEditorPanel />
+    <!-- Always rendered (not gated by an {#if}) — same "stays mounted, just
+         hidden" reasoning as CodeEditorPanel's own Pseudocode/Java toggle,
+         so switching mobile tabs (or the desktop hide/show toggle above)
+         never has to pay Monaco's mount cost again. Mobile: shown unless the
+         Flowchart tab is active. Desktop: shown unless isCodePanelHidden —
+         md:flex/md:hidden unconditionally override the mobile-only class at
+         that breakpoint. -->
+    <section
+      class="code-column {mobileTab === 'flowchart'
+        ? 'hidden'
+        : 'flex'} h-1/2 flex-1 flex-col overflow-hidden md:h-full {$isCodePanelHidden ? 'md:hidden' : 'md:flex'}"
+    >
+      <div class="min-h-0 flex-1" style="background: var(--color-editor-bg);">
+        <CodeEditorPanel />
+      </div>
+
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label={$t('app.resizeRowAriaLabel')}
+        class="resizer resizer-horizontal shrink-0"
+        onpointerdown={beginRowResize}
+      ></div>
+
+      <footer
+        class="flex shrink-0 flex-col overflow-hidden border-t"
+        style="height: {outputHeight}px; border-color: var(--color-border); background: var(--color-panel);"
+      >
+        <div class="min-h-0 flex-1">
+          <OutputPanel />
         </div>
-
-        <div
-          role="separator"
-          aria-orientation="horizontal"
-          aria-label={$t('app.resizeRowAriaLabel')}
-          class="resizer resizer-horizontal shrink-0"
-          onpointerdown={beginRowResize}
-        ></div>
-
-        <footer
-          class="flex shrink-0 flex-col overflow-hidden border-t"
-          style="height: {outputHeight}px; border-color: var(--color-border); background: var(--color-panel);"
-        >
-          <div class="min-h-0 flex-1">
-            <OutputPanel />
-          </div>
-        </footer>
-      </section>
-    {/if}
+      </footer>
+    </section>
   </main>
 </div>
 <Toast />

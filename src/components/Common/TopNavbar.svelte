@@ -8,7 +8,6 @@
   import { t } from '../../stores/i18n';
   import { projectName, setProjectName, setProjectNameLive } from '../../stores/project';
   import { undo, redo, canUndo, canRedo } from '../../stores/history';
-  import { isCodePanelHidden, toggleCodePanel } from '../../stores/layout';
 
   let helpOpen = $state(false);
 </script>
@@ -78,22 +77,6 @@
   </nav>
 
   <div class="flex items-center gap-2">
-    <!-- App.svelte's own hide/show toggle lives on the flowchart/code
-         divider, which only renders (and thus only shows this button) at
-         `md` and above — the panels still stack full-width below that (see
-         App.svelte), so a mobile visitor otherwise has no way to reclaim the
-         other half of a short screen for whichever panel they need right
-         now. Same store/behavior, just a reachable trigger on a narrow
-         viewport. -->
-    <button
-      type="button"
-      class="btn-panel rounded-md border px-2 py-1.5 text-xs md:hidden"
-      title={$isCodePanelHidden ? $t('app.showCodePanel') : $t('app.hideCodePanel')}
-      aria-label={$isCodePanelHidden ? $t('app.showCodePanel') : $t('app.hideCodePanel')}
-      onclick={() => toggleCodePanel()}
-    >
-      {$isCodePanelHidden ? '⏷' : '⏶'}
-    </button>
     <ThemeToggle />
     <FullscreenToggle />
   </div>
