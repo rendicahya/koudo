@@ -8,6 +8,7 @@
     type BlockDefinition,
     type BlockType,
   } from '../../stores/flowchart';
+  import { variableMode } from '../../stores/settings';
   import { t } from '../../stores/i18n';
   import type { TranslationKey } from '../../lib/i18n/translations';
 
@@ -22,6 +23,22 @@
   // on-screen position — see handlePointerDown below for why this isn't
   // native HTML5 drag-and-drop.
   let drag = $state<{ type: BlockType; label: string; x: number; y: number } | null>(null);
+
+  // Methods/subroutines are a more advanced concept than this app otherwise
+  // teaches in Beginner Mode (see stores/settings.ts's variableMode) — and,
+  // unlike Declare's own value-based type inference, a parameter has no
+  // sample value to infer a type from, so there's no beginner-friendly
+  // version of the type pickers their signature genuinely needs. Hidden
+  // from the palette entirely in Beginner Mode rather than shown with those
+  // pickers; any Subroutine blocks already on the canvas from a prior
+  // Standard Mode session are untouched and keep working.
+  let visibleBlocks = $derived(
+    $variableMode === 'inferred'
+      ? BLOCK_DEFINITIONS.filter(
+          (block) => block.type !== 'subroutineStart' && block.type !== 'subroutineCall' && block.type !== 'subroutineEnd',
+        )
+      : BLOCK_DEFINITIONS,
+  );
 
   let hasStart = $derived($nodes.some((node) => node.data?.blockType === 'start'));
   let hasEnd = $derived($nodes.some((node) => node.data?.blockType === 'end'));
@@ -161,7 +178,7 @@
     </button>
   </div>
   {#if !minimized}
-    {#each BLOCK_DEFINITIONS as block (block.type)}
+    {#each visibleBlocks as block (block.type)}
       {@const dimmed = isDimmed(block)}
       {#if block.type === 'process' || block.type === 'input' || block.type === 'decision' || block.type === 'forLoop' || block.type === 'whileLoop'}
         <!-- Standard flowchart Input/Output (parallelogram) and Decision
