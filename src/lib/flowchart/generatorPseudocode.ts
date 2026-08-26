@@ -48,10 +48,20 @@ function statementLinesFor(node: Node, nodesById: Map<string, Node>, edges: Edge
   switch (blockType) {
     case 'start':
     case 'end':
+    case 'subroutineStart':
+    case 'subroutineEnd':
     case 'decision':
     case 'forLoop':
     case 'whileLoop':
       return [];
+    case 'subroutineCall': {
+      const data = node.data as { targetId?: string; args?: string[] } | undefined;
+      const targetNode = data?.targetId ? nodesById.get(data.targetId) : undefined;
+      const name = (targetNode?.data as { name?: string } | undefined)?.name;
+      if (!name) return [];
+      const args = data?.args ?? [];
+      return [`CALL ${name}(${args.join(', ')})`];
+    }
     case 'process': {
       const statements = (node.data?.statements as string[] | undefined) ?? [];
       return statements
@@ -176,7 +186,11 @@ function walk(nodeId: string | null, stopId: string | null, nodesById: Map<strin
 // Unlike generateJavaCode (whose codeContent is just the bare method body —
 // see stores/code.ts, wrapped into a real class only at Export Java time),
 // pseudocode has no separate export step to add the START/END frame later,
-// so it's included directly here.
+// so it's included directly here — and, unlike Java, pseudocode has no
+// interpreter consuming it that a SUBROUTINE block would break (see
+// generator.ts's generateJavaMethods for why Java keeps them separate), so
+// each Subroutine Start's own body is appended directly below the main
+// program, in the same string.
 export function generatePseudocode(nodes: Node[], edges: Edge[]): string {
   if (nodes.length === 0) return '';
 
@@ -185,6 +199,16 @@ export function generatePseudocode(nodes: Node[], edges: Edge[]): string {
 
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
   const lines = walk(startNode.id, null, nodesById, edges, new Set());
+  const mainBlock = `START\n${indent(lines).join('\n')}\nEND`;
 
-  return `START\n${indent(lines).join('\n')}\nEND\n`;
+  const subroutineStarts = nodes.filter((node) => blockTypeOf(node) === 'subroutineStart');
+  const subroutineBlocks = subroutineStarts.map((subNode) => {
+    const data = subNode.data as { name?: string; params?: { paramType: string; paramName: string }[] } | undefined;
+    const name = data?.name || 'method';
+    const paramList = (data?.params ?? []).map((p) => p.paramName).join(', ');
+    const bodyLines = walk(subNode.id, null, nodesById, edges, new Set());
+    return `SUBROUTINE ${name}(${paramList})\n${indent(bodyLines).join('\n')}\nEND SUBROUTINE`;
+  });
+
+  return [mainBlock, ...subroutineBlocks].join('\n\n') + '\n';
 }

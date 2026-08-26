@@ -14,6 +14,7 @@
   import { codeContent } from '../../stores/code';
   import { nodes, edges } from '../../stores/flowchart';
   import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
+  import { generateJavaMethods } from '../../lib/flowchart/generator';
   import { wrapAsJavaFile, sanitizeJavaClassName } from '../../lib/flowchart/exportJava';
   import { reindent } from '../../lib/codeIndent';
   import { projectName } from '../../stores/project';
@@ -35,7 +36,7 @@
   let currentTabCode = $derived(
     reindent(
       $activeCodeTab === 'Java'
-        ? wrapAsJavaFile($codeContent, sanitizeJavaClassName($projectName))
+        ? wrapAsJavaFile($codeContent, sanitizeJavaClassName($projectName), generateJavaMethods($nodes, $edges))
         : generatePseudocode($nodes, $edges),
       $codeIndentStyle,
     ),

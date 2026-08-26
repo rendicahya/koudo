@@ -12,6 +12,11 @@
     },
     { symbol: '◇', nameKey: 'help.flowchartTutorial.symbol.decision.name', descKey: 'help.flowchartTutorial.symbol.decision.desc' },
     { symbol: '⬡', nameKey: 'help.flowchartTutorial.symbol.loop.name', descKey: 'help.flowchartTutorial.symbol.loop.desc' },
+    {
+      symbol: '▤',
+      nameKey: 'help.flowchartTutorial.symbol.subroutine.name',
+      descKey: 'help.flowchartTutorial.symbol.subroutine.desc',
+    },
     { symbol: '→', nameKey: 'help.flowchartTutorial.symbol.arrow.name', descKey: 'help.flowchartTutorial.symbol.arrow.desc' },
   ];
 </script>

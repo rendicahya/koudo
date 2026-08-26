@@ -3,7 +3,19 @@ import { derived, get, writable } from 'svelte/store';
 import { outgoing, findMergePoint, branchHandlesOf, unusedBranchHandle } from '../lib/flowchart/graphWalk';
 import { formatDeclaredValue } from '../lib/flowchart/valueFormat';
 
-export type BlockType = 'start' | 'end' | 'process' | 'declare' | 'assign' | 'input' | 'forLoop' | 'decision' | 'whileLoop';
+export type BlockType =
+  | 'start'
+  | 'end'
+  | 'process'
+  | 'declare'
+  | 'assign'
+  | 'input'
+  | 'forLoop'
+  | 'decision'
+  | 'whileLoop'
+  | 'subroutineStart'
+  | 'subroutineEnd'
+  | 'subroutineCall';
 
 export interface DeclarationEntry {
   varType: string;
@@ -101,6 +113,48 @@ export interface WhileLoopNodeData extends Record<string, unknown> {
   condition: string;
 }
 
+// A parameter of a Subroutine Start block's own method signature — mirrors
+// DeclarationEntry's varType/varName shape but named differently (paramType/
+// paramName) since a parameter has no varValue of its own.
+export interface SubroutineParam {
+  paramType: string;
+  paramName: string;
+}
+
+// One connected component elsewhere on the canvas, walked and generated as
+// its own Java method (see generator.ts's subroutineMethods) — the flowchart
+// notation for a Predefined Process/Subroutine, split across a matching
+// Subroutine Start/Subroutine Call/Subroutine End trio the same way this
+// app's main program is split across Start/blocks/End. Void-only for now:
+// no return-value modeling (see SubroutineCallNodeData below).
+export interface SubroutineStartNodeData extends Record<string, unknown> {
+  blockType: 'subroutineStart';
+  label: string;
+  name: string;
+  params: SubroutineParam[];
+}
+
+// No extra data of its own — same role as the main flow's End block (just
+// marks where this subroutine's body stops), but a distinct blockType so it
+// isn't caught by the main flow's own End-specific checks (singleton,
+// hasConnectedEndBlock — see stores/flowchart.ts and FlowchartBoard.svelte).
+export interface SubroutineEndNodeData extends Record<string, unknown> {
+  blockType: 'subroutineEnd';
+  label: string;
+}
+
+// A call site — placed in any flow (main's, or another subroutine's own
+// body) to invoke a Subroutine Start elsewhere on the canvas. References its
+// target by node id, not by name (see updateSubroutineCallTarget below) —
+// renaming the target's method name shouldn't silently orphan every call to
+// it the way name-string matching would.
+export interface SubroutineCallNodeData extends Record<string, unknown> {
+  blockType: 'subroutineCall';
+  label: string;
+  targetId: string;
+  args: string[];
+}
+
 export interface BlockDefinition {
   type: BlockType;
   label: string;
@@ -121,6 +175,9 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
   { type: 'decision', label: 'If' },
   { type: 'forLoop', label: 'For' },
   { type: 'whileLoop', label: 'While' },
+  { type: 'subroutineStart', label: 'Sub Start' },
+  { type: 'subroutineCall', label: 'Call Sub' },
+  { type: 'subroutineEnd', label: 'Sub End' },
   { type: 'end', label: 'End', singleton: true },
 ];
 
@@ -167,6 +224,10 @@ const FORLOOP_HEIGHT = 90;
 // rest of the plain rectangular blocks before that last editor gets crushed
 // down to nothing.
 export const ASSIGN_WIDTH = BLOCK_WIDTH + 100;
+// Wider than the plain TERMINAL_WIDTH pill Start/End use — a Subroutine
+// Start's own name + growing parameter list needs more room than a fixed
+// "Start"/"End" label ever does.
+export const SUBROUTINE_START_WIDTH = 200;
 
 const NODE_WIDTH: Record<BlockType, number> = {
   start: TERMINAL_WIDTH,
@@ -178,6 +239,9 @@ const NODE_WIDTH: Record<BlockType, number> = {
   forLoop: FORLOOP_WIDTH,
   decision: DIAMOND_WIDTH,
   whileLoop: DIAMOND_WIDTH,
+  subroutineStart: SUBROUTINE_START_WIDTH,
+  subroutineEnd: TERMINAL_WIDTH,
+  subroutineCall: BLOCK_WIDTH,
 };
 
 // The width to lay a block out with before it exists yet (e.g. sizing a
@@ -220,11 +284,16 @@ const FORLOOP_NODE_STYLE = `width: ${FORLOOP_WIDTH}px; height: ${FORLOOP_HEIGHT}
 
 // Flowchart terminal symbol: fully rounded (pill/stadium) left and right.
 const PILL_STYLE = `${TERMINAL_NODE_STYLE} border-radius: 9999px; padding: 8px 16px; text-align: center;`;
+// A softened rectangle (not a full pill — its name/parameter-list content
+// grows the way a rectangular block's does, unlike Start/End's short fixed
+// label) that still reads as "a terminal-ish, special block" rather than
+// Process's sharp-cornered rectangle.
+const SUBROUTINE_START_NODE_STYLE = `width: ${SUBROUTINE_START_WIDTH}px; border-radius: 14px;`;
 
-// decision's, input's, forLoop's, and whileLoop's entries here are never
-// actually read (createBlockNode short-circuits to their own createXNode
-// before reaching this) — kept only so this object satisfies
-// Record<BlockType, string>.
+// decision's, input's, forLoop's, whileLoop's, and every subroutine*
+// entries here are never actually read (createBlockNode short-circuits to
+// their own createXNode before reaching this) — kept only so this object
+// satisfies Record<BlockType, string>.
 const XYFLOW_NODE_STYLE: Record<BlockType, string> = {
   start: PILL_STYLE,
   end: PILL_STYLE,
@@ -235,6 +304,9 @@ const XYFLOW_NODE_STYLE: Record<BlockType, string> = {
   forLoop: FORLOOP_NODE_STYLE,
   decision: DIAMOND_NODE_STYLE,
   whileLoop: DIAMOND_NODE_STYLE,
+  subroutineStart: BASE_NODE_STYLE,
+  subroutineEnd: PILL_STYLE,
+  subroutineCall: BASE_NODE_STYLE,
 };
 
 let nodeCounter = 0;
@@ -339,6 +411,9 @@ export function createBlockNode(type: BlockType, position: { x: number; y: numbe
   if (type === 'decision') return createDecisionNode(position);
   if (type === 'forLoop') return createForLoopNode(position);
   if (type === 'whileLoop') return createWhileLoopNode(position);
+  if (type === 'subroutineStart') return createSubroutineStartNode(position);
+  if (type === 'subroutineEnd') return createSubroutineEndNode(position);
+  if (type === 'subroutineCall') return createSubroutineCallNode(position);
 
   nodeCounter += 1;
   const label = definition.comingSoon ? `${definition.label} (soon)` : definition.label;
@@ -462,6 +537,126 @@ export function createWhileLoopNode(position: { x: number; y: number }): Node {
 
 export function updateWhileLoopCondition(node: Node, condition: string): Node {
   return { ...node, data: { ...node.data, condition, label: whileLoopLabel(condition) } };
+}
+
+// Every `methodN` name already in use by some Subroutine Start currently on
+// the canvas — same "fill the lowest gap, scanned fresh from live state"
+// approach as usedDefaultVarNames/nextDefaultVarName above.
+function usedDefaultMethodNames(): Set<string> {
+  const used = new Set<string>();
+  for (const node of get(nodes)) {
+    if (node.data?.blockType !== 'subroutineStart') continue;
+    const name = (node.data as Partial<SubroutineStartNodeData>).name;
+    if (name && /^method\d+$/.test(name)) used.add(name);
+  }
+  return used;
+}
+
+function nextDefaultMethodName(): string {
+  const used = usedDefaultMethodNames();
+  let n = 1;
+  while (used.has(`method${n}`)) n++;
+  return `method${n}`;
+}
+
+export function subroutineSignatureLabel(name: string, params: SubroutineParam[]): string {
+  const paramList = params.map((p) => `${p.paramType} ${p.paramName}`).join(', ');
+  return `${name || '?'}(${paramList})`;
+}
+
+export function createSubroutineStartNode(position: { x: number; y: number }): Node {
+  nodeCounter += 1;
+  const name = nextDefaultMethodName();
+  const params: SubroutineParam[] = [];
+
+  return {
+    id: `subroutineStart-${nodeCounter}`,
+    type: 'subroutineStart',
+    data: { blockType: 'subroutineStart', label: subroutineSignatureLabel(name, params), name, params },
+    position,
+    style: SUBROUTINE_START_NODE_STYLE,
+  };
+}
+
+export function updateSubroutineName(node: Node, name: string): Node {
+  const data = node.data as Partial<SubroutineStartNodeData>;
+  const params = data.params ?? [];
+  return { ...node, data: { ...node.data, name, label: subroutineSignatureLabel(name, params) } };
+}
+
+export function addSubroutineParam(node: Node): Node {
+  const data = node.data as Partial<SubroutineStartNodeData>;
+  const params = [...(data.params ?? []), { paramType: 'int', paramName: `p${(data.params?.length ?? 0) + 1}` }];
+  return { ...node, data: { ...node.data, params, label: subroutineSignatureLabel(data.name ?? '', params) } };
+}
+
+export function updateSubroutineParamAt(node: Node, index: number, fields: Partial<SubroutineParam>): Node {
+  const data = node.data as Partial<SubroutineStartNodeData>;
+  const params = [...(data.params ?? [])];
+  const current = params[index] ?? { paramType: 'int', paramName: '' };
+  params[index] = { ...current, ...fields };
+  return { ...node, data: { ...node.data, params, label: subroutineSignatureLabel(data.name ?? '', params) } };
+}
+
+export function removeSubroutineParamAt(node: Node, index: number): Node {
+  const data = node.data as Partial<SubroutineStartNodeData>;
+  const params = (data.params ?? []).filter((_, i) => i !== index);
+  return { ...node, data: { ...node.data, params, label: subroutineSignatureLabel(data.name ?? '', params) } };
+}
+
+export function createSubroutineEndNode(position: { x: number; y: number }): Node {
+  nodeCounter += 1;
+  return {
+    id: `subroutineEnd-${nodeCounter}`,
+    type: 'subroutineEnd',
+    data: { blockType: 'subroutineEnd', label: 'End' },
+    position,
+    style: PILL_STYLE,
+  };
+}
+
+// All Subroutine Start nodes currently on the canvas — the pool a Subroutine
+// Call's own target dropdown is populated from (see SubroutineCallNode.svelte)
+// and generator.ts walks to emit each one's own Java method. Global, not
+// upstream-scoped the way declaredVariableNamesUpstreamOf is: any subroutine
+// can call any other regardless of where either sits on the canvas, same as
+// real Java methods can call each other in any order/position within a class.
+export function subroutineStartNodes(nodeList: Node[]): Node[] {
+  return nodeList.filter((node) => node.data?.blockType === 'subroutineStart');
+}
+
+export function subroutineCallLabel(targetName: string, args: string[]): string {
+  return `${targetName || '?'}(${args.join(', ')})`;
+}
+
+export function createSubroutineCallNode(position: { x: number; y: number }): Node {
+  nodeCounter += 1;
+  return {
+    id: `subroutineCall-${nodeCounter}`,
+    type: 'subroutineCall',
+    data: { blockType: 'subroutineCall', label: subroutineCallLabel('', []), targetId: '', args: [] },
+    position,
+    style: BASE_NODE_STYLE,
+  };
+}
+
+// Switching a Call block's target resets its argument list to match the new
+// target's parameter count — an argument list sized for the previous
+// target's signature has no meaningful mapping onto a different one.
+// targetName is passed in (rather than looked up here) since this function
+// only ever sees the one node being updated, not the full node list its
+// target actually lives in — same reason renameDeclaredVariable's callers
+// resolve names before calling in, see that function's own comment.
+export function updateSubroutineCallTarget(node: Node, targetId: string, targetName: string, paramCount: number): Node {
+  const args = Array.from({ length: paramCount }, () => '');
+  return { ...node, data: { ...node.data, targetId, args, label: subroutineCallLabel(targetName, args) } };
+}
+
+export function updateSubroutineCallArgAt(node: Node, index: number, value: string, targetName: string): Node {
+  const data = node.data as Partial<SubroutineCallNodeData>;
+  const args = [...(data.args ?? [])];
+  args[index] = value;
+  return { ...node, data: { ...node.data, args, label: subroutineCallLabel(targetName, args) } };
 }
 
 export function declareLabel(varType: string, varName: string, varValue: string): string {
@@ -780,7 +975,13 @@ export {
 export function bottomMostNodeId(nodeList: Node[], edgeList?: Edge[]): string | null {
   const candidates = nodeList.filter((node) => {
     const type = node.data?.blockType as string | undefined;
-    if (type === 'end') return false;
+    // A Subroutine Start/Call/End belongs to its own separate connected
+    // component (a distinct method's body — see SubroutineStartNodeData),
+    // never the main flow this auto-chain targets — excluded outright so a
+    // block dropped with no specific target nearby never lands on top of a
+    // subroutine's own flow just because it happens to sit lower on the
+    // canvas than main's own bottom node.
+    if (type === 'end' || type === 'subroutineStart' || type === 'subroutineCall' || type === 'subroutineEnd') return false;
     if (branchHandlesOf(type)) return edgeList !== undefined && unusedBranchHandle(node, edgeList) !== null;
     return true;
   });
@@ -949,10 +1150,25 @@ export function arrangeNodesVertically(nodeList: Node[], edgeList: Edge[]): Node
     return y;
   }
 
-  const afterFlowY = layout(startNode.id, null, originX, originY);
+  let afterFlowY = layout(startNode.id, null, originX, originY);
 
-  // Anything the walk never reached (disconnected from Start) — stack
-  // below everything else, in their original relative top-to-bottom order.
+  // Each Subroutine Start is its own separate component's root (see
+  // SubroutineStartNodeData) — never reached from Start's own walk above —
+  // so it gets the same recursive layout() treatment (branches/loops inside
+  // a subroutine's body still lay out correctly), stacked as its own island
+  // below whatever came before it, in canvas order.
+  const subroutineStarts = nodeList
+    .filter((node) => node.data?.blockType === 'subroutineStart')
+    .sort((a, b) => a.position.y - b.position.y);
+  for (const subNode of subroutineStarts) {
+    if (visited.has(subNode.id)) continue;
+    afterFlowY += 90;
+    afterFlowY = layout(subNode.id, null, originX, afterFlowY);
+  }
+
+  // Anything still unreached (disconnected from Start and not itself a
+  // Subroutine Start — e.g. an orphaned mid-chain block) — stack below
+  // everything else, in their original relative top-to-bottom order.
   const leftovers = nodeList.filter((node) => !visited.has(node.id)).sort((a, b) => a.position.y - b.position.y);
   let leftoverY = leftovers.length > 0 ? afterFlowY + 90 : afterFlowY;
   for (const node of leftovers) {

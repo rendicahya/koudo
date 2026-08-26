@@ -21,13 +21,24 @@ export function sanitizeJavaClassName(name: string): string {
   return identifier.replace(/^[0-9]+/, '') || 'Main';
 }
 
-export function wrapAsJavaFile(code: string, className: string): string {
-  const body = code
+function indentLines(text: string, prefix: string): string {
+  return text
     .trim()
     .split('\n')
-    .map((line) => (line ? `${BODY_INDENT}${line}` : ''))
+    .map((line) => (line ? `${prefix}${line}` : ''))
     .join('\n');
-  const importLine = USES_SCANNER_PATTERN.test(code) ? 'import java.util.Scanner;\n\n' : '';
+}
 
-  return `${importLine}public class ${className} {\n    public static void main(String[] args) {\n${body}\n    }\n}\n`;
+// `methods` is generator.ts's generateJavaMethods output — the extra
+// `private static void <name>(...)` methods a flowchart's Subroutine Start
+// blocks produce, kept separate from `code` (main's body) since the
+// in-browser interpreter that also consumes `code` (see stores/run.ts)
+// doesn't understand method declarations at all.
+export function wrapAsJavaFile(code: string, className: string, methods = ''): string {
+  const body = indentLines(code, BODY_INDENT);
+  const usesScanner = USES_SCANNER_PATTERN.test(code) || USES_SCANNER_PATTERN.test(methods);
+  const importLine = usesScanner ? 'import java.util.Scanner;\n\n' : '';
+  const methodsBlock = methods ? `\n\n${indentLines(methods, '    ')}` : '';
+
+  return `${importLine}public class ${className} {\n    public static void main(String[] args) {\n${body}\n    }${methodsBlock}\n}\n`;
 }

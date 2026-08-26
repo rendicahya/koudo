@@ -50,10 +50,23 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
   switch (blockType) {
     case 'start':
     case 'end':
+    case 'subroutineStart': // its own body is walked separately as a method, never inline (see subroutineMethods)
+    case 'subroutineEnd':
     case 'decision': // handled separately in walk() — branches, not a single statement
     case 'forLoop': // handled separately in walk() — branches (and loops back), not a single statement
     case 'whileLoop': // handled separately in walk() — branches (and loops back), not a single statement
       return [];
+    case 'subroutineCall': {
+      // References its target by node id, not name (see
+      // SubroutineCallNodeData) — the target's current name is looked up
+      // fresh here rather than trusted from stale label text.
+      const data = node.data as { targetId?: string; args?: string[] } | undefined;
+      const targetNode = data?.targetId ? nodesById.get(data.targetId) : undefined;
+      const name = (targetNode?.data as { name?: string } | undefined)?.name;
+      if (!name) return [];
+      const args = data?.args ?? [];
+      return [{ text: `${name}(${args.join(', ')});`, rowIndex: 0 }];
+    }
     case 'process': {
       // One block can hold several print statements (see
       // ProcessNode.svelte's "+ Add variable"), each becoming its own line.
@@ -247,4 +260,37 @@ export function generateJavaCode(nodes: Node[], edges: Edge[]): string {
   }
 
   return `${lines.join('\n')}\n`;
+}
+
+// The extra `private static void <name>(<params>) { ... }` methods a
+// flowchart's Subroutine Start blocks (see SubroutineStartNodeData) each
+// generate — one per Subroutine Start, walked from its own body the same way
+// generateJavaCode walks main's. Deliberately separate from codeContent
+// (generateJavaCode's return value): codeContent also feeds the in-browser
+// Run/Step interpreter (see stores/run.ts, lib/execution/*), which has no
+// notion of a method declaration at all — splicing these method blocks into
+// that same string would break every existing flowchart's Run button, not
+// just ones using a subroutine. Only wrapAsJavaFile (Export Java / the Java
+// tab's real, compilable output) consumes this — Run/Step simply doesn't
+// execute a Subroutine Call yet; it surfaces the interpreter's own parse
+// error if one appears in main's flow, same honest failure as any other
+// unsupported construct typed into the code panel.
+export function generateJavaMethods(nodes: Node[], edges: Edge[]): string {
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const starts = nodes.filter((node) => blockTypeOf(node) === 'subroutineStart');
+
+  const methods = starts.map((startNode) => {
+    const data = startNode.data as { name?: string; params?: { paramType: string; paramName: string }[] } | undefined;
+    const name = data?.name || 'method';
+    const params = data?.params ?? [];
+    const bodyLines = walk(startNode.id, null, nodesById, edges, new Set());
+    if (bodyLines.some((line) => SCANNER_CALL_PATTERN.test(line))) {
+      bodyLines.unshift('Scanner scanner = new Scanner(System.in);');
+    }
+    const paramList = params.map((p) => `${p.paramType} ${p.paramName}`).join(', ');
+    const body = indent(bodyLines).join('\n');
+    return `private static void ${name}(${paramList}) {\n${body}\n}`;
+  });
+
+  return methods.join('\n\n');
 }

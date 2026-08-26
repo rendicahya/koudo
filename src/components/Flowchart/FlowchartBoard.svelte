@@ -17,6 +17,9 @@
   import DecisionNode from './DecisionNode.svelte';
   import ForLoopNode from './ForLoopNode.svelte';
   import WhileLoopNode from './WhileLoopNode.svelte';
+  import SubroutineStartNode from './SubroutineStartNode.svelte';
+  import SubroutineEndNode from './SubroutineEndNode.svelte';
+  import SubroutineCallNode from './SubroutineCallNode.svelte';
   import CanvasContextMenu from './CanvasContextMenu.svelte';
   import { theme } from '../../stores/theme';
   import {
@@ -61,6 +64,9 @@
     decision: DecisionNode,
     forLoop: ForLoopNode,
     whileLoop: WhileLoopNode,
+    subroutineStart: SubroutineStartNode,
+    subroutineEnd: SubroutineEndNode,
+    subroutineCall: SubroutineCallNode,
   };
   const defaultEdgeOptions = { markerEnd: { type: MarkerType.ArrowClosed } };
 
@@ -114,19 +120,25 @@
     // in between them (A → C → B) instead of just chaining it onto whatever
     // sits at the very bottom of the whole flow. See findInsertionEdge for
     // the geometry this is based on.
-    const insertionEdge = type !== 'start' ? findInsertionEdge($nodes, $edges, dropCenter) : null;
+    // A Subroutine Start is a root the same way the main flow's Start is —
+    // it begins its own separate component (a distinct method's body — see
+    // SubroutineStartNodeData), never a continuation of whatever's already
+    // on the canvas, so it's excluded from both the mid-chain splice and the
+    // auto-chain-to-bottom fallback the same way 'start' already is.
+    const isRoot = type === 'start' || type === 'subroutineStart';
+    const insertionEdge = !isRoot ? findInsertionEdge($nodes, $edges, dropCenter) : null;
 
     let previousBottomId: string | null = null;
     let sourceHandle: string | null = null;
 
     if (!insertionEdge) {
       // Auto-chain onto whatever's currently at the bottom of the flow, so a
-      // freshly dropped block doesn't land disconnected. Start blocks have no
-      // target handle to connect into, so they're left standalone. Passing
-      // $edges lets a bottom-most branching block (Decision or ForLoop, still
-      // short a handle) be picked as the anchor too, instead of always
-      // skipping it.
-      previousBottomId = type !== 'start' ? bottomMostNodeId($nodes, $edges) : null;
+      // freshly dropped block doesn't land disconnected. Start/Subroutine
+      // Start blocks have no target handle to connect into, so they're left
+      // standalone. Passing $edges lets a bottom-most branching block
+      // (Decision or ForLoop, still short a handle) be picked as the anchor
+      // too, instead of always skipping it.
+      previousBottomId = !isRoot ? bottomMostNodeId($nodes, $edges) : null;
       const bottomNode = previousBottomId ? $nodes.find((node) => node.id === previousBottomId) : undefined;
       sourceHandle =
         bottomNode && branchHandlesOf(bottomNode.data?.blockType as string) ? unusedBranchHandle(bottomNode, $edges) : null;

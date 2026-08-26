@@ -3,6 +3,7 @@
   import { downloadTextFile, sanitizeFilename } from '../../lib/download';
   import { serializeFlowchart, parseFlowchartFile } from '../../lib/storage/flowchartFile';
   import { wrapAsJavaFile, sanitizeJavaClassName } from '../../lib/flowchart/exportJava';
+  import { generateJavaMethods } from '../../lib/flowchart/generator';
   import { generatePseudocode } from '../../lib/flowchart/generatorPseudocode';
   import { reindent } from '../../lib/codeIndent';
   import { codeIndentStyle } from '../../stores/layout';
@@ -54,7 +55,8 @@
   // derived from the project name together here.
   function handleExportJava() {
     const className = sanitizeJavaClassName($projectName);
-    downloadTextFile(`${className}.java`, reindent(wrapAsJavaFile($codeContent, className), $codeIndentStyle), 'text/x-java-source');
+    const methods = generateJavaMethods($nodes, $edges);
+    downloadTextFile(`${className}.java`, reindent(wrapAsJavaFile($codeContent, className, methods), $codeIndentStyle), 'text/x-java-source');
   }
 
   function handleExportPseudocode() {

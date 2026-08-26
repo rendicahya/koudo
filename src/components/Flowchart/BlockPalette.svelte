@@ -41,6 +41,9 @@
     decision: 'block.type.decision',
     forLoop: 'block.type.forLoop',
     whileLoop: 'block.type.whileLoop',
+    subroutineStart: 'block.type.subroutineStart',
+    subroutineCall: 'block.type.subroutineCall',
+    subroutineEnd: 'block.type.subroutineEnd',
   };
 
   function displayLabel(block: BlockDefinition): string {
@@ -190,6 +193,37 @@
           title={chipTitle(block)}
         >
           {block.label}{block.comingSoon ? $t('palette.comingSoonSuffix') : ''}
+        </div>
+      {:else if block.type === 'subroutineStart' || block.type === 'subroutineEnd'}
+        <!-- Same rounded-terminal family as Start/End, but with a translated
+             label (see BLOCK_TYPE_LABEL_KEY) — unlike Start/End, these are
+             this app's own custom components, not xyflow's fixed built-ins. -->
+        <div
+          role="button"
+          tabindex="0"
+          onpointerdown={(event) => handlePointerDown(event, block)}
+          class="cursor-grab touch-none px-4 py-2 text-center active:cursor-grabbing"
+          class:opacity-50={dimmed}
+          style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text); border-radius: 14px;"
+          title={chipTitle(block)}
+        >
+          {displayLabel(block)}{block.comingSoon ? $t('palette.comingSoonSuffix') : ''}
+        </div>
+      {:else if block.type === 'subroutineCall'}
+        <!-- Flowchart "Predefined Process/Subroutine" symbol: a rectangle
+             with an extra vertical line just inside each side edge. -->
+        <div
+          role="button"
+          tabindex="0"
+          onpointerdown={(event) => handlePointerDown(event, block)}
+          class="relative cursor-grab touch-none px-4 py-2 text-center active:cursor-grabbing"
+          class:opacity-50={dimmed}
+          style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text);"
+          title={chipTitle(block)}
+        >
+          <div class="pointer-events-none absolute inset-y-1 left-1.5 w-px" style="background: var(--color-border);"></div>
+          <div class="pointer-events-none absolute inset-y-1 right-1.5 w-px" style="background: var(--color-border);"></div>
+          {displayLabel(block)}{block.comingSoon ? $t('palette.comingSoonSuffix') : ''}
         </div>
       {:else}
         <div

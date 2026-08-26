@@ -4,8 +4,10 @@
   import { codeContent } from '../../stores/code';
   import { theme } from '../../stores/theme';
   import { projectName } from '../../stores/project';
+  import { nodes, edges } from '../../stores/flowchart';
   import { codeFontSize, codeIndentStyle, codeFontId, codeFontStackFor } from '../../stores/layout';
   import { wrapAsJavaFile, sanitizeJavaClassName } from '../../lib/flowchart/exportJava';
+  import { generateJavaMethods } from '../../lib/flowchart/generator';
   import { reindent } from '../../lib/codeIndent';
 
   let container: HTMLDivElement;
@@ -15,7 +17,12 @@
   // view is read-only (see `readOnly` below) and never writes back to it, so
   // there's no two-way sync to guard against here the way JavaCodeEditor's
   // sibling views used to need.
-  let displayedCode = $derived(reindent(wrapAsJavaFile($codeContent, sanitizeJavaClassName($projectName)), $codeIndentStyle));
+  let displayedCode = $derived(
+    reindent(
+      wrapAsJavaFile($codeContent, sanitizeJavaClassName($projectName), generateJavaMethods($nodes, $edges)),
+      $codeIndentStyle,
+    ),
+  );
   let fontFamily = $derived(codeFontStackFor($codeFontId));
 
   onMount(() => {

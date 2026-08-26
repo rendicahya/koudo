@@ -105,6 +105,9 @@ const en = {
     'Asks a true/false question and sends the flow down one of two paths depending on the answer.',
   'help.flowchartTutorial.symbol.loop.name': 'Loop',
   'help.flowchartTutorial.symbol.loop.desc': 'Repeats a group of steps while a condition holds, or a fixed number of times.',
+  'help.flowchartTutorial.symbol.subroutine.name': 'Predefined Process (Subroutine)',
+  'help.flowchartTutorial.symbol.subroutine.desc':
+    'Calls a separate, named flow defined elsewhere on the canvas (its own Sub Start/Sub End pair) — like calling a method in Java.',
   'help.flowchartTutorial.symbol.arrow.name': 'Arrow',
   'help.flowchartTutorial.symbol.arrow.desc': 'Connects two shapes and shows which one runs next.',
   'help.flowchartTutorial.reading.heading': 'Reading the flow',
@@ -129,6 +132,9 @@ const en = {
   'help.pseudocodeTutorial.keyword.if.desc': 'Branches on a condition; ELSE is optional.',
   'help.pseudocodeTutorial.keyword.for.desc': 'A counting loop — init, condition, and update, same idea as Java\'s for.',
   'help.pseudocodeTutorial.keyword.while.desc': 'Repeats the body for as long as the condition holds.',
+  'help.pseudocodeTutorial.keyword.subroutine.desc':
+    'Defines a separate, named block of steps that can be called from elsewhere — like a method in Java.',
+  'help.pseudocodeTutorial.keyword.call.desc': 'Runs a SUBROUTINE defined elsewhere, then continues right after this line.',
   'help.pseudocodeTutorial.example.heading': 'Example',
 
   // HelpModal — Java tutorial tab (sub-tabs)
@@ -211,6 +217,20 @@ const en = {
   'block.type.decision': 'If',
   'block.type.forLoop': 'For',
   'block.type.whileLoop': 'While',
+  'block.type.subroutineStart': 'Sub Start',
+  'block.type.subroutineCall': 'Call Sub',
+  'block.type.subroutineEnd': 'Sub End',
+
+  // Subroutine Start/Call/End blocks
+  'subroutineStart.label': 'Sub',
+  'subroutineStart.namePlaceholder': 'name',
+  'subroutineStart.invalidName': '"{name}" is not a valid Java method name',
+  'subroutineStart.paramPlaceholder': 'param',
+  'subroutineStart.addParam': '+ Add parameter',
+  'subroutineStart.removeParam': 'Remove parameter',
+  'subroutineEnd.label': 'End',
+  'subroutineCall.label': 'Call',
+  'subroutineCall.noSubroutines': 'No subroutines yet',
 
   // Shared "no variables yet" / "choose" dropdown prompt (Input/Output/Assign)
   'shared.noVariables': 'No variables',
@@ -362,6 +382,9 @@ const id: Record<TranslationKey, string> = {
     'Mengajukan pertanyaan true/false dan mengirim alur ke salah satu dari dua jalur tergantung jawabannya.',
   'help.flowchartTutorial.symbol.loop.name': 'Loop',
   'help.flowchartTutorial.symbol.loop.desc': 'Mengulang sekelompok langkah selama suatu kondisi terpenuhi, atau sejumlah kali tertentu.',
+  'help.flowchartTutorial.symbol.subroutine.name': 'Predefined Process (Subroutine)',
+  'help.flowchartTutorial.symbol.subroutine.desc':
+    'Memanggil alur terpisah bernama yang didefinisikan di tempat lain pada kanvas (pasangan Sub Start/Sub End miliknya sendiri) — seperti memanggil method di Java.',
   'help.flowchartTutorial.symbol.arrow.name': 'Anak panah',
   'help.flowchartTutorial.symbol.arrow.desc': 'Menghubungkan dua bentuk dan menunjukkan mana yang dijalankan berikutnya.',
   'help.flowchartTutorial.reading.heading': 'Membaca alur',
@@ -386,6 +409,9 @@ const id: Record<TranslationKey, string> = {
   'help.pseudocodeTutorial.keyword.if.desc': 'Bercabang berdasarkan sebuah kondisi; ELSE bersifat opsional.',
   'help.pseudocodeTutorial.keyword.for.desc': 'Perulangan dengan penghitung — init, kondisi, dan update, ide yang sama seperti for di Java.',
   'help.pseudocodeTutorial.keyword.while.desc': 'Mengulang isinya selama kondisinya masih terpenuhi.',
+  'help.pseudocodeTutorial.keyword.subroutine.desc':
+    'Mendefinisikan sekelompok langkah terpisah dan bernama yang bisa dipanggil dari tempat lain — seperti method di Java.',
+  'help.pseudocodeTutorial.keyword.call.desc': 'Menjalankan SUBROUTINE yang didefinisikan di tempat lain, lalu lanjut tepat setelah baris ini.',
   'help.pseudocodeTutorial.example.heading': 'Contoh',
 
   // HelpModal — Java tutorial tab (sub-tabs)
@@ -468,6 +494,20 @@ const id: Record<TranslationKey, string> = {
   'block.type.decision': 'If',
   'block.type.forLoop': 'For',
   'block.type.whileLoop': 'While',
+  'block.type.subroutineStart': 'Awal Sub',
+  'block.type.subroutineCall': 'Panggil Sub',
+  'block.type.subroutineEnd': 'Akhir Sub',
+
+  // Subroutine Start/Call/End blocks
+  'subroutineStart.label': 'Sub',
+  'subroutineStart.namePlaceholder': 'nama',
+  'subroutineStart.invalidName': '"{name}" bukan nama method Java yang valid',
+  'subroutineStart.paramPlaceholder': 'param',
+  'subroutineStart.addParam': '+ Tambah parameter',
+  'subroutineStart.removeParam': 'Hapus parameter',
+  'subroutineEnd.label': 'Akhir',
+  'subroutineCall.label': 'Panggil',
+  'subroutineCall.noSubroutines': 'Belum ada subroutine',
 
   // Shared "no variables yet" / "choose" dropdown prompt
   'shared.noVariables': 'Tidak ada variabel',
