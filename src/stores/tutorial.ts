@@ -1,11 +1,19 @@
 import { writable, get } from 'svelte/store';
 import type { TranslationKey } from '../lib/i18n/translations';
 
-// Six independent guided walkthroughs, each covering one concept end to
+// Seven independent guided walkthroughs, each covering one concept end to
 // end (declare -> ... -> run). "basic" is the only one a brand-new visitor
 // sees automatically (see startTutorial below); the rest are reachable any
 // time from the Tutorial submenu (see HelpMenu.svelte).
-export const TUTORIAL_TRACKS = ['basic', 'variableConstAssignment', 'inputOutput', 'decision', 'forLoop', 'whileLoop'] as const;
+export const TUTORIAL_TRACKS = [
+  'basic',
+  'variableConstAssignment',
+  'inputOutput',
+  'decision',
+  'forLoop',
+  'whileLoop',
+  'subroutine',
+] as const;
 
 export type TutorialTrackId = (typeof TUTORIAL_TRACKS)[number];
 
@@ -16,6 +24,7 @@ export const TRACK_LABEL_KEYS: Record<TutorialTrackId, TranslationKey> = {
   decision: 'tutorial.track.decision',
   forLoop: 'tutorial.track.forLoop',
   whileLoop: 'tutorial.track.whileLoop',
+  subroutine: 'tutorial.track.subroutine',
 };
 
 interface TutorialStepDef {
@@ -259,6 +268,59 @@ const TRACK_STEPS: Record<TutorialTrackId, TutorialStepDef[]> = {
       highlight: '[data-tutorial-run-button]',
     },
     { id: 'done', titleKey: 'tutorial.step.whileLoop.done.title', bodyKey: 'tutorial.step.whileLoop.done.body' },
+  ],
+  subroutine: [
+    { id: 'welcome', titleKey: 'tutorial.step.subroutine.welcome.title', bodyKey: 'tutorial.step.subroutine.welcome.body' },
+    { id: 'mode', titleKey: 'tutorial.step.subroutine.mode.title', bodyKey: 'tutorial.step.subroutine.mode.body' },
+    {
+      id: 'subroutineStart',
+      titleKey: 'tutorial.step.subroutine.subroutineStart.title',
+      bodyKey: 'tutorial.step.subroutine.subroutineStart.body',
+      highlight: '[data-block-chip="subroutineStart"]',
+    },
+    {
+      id: 'subroutineReturn',
+      titleKey: 'tutorial.step.subroutine.subroutineReturn.title',
+      bodyKey: 'tutorial.step.subroutine.subroutineReturn.body',
+      highlight: '[data-block-chip="subroutineEnd"]',
+    },
+    {
+      id: 'mainDeclare',
+      titleKey: 'tutorial.step.subroutine.mainDeclare.title',
+      bodyKey: 'tutorial.step.subroutine.mainDeclare.body',
+      highlight: '[data-block-chip="declare"]',
+    },
+    {
+      id: 'subroutineCall',
+      titleKey: 'tutorial.step.subroutine.subroutineCall.title',
+      bodyKey: 'tutorial.step.subroutine.subroutineCall.body',
+      highlight: '[data-block-chip="subroutineCall"]',
+    },
+    {
+      id: 'output',
+      titleKey: 'tutorial.step.subroutine.output.title',
+      bodyKey: 'tutorial.step.subroutine.output.body',
+      highlight: '[data-block-chip="process"]',
+    },
+    {
+      id: 'end',
+      titleKey: 'tutorial.step.subroutine.end.title',
+      bodyKey: 'tutorial.step.subroutine.end.body',
+      highlight: '[data-block-chip="end"]',
+    },
+    {
+      id: 'arrange',
+      titleKey: 'tutorial.step.subroutine.arrange.title',
+      bodyKey: 'tutorial.step.subroutine.arrange.body',
+      highlight: '[data-tutorial-canvas-menu]',
+    },
+    {
+      id: 'run',
+      titleKey: 'tutorial.step.subroutine.run.title',
+      bodyKey: 'tutorial.step.subroutine.run.body',
+      highlight: '[data-tutorial-run-button]',
+    },
+    { id: 'done', titleKey: 'tutorial.step.subroutine.done.title', bodyKey: 'tutorial.step.subroutine.done.body' },
   ],
 };
 

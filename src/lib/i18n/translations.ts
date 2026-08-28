@@ -337,6 +337,7 @@ const en = {
   'tutorial.track.decision': 'Decision (If)',
   'tutorial.track.forLoop': 'For Loop',
   'tutorial.track.whileLoop': 'While Loop',
+  'tutorial.track.subroutine': 'Subroutines (Sub Start/End/Call)',
 
   // Basic guide
   'tutorial.step.basic.welcome.title': "Let's build something!",
@@ -480,7 +481,39 @@ const en = {
   'tutorial.step.whileLoop.run.body': 'Click ▶ Run below the canvas. Expect to see `1` through `5`, one per line.',
   'tutorial.step.whileLoop.done.title': '🎉 You did it!',
   'tutorial.step.whileLoop.done.body':
-    'You just repeated a step with a While loop and managed your own counter. Explore the palette for more.',
+    'You just repeated a step with a While loop and managed your own counter. Open Help → Tutorial to try Subroutines next.',
+
+  // Subroutines guide
+  'tutorial.step.subroutine.welcome.title': 'Reuse steps with a subroutine',
+  'tutorial.step.subroutine.welcome.body':
+    "A subroutine is a mini flow you can call from your main flow, with its own name, parameters, and (optionally) a return value — like a Java method. We'll build one that squares a number.",
+  'tutorial.step.subroutine.mode.title': 'Switch to Standard Mode',
+  'tutorial.step.subroutine.mode.body':
+    "Subroutine blocks only appear in Standard Mode. Open Preferences → Mode and choose 'Standard Mode' before continuing.",
+  'tutorial.step.subroutine.subroutineStart.title': 'Start the subroutine',
+  'tutorial.step.subroutine.subroutineStart.body':
+    "Drag a 'Sub Start' block onto the canvas. Name it `square`, set 'Returns' to `int`, then click '+ Add parameter' and set it to `int` `n`.",
+  'tutorial.step.subroutine.subroutineReturn.title': 'Return a value',
+  'tutorial.step.subroutine.subroutineReturn.body':
+    "Drag a 'Sub End' block below it and connect them. Set its 'Return' field to `n * n`.",
+  'tutorial.step.subroutine.mainDeclare.title': 'Declare a variable for the result',
+  'tutorial.step.subroutine.mainDeclare.body':
+    "Back in the main flow (from the regular 'Start' block), drag a 'Variable' block. Name it `result`, type `int`.",
+  'tutorial.step.subroutine.subroutineCall.title': 'Call the subroutine',
+  'tutorial.step.subroutine.subroutineCall.body':
+    "Drag a 'Call Sub' block after it. Set the left dropdown to `result`, choose `square` as the subroutine, and set its argument to `5`.",
+  'tutorial.step.subroutine.output.title': 'Print the result',
+  'tutorial.step.subroutine.output.body': "Drag an 'Output' block and print `result`.",
+  'tutorial.step.subroutine.end.title': 'Finish the main flow',
+  'tutorial.step.subroutine.end.body': "Drag an 'End' block and connect it after Output.",
+  'tutorial.step.subroutine.arrange.title': 'Tidy the layout',
+  'tutorial.step.subroutine.arrange.body':
+    "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly.",
+  'tutorial.step.subroutine.run.title': 'Run it!',
+  'tutorial.step.subroutine.run.body': 'Click ▶ Run below the canvas. Expect to see `25`.',
+  'tutorial.step.subroutine.done.title': '🎉 You did it!',
+  'tutorial.step.subroutine.done.body':
+    'You just built and called your own subroutine with a parameter and a return value. Explore the palette for more.',
 
   // TopNavbar — opens the Tutorial submenu above (see HelpMenu.svelte)
   'nav.tutorial': 'Tutorial',
@@ -810,6 +843,7 @@ const id: Record<TranslationKey, string> = {
   'tutorial.track.decision': 'Keputusan (If)',
   'tutorial.track.forLoop': 'Perulangan For',
   'tutorial.track.whileLoop': 'Perulangan While',
+  'tutorial.track.subroutine': 'Subroutine (Sub Start/End/Call)',
 
   // Panduan Dasar
   'tutorial.step.basic.welcome.title': 'Mari membuat sesuatu!',
@@ -949,7 +983,38 @@ const id: Record<TranslationKey, string> = {
     'Klik ▶ Run di bawah kanvas. Hasil yang diharapkan: `1` sampai `5`, masing-masing di barisnya sendiri.',
   'tutorial.step.whileLoop.done.title': '🎉 Berhasil!',
   'tutorial.step.whileLoop.done.body':
-    'Kamu baru saja mengulang sebuah langkah dengan perulangan While dan mengatur penghitung sendiri. Jelajahi palet untuk lainnya.',
+    'Kamu baru saja mengulang sebuah langkah dengan perulangan While dan mengatur penghitung sendiri. Buka Bantuan → Tutorial untuk mencoba Subroutine selanjutnya.',
+
+  // Panduan Subroutine
+  'tutorial.step.subroutine.welcome.title': 'Gunakan ulang langkah dengan subroutine',
+  'tutorial.step.subroutine.welcome.body':
+    'Subroutine adalah alur kecil yang bisa kamu panggil dari alur utama, dengan nama, parameter, dan (opsional) nilai balik sendiri — seperti method Java. Kita akan membuat subroutine yang mengkuadratkan sebuah angka.',
+  'tutorial.step.subroutine.mode.title': 'Ganti ke Mode Standar',
+  'tutorial.step.subroutine.mode.body':
+    "Blok subroutine hanya muncul di Mode Standar. Buka Preferensi → Mode lalu pilih 'Mode Standar' sebelum melanjutkan.",
+  'tutorial.step.subroutine.subroutineStart.title': 'Mulai subroutine-nya',
+  'tutorial.step.subroutine.subroutineStart.body':
+    "Seret blok 'Sub Start' ke kanvas. Beri nama `square`, atur 'Returns' ke `int`, lalu klik '+ Tambah parameter' dan atur ke `int` `n`.",
+  'tutorial.step.subroutine.subroutineReturn.title': 'Kembalikan sebuah nilai',
+  'tutorial.step.subroutine.subroutineReturn.body':
+    "Seret blok 'Sub End' di bawahnya lalu hubungkan keduanya. Atur kolom 'Nilai balik' ke `n * n`.",
+  'tutorial.step.subroutine.mainDeclare.title': 'Deklarasikan variabel untuk hasilnya',
+  'tutorial.step.subroutine.mainDeclare.body':
+    "Kembali ke alur utama (dari blok 'Start' biasa), seret blok 'Variable'. Beri nama `result`, tipe `int`.",
+  'tutorial.step.subroutine.subroutineCall.title': 'Panggil subroutine-nya',
+  'tutorial.step.subroutine.subroutineCall.body':
+    "Seret blok 'Call Sub' setelahnya. Atur dropdown kiri ke `result`, pilih `square` sebagai subroutine-nya, dan atur argumennya ke `5`.",
+  'tutorial.step.subroutine.output.title': 'Cetak hasilnya',
+  'tutorial.step.subroutine.output.body': "Seret blok 'Output' dan cetak `result`.",
+  'tutorial.step.subroutine.end.title': 'Selesaikan alur utamanya',
+  'tutorial.step.subroutine.end.body': "Seret blok 'End' dan hubungkan setelah Output.",
+  'tutorial.step.subroutine.arrange.title': 'Rapikan tata letak',
+  'tutorial.step.subroutine.arrange.body': "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu.",
+  'tutorial.step.subroutine.run.title': 'Jalankan!',
+  'tutorial.step.subroutine.run.body': 'Klik ▶ Run di bawah kanvas. Hasil yang diharapkan: `25`.',
+  'tutorial.step.subroutine.done.title': '🎉 Berhasil!',
+  'tutorial.step.subroutine.done.body':
+    'Kamu baru saja membuat dan memanggil subroutine sendiri dengan parameter dan nilai balik. Jelajahi palet untuk lainnya.',
 
   // TopNavbar — membuka tutorial di atas lagi
   'nav.tutorial': 'Tutorial',
