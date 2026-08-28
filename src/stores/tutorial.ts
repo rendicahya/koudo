@@ -314,12 +314,7 @@ const TRACK_STEPS: Record<TutorialTrackId, TutorialStepDef[]> = {
       bodyKey: 'tutorial.step.subroutine.arrange.body',
       highlight: '[data-tutorial-canvas-menu]',
     },
-    {
-      id: 'run',
-      titleKey: 'tutorial.step.subroutine.run.title',
-      bodyKey: 'tutorial.step.subroutine.run.body',
-      highlight: '[data-tutorial-run-button]',
-    },
+    { id: 'run', titleKey: 'tutorial.step.subroutine.run.title', bodyKey: 'tutorial.step.subroutine.run.body' },
     { id: 'done', titleKey: 'tutorial.step.subroutine.done.title', bodyKey: 'tutorial.step.subroutine.done.body' },
   ],
 };

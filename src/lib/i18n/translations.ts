@@ -501,7 +501,7 @@ const en = {
     "Back in the main flow (from the regular 'Start' block), drag a 'Variable' block. Name it `result`, type `int`.",
   'tutorial.step.subroutine.subroutineCall.title': 'Call the subroutine',
   'tutorial.step.subroutine.subroutineCall.body':
-    "Drag a 'Call Sub' block after it. Set the left dropdown to `result`, choose `square` as the subroutine, and set its argument to `5`.",
+    "Drag a 'Call Sub' block after it. Choose `square` as the subroutine first — that makes a result dropdown appear on the left, set it to `result`. Then set the argument to `5`.",
   'tutorial.step.subroutine.output.title': 'Print the result',
   'tutorial.step.subroutine.output.body': "Drag an 'Output' block and print `result`.",
   'tutorial.step.subroutine.end.title': 'Finish the main flow',
@@ -509,11 +509,12 @@ const en = {
   'tutorial.step.subroutine.arrange.title': 'Tidy the layout',
   'tutorial.step.subroutine.arrange.body':
     "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly.",
-  'tutorial.step.subroutine.run.title': 'Run it!',
-  'tutorial.step.subroutine.run.body': 'Click ▶ Run below the canvas. Expect to see `25`.',
+  'tutorial.step.subroutine.run.title': 'See the generated Java',
+  'tutorial.step.subroutine.run.body':
+    "The ▶ Run button doesn't execute subroutine calls yet, so skip it here. Instead, switch to the 'Java' tab above the code panel — it shows the full, compilable code, including your `square` method.",
   'tutorial.step.subroutine.done.title': '🎉 You did it!',
   'tutorial.step.subroutine.done.body':
-    'You just built and called your own subroutine with a parameter and a return value. Explore the palette for more.',
+    "You just built and called your own subroutine with a parameter and a return value. Copy the 'Java' tab's code into a real .java file to compile and run it. Explore the palette for more.",
 
   // TopNavbar — opens the Tutorial submenu above (see HelpMenu.svelte)
   'nav.tutorial': 'Tutorial',
@@ -1003,18 +1004,19 @@ const id: Record<TranslationKey, string> = {
     "Kembali ke alur utama (dari blok 'Start' biasa), seret blok 'Variable'. Beri nama `result`, tipe `int`.",
   'tutorial.step.subroutine.subroutineCall.title': 'Panggil subroutine-nya',
   'tutorial.step.subroutine.subroutineCall.body':
-    "Seret blok 'Call Sub' setelahnya. Atur dropdown kiri ke `result`, pilih `square` sebagai subroutine-nya, dan atur argumennya ke `5`.",
+    "Seret blok 'Call Sub' setelahnya. Pilih dulu `square` sebagai subroutine-nya — dropdown hasil akan muncul di sebelah kiri, atur ke `result`. Baru kemudian atur argumennya ke `5`.",
   'tutorial.step.subroutine.output.title': 'Cetak hasilnya',
   'tutorial.step.subroutine.output.body': "Seret blok 'Output' dan cetak `result`.",
   'tutorial.step.subroutine.end.title': 'Selesaikan alur utamanya',
   'tutorial.step.subroutine.end.body': "Seret blok 'End' dan hubungkan setelah Output.",
   'tutorial.step.subroutine.arrange.title': 'Rapikan tata letak',
   'tutorial.step.subroutine.arrange.body': "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu.",
-  'tutorial.step.subroutine.run.title': 'Jalankan!',
-  'tutorial.step.subroutine.run.body': 'Klik ▶ Run di bawah kanvas. Hasil yang diharapkan: `25`.',
+  'tutorial.step.subroutine.run.title': 'Lihat kode Java yang dihasilkan',
+  'tutorial.step.subroutine.run.body':
+    "Tombol ▶ Run belum bisa menjalankan pemanggilan subroutine, jadi lewati langkah ini. Sebagai gantinya, buka tab 'Java' di atas panel kode — di situ tampil kode lengkap yang bisa dikompilasi, termasuk method `square`-mu.",
   'tutorial.step.subroutine.done.title': '🎉 Berhasil!',
   'tutorial.step.subroutine.done.body':
-    'Kamu baru saja membuat dan memanggil subroutine sendiri dengan parameter dan nilai balik. Jelajahi palet untuk lainnya.',
+    "Kamu baru saja membuat dan memanggil subroutine sendiri dengan parameter dan nilai balik. Salin kode dari tab 'Java' ke file .java sungguhan untuk mengompilasi dan menjalankannya. Jelajahi palet untuk lainnya.",
 
   // TopNavbar — membuka tutorial di atas lagi
   'nav.tutorial': 'Tutorial',
