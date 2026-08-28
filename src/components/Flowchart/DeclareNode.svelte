@@ -9,6 +9,8 @@
     reorderDeclarationEntries,
     renameDeclaredVariable,
     pendingFocusNodeId,
+    declareLabel,
+    declareDragGhost,
     type DeclareNodeData,
   } from '../../stores/flowchart';
   import { isValidJavaIdentifier } from '../../lib/flowchart/declarationParser';
@@ -26,7 +28,9 @@
   let rootEl: HTMLDivElement;
 
   // Drag-to-reorder state (see handleDragHandlePointerDown below) — which
-  // entry is being dragged, and which row it's currently hovering over.
+  // entry is being dragged, and which row it's currently hovering over. The
+  // floating row-content ghost itself lives in declareDragGhost (a store,
+  // not local state — see that store's own comment for why).
   let dragIndex: number | null = $state(null);
   let dragOverIndex: number | null = $state(null);
 
@@ -128,6 +132,12 @@
     handle.setPointerCapture(pointerId);
     dragIndex = index;
     dragOverIndex = index;
+    const draggedEntry = entries[index];
+    declareDragGhost.set({
+      x: event.clientX,
+      y: event.clientY,
+      text: declareLabel(draggedEntry.varType, draggedEntry.varName, draggedEntry.varValue, draggedEntry.isConst),
+    });
 
     function cleanup() {
       handle.releasePointerCapture(pointerId);
@@ -136,10 +146,12 @@
       handle.removeEventListener('pointercancel', handleCancel);
       dragIndex = null;
       dragOverIndex = null;
+      declareDragGhost.set(null);
     }
     function handleMove(moveEvent: PointerEvent) {
       if (moveEvent.pointerId !== pointerId) return;
       dragOverIndex = rowIndexAtY(moveEvent.clientY);
+      declareDragGhost.update((ghost) => (ghost ? { ...ghost, x: moveEvent.clientX, y: moveEvent.clientY } : ghost));
     }
     function handleUp(upEvent: PointerEvent) {
       if (upEvent.pointerId !== pointerId) return;

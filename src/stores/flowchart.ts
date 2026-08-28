@@ -990,6 +990,16 @@ export const edges = writable<Edge[]>([]);
 // effect sees it, so it never re-fires on an unrelated re-render.
 export const pendingFocusNodeId = writable<string | null>(null);
 
+// The floating "what's actually being moved" ghost for a Declare block's
+// drag-to-reorder (see DeclareNode.svelte's handleDragHandlePointerDown) —
+// rendered by FlowchartBoard.svelte, not DeclareNode itself, because a
+// `position: fixed` element positions relative to the nearest transformed
+// ancestor, and every xyflow node sits inside one (the pane's own pan/zoom
+// transform) — rendered from here instead, a sibling of BlockPalette that
+// isn't nested inside that transform, it follows the raw cursor position
+// like BlockPalette's own drag ghost does.
+export const declareDragGhost = writable<{ x: number; y: number; text: string } | null>(null);
+
 // Powers the "New" button — wipes the canvas back to a single fresh Start
 // block. The code panel clears itself too, since it's just a reactive
 // projection of the node list (see stores/sync.ts). Also resets nodeCounter,

@@ -44,6 +44,7 @@
     updateInputEntryAt,
     updateProcessStatementAt,
     printlnStatement,
+    declareDragGhost,
     type BlockType,
   } from '../../stores/flowchart';
   import { stepCurrentNodeId, stepCurrentLine } from '../../stores/stepRunner';
@@ -342,6 +343,20 @@
       onDelete={handleDelete}
       onClose={closeContextMenu}
     />
+  {/if}
+
+  {#if $declareDragGhost}
+    <!-- Follows the cursor while a Declare block's row is being dragged (see
+         DeclareNode.svelte's handleDragHandlePointerDown) — rendered here,
+         not from DeclareNode itself, since this is a sibling of BlockPalette
+         outside SvelteFlow's own pan/zoom transform (see declareDragGhost's
+         own comment for why that placement matters for `position: fixed`). -->
+    <div
+      class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded border px-2 py-1 font-mono text-xs whitespace-nowrap shadow-md"
+      style="left: {$declareDragGhost.x}px; top: {$declareDragGhost.y}px; background: var(--color-node-bg); border-color: var(--color-accent); color: var(--color-text);"
+    >
+      {$declareDragGhost.text}
+    </div>
   {/if}
 </div>
 
