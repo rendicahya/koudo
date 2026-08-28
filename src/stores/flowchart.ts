@@ -224,8 +224,8 @@ export const BLOCK_WIDTH = 260;
 // much smaller bump than Assign's own +100 (see ASSIGN_WIDTH) — Declare's
 // extra content is one compact badge/select, not a whole second editor.
 // +40 for the type/name/value fields for a single line (see BLOCK_WIDTH),
-// +40 more for the reorder (▲▼) and const-checkbox controls added
-// alongside each entry (see DeclareNode.svelte).
+// +40 more for the drag handle and const-checkbox controls added alongside
+// each entry (see DeclareNode.svelte).
 export const DECLARE_WIDTH = BLOCK_WIDTH + 80;
 export const TERMINAL_WIDTH = 140;
 export const DIAMOND_WIDTH = 200;
@@ -424,14 +424,14 @@ function removeListItemAt<T>(config: ListBlockConfig<T>, node: Node, index: numb
   return withList(node, config, listOf<T>(node, config.dataKey).filter((_, i) => i !== index));
 }
 
-// Swaps index with index+direction (direction is -1 or +1) — a no-op if
-// that would go out of bounds, so callers don't each need their own
-// boundary check before wiring up an Up/Down button's disabled state.
-function moveListItemAt<T>(config: ListBlockConfig<T>, node: Node, index: number, direction: -1 | 1): Node {
+// Moves the item at fromIndex to sit at toIndex (drag-and-drop reordering —
+// see DeclareNode.svelte's own pointer-based drag handle) — a no-op if
+// either index is out of bounds or they're the same.
+function reorderListItemAt<T>(config: ListBlockConfig<T>, node: Node, fromIndex: number, toIndex: number): Node {
   const list = [...listOf<T>(node, config.dataKey)];
-  const target = index + direction;
-  if (target < 0 || target >= list.length) return node;
-  [list[index], list[target]] = [list[target], list[index]];
+  if (fromIndex === toIndex || fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) return node;
+  const [item] = list.splice(fromIndex, 1);
+  list.splice(toIndex, 0, item);
   return withList(node, config, list);
 }
 
@@ -789,10 +789,12 @@ export function removeDeclarationEntryAt(node: Node, index: number): Node {
   return removeListItemAt(DECLARE_LIST, node, index);
 }
 
-// Reorders a Declare block's own variables — direction is -1 (move up) or
-// +1 (move down); a no-op past either end (see moveListItemAt).
-export function moveDeclarationEntryAt(node: Node, index: number, direction: -1 | 1): Node {
-  return moveListItemAt(DECLARE_LIST, node, index, direction);
+// Reorders a Declare block's own variables via drag-and-drop (see
+// DeclareNode.svelte's drag handle) — Java executes declarations in source
+// order, so this changes what's visible to earlier/later lines, not just
+// cosmetic ordering.
+export function reorderDeclarationEntries(node: Node, fromIndex: number, toIndex: number): Node {
+  return reorderListItemAt(DECLARE_LIST, node, fromIndex, toIndex);
 }
 
 export function assignmentLabel(entry: AssignmentEntry): string {

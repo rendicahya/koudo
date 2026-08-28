@@ -55,6 +55,33 @@ export function zoomCodeFontSize(delta: number) {
   codeFontSize.update((size) => Math.min(MAX_CODE_FONT_SIZE, Math.max(MIN_CODE_FONT_SIZE, size + delta)));
 }
 
+// OutputPanel's own zoom (Run/Step output text and the Variable Watcher
+// table) — a separate setting from codeFontSize above since the output
+// panel and the code panel are read at different times for different
+// reasons, not a single "everything's font size" control.
+const OUTPUT_FONT_SIZE_STORAGE_KEY = 'koudo-output-font-size';
+const DEFAULT_OUTPUT_FONT_SIZE = 12;
+export const MIN_OUTPUT_FONT_SIZE = 10;
+export const MAX_OUTPUT_FONT_SIZE = 24;
+
+function getInitialOutputFontSize(): number {
+  const stored = Number(localStorage.getItem(OUTPUT_FONT_SIZE_STORAGE_KEY));
+  if (!Number.isFinite(stored) || stored < MIN_OUTPUT_FONT_SIZE || stored > MAX_OUTPUT_FONT_SIZE) {
+    return DEFAULT_OUTPUT_FONT_SIZE;
+  }
+  return stored;
+}
+
+export const outputFontSize = writable<number>(getInitialOutputFontSize());
+
+outputFontSize.subscribe((value) => {
+  localStorage.setItem(OUTPUT_FONT_SIZE_STORAGE_KEY, String(value));
+});
+
+export function zoomOutputFontSize(delta: number) {
+  outputFontSize.update((size) => Math.min(MAX_OUTPUT_FONT_SIZE, Math.max(MIN_OUTPUT_FONT_SIZE, size + delta)));
+}
+
 // How the generated code's indentation is displayed — generator.ts and
 // generatorPseudocode.ts both emit a fixed 4-space step per nesting level
 // (see lib/codeIndent.ts's reindent, which converts that fixed output to

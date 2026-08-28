@@ -16,6 +16,7 @@
   import { blockTypeOf } from '../../lib/flowchart/graphWalk';
   import { codeContent } from '../../stores/code';
   import { t } from '../../stores/i18n';
+  import { outputFontSize, zoomOutputFontSize, MIN_OUTPUT_FONT_SIZE, MAX_OUTPUT_FONT_SIZE } from '../../stores/layout';
 
   // While a step run is active it takes over the panel — Start/Next/Stop
   // live next to ▶ Run, right here above the panel. Stopping just switches
@@ -117,7 +118,7 @@
     </button>
   </div>
 
-  <div class="flex shrink-0 items-center gap-2">
+  <div class="flex shrink-0 flex-wrap items-center gap-2">
     <p class="text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">{$t('output.heading')}</p>
     <button
       type="button"
@@ -128,6 +129,35 @@
     >
       {$t('output.clear')}
     </button>
+
+    <!-- Zoom for the output box and Variable Watcher table below — same
+         shared-zoom pattern as CodeEditorPanel's own text-size buttons, just
+         a separate setting (see stores/layout.ts's outputFontSize). -->
+    <div class="ml-auto flex items-center gap-1 text-xs" style="color: var(--color-text-secondary);">
+      <button
+        type="button"
+        class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
+        style="border-color: var(--color-border);"
+        disabled={$outputFontSize <= MIN_OUTPUT_FONT_SIZE}
+        title={$t('code.decreaseTextSize')}
+        aria-label={$t('code.decreaseTextSize')}
+        onclick={() => zoomOutputFontSize(-1)}
+      >
+        −
+      </button>
+      <span class="w-8 text-center tabular-nums">{$outputFontSize}px</span>
+      <button
+        type="button"
+        class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"
+        style="border-color: var(--color-border);"
+        disabled={$outputFontSize >= MAX_OUTPUT_FONT_SIZE}
+        title={$t('code.increaseTextSize')}
+        aria-label={$t('code.increaseTextSize')}
+        onclick={() => zoomOutputFontSize(1)}
+      >
+        +
+      </button>
+    </div>
   </div>
 
   {#if $isStepping && $stepCurrentLine}
@@ -152,8 +182,8 @@
 
   <div class="flex min-h-0 flex-1 flex-col gap-3 sm:flex-row">
     <div
-      class="min-h-0 flex-1 overflow-y-auto rounded-md border p-3 font-mono text-xs"
-      style="border-color: var(--color-border); background: var(--color-editor-bg);"
+      class="min-h-0 flex-1 overflow-y-auto rounded-md border p-3 font-mono"
+      style="border-color: var(--color-border); background: var(--color-editor-bg); font-size: {$outputFontSize}px;"
     >
       {#if !$isStepping && !$hasRun}
         <p style="color: var(--color-text-secondary);">
@@ -185,7 +215,7 @@
         {$t('output.variables')}
       </p>
       <div class="min-h-0 flex-1 overflow-y-auto">
-        <table class="w-full text-left text-xs">
+        <table class="w-full text-left" style="font-size: {$outputFontSize}px;">
           <tbody>
             {#each displayVariables as v (v.name)}
               <tr style="border-top: 1px solid var(--color-border);">

@@ -6,7 +6,7 @@
     addDeclarationEntry,
     updateDeclarationEntryAt,
     removeDeclarationEntryAt,
-    moveDeclarationEntryAt,
+    reorderDeclarationEntries,
     renameDeclaredVariable,
     pendingFocusNodeId,
     type DeclareNodeData,
@@ -24,6 +24,11 @@
   // tracks the value instead (see handleInput below).
   let inferred = $derived($variableMode === 'inferred');
   let rootEl: HTMLDivElement;
+
+  // Drag-to-reorder state (see handleDragHandlePointerDown below) — which
+  // entry is being dragged, and which row it's currently hovering over.
+  let dragIndex: number | null = $state(null);
+  let dragOverIndex: number | null = $state(null);
 
   // FlowchartBoard's placeBlock points this at whichever Declare node just
   // received a freshly added entry (new block or merged into this one) —
@@ -101,8 +106,56 @@
     $nodes = $nodes.map((node) => (node.id === id ? removeDeclarationEntryAt(node, index) : node));
   }
 
-  function handleMove(index: number, direction: -1 | 1) {
-    $nodes = $nodes.map((node) => (node.id === id ? moveDeclarationEntryAt(node, index, direction) : node));
+  // Which row slot a given pointer Y falls into, by comparing against each
+  // row's own vertical midpoint — the row whose midpoint the pointer hasn't
+  // reached yet, or the last row if it's past all of them.
+  function rowIndexAtY(clientY: number): number {
+    const rows = Array.from(rootEl.querySelectorAll<HTMLElement>('[data-declare-row]'));
+    for (let i = 0; i < rows.length; i++) {
+      const rect = rows[i].getBoundingClientRect();
+      if (clientY < rect.top + rect.height / 2) return i;
+    }
+    return rows.length - 1;
+  }
+
+  // Pointer events, not native HTML5 drag-and-drop — dataTransfer/dragstart/
+  // dragover/drop turned out not to fire reliably for at least one real user
+  // (see BlockPalette.svelte's own handlePointerDown for the same reasoning).
+  function handleDragHandlePointerDown(event: PointerEvent, index: number) {
+    event.preventDefault();
+    const handle = event.currentTarget as HTMLElement;
+    const pointerId = event.pointerId;
+    handle.setPointerCapture(pointerId);
+    dragIndex = index;
+    dragOverIndex = index;
+
+    function cleanup() {
+      handle.releasePointerCapture(pointerId);
+      handle.removeEventListener('pointermove', handleMove);
+      handle.removeEventListener('pointerup', handleUp);
+      handle.removeEventListener('pointercancel', handleCancel);
+      dragIndex = null;
+      dragOverIndex = null;
+    }
+    function handleMove(moveEvent: PointerEvent) {
+      if (moveEvent.pointerId !== pointerId) return;
+      dragOverIndex = rowIndexAtY(moveEvent.clientY);
+    }
+    function handleUp(upEvent: PointerEvent) {
+      if (upEvent.pointerId !== pointerId) return;
+      const from = dragIndex;
+      const to = dragOverIndex;
+      cleanup();
+      if (from === null || to === null || from === to) return;
+      $nodes = $nodes.map((node) => (node.id === id ? reorderDeclarationEntries(node, from, to) : node));
+    }
+    function handleCancel(cancelEvent: PointerEvent) {
+      if (cancelEvent.pointerId !== pointerId) return;
+      cleanup();
+    }
+    handle.addEventListener('pointermove', handleMove);
+    handle.addEventListener('pointerup', handleUp);
+    handle.addEventListener('pointercancel', handleCancel);
   }
 
   function handleConstToggle(index: number, event: Event) {
@@ -135,39 +188,35 @@
   {#each entries as entry, index (index)}
     {@const nameIsValid = isValidJavaIdentifier(entry.varName ?? '')}
     {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
-    <div class="flex items-center gap-1">
+    <div
+      data-declare-row
+      data-entry-index={index}
+      class="flex items-center gap-1"
+      style:opacity={dragIndex === index ? 0.4 : 1}
+      style:border-top={dragOverIndex === index && dragIndex !== null && dragIndex !== index
+        ? '2px solid var(--color-accent)'
+        : '2px solid transparent'}
+    >
       <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
            stepCurrentRow) — reserved width so other rows don't shift when
            one of them lights up. -->
       <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
 
-      <!-- Reorders this variable within the block — Java executes
-           declarations in source order, so moving one changes what's
-           visible to earlier/later lines, not just cosmetic ordering. -->
-      <div class="nodrag flex flex-col leading-none">
-        <button
-          type="button"
-          class="px-0.5 disabled:opacity-25"
-          style="color: var(--color-text-secondary);"
-          disabled={index === 0}
-          title={$t('declare.moveUp')}
-          aria-label={$t('declare.moveUp')}
-          onclick={() => handleMove(index, -1)}
-        >
-          ▲
-        </button>
-        <button
-          type="button"
-          class="px-0.5 disabled:opacity-25"
-          style="color: var(--color-text-secondary);"
-          disabled={index === entries.length - 1}
-          title={$t('declare.moveDown')}
-          aria-label={$t('declare.moveDown')}
-          onclick={() => handleMove(index, 1)}
-        >
-          ▼
-        </button>
-      </div>
+      <!-- Drag handle — reorders this variable within the block (Java
+           executes declarations in source order, so this changes what's
+           visible to earlier/later lines, not just cosmetic ordering).
+           Pointer events, see handleDragHandlePointerDown above. -->
+      <span
+        role="button"
+        tabindex="-1"
+        class="nodrag shrink-0 cursor-grab touch-none px-0.5 leading-none select-none active:cursor-grabbing"
+        style="color: var(--color-text-secondary);"
+        title={$t('declare.dragToReorder')}
+        aria-label={$t('declare.dragToReorder')}
+        onpointerdown={(event) => handleDragHandlePointerDown(event, index)}
+      >
+        ⠿
+      </span>
 
       <input
         type="checkbox"
