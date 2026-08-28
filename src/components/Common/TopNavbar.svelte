@@ -15,7 +15,16 @@
   style="border-color: var(--color-border); background: var(--color-panel);"
 >
   <div class="flex min-w-0 items-center gap-2 font-semibold" style="color: var(--color-text);">
-    <span>💻</span>
+    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true" class="shrink-0">
+      <g fill="none" stroke="#b3331c" stroke-width="3" stroke-linecap="round">
+        <path d="M17 8c0 2-3 2-3 4.5s3 2.5 3 5" />
+        <path d="M24 8c0 2-3 2-3 4.5s3 2.5 3 5" />
+        <path d="M31 8c0 2-3 2-3 4.5s3 2.5 3 5" />
+      </g>
+      <path d="M12 20h20v10a10 10 0 0 1-20 0V20Z" fill="#b3331c" />
+      <path d="M32 22a6 6 0 0 1 0 12" fill="none" stroke="#b3331c" stroke-width="3" stroke-linecap="round" />
+      <ellipse cx="22" cy="41" rx="13" ry="2.5" fill="#b3331c" />
+    </svg>
     <span>KOUDO</span>
     <!-- Dropped below `sm` — the katakana subtitle is decorative, and the
          project name input needs the room more on a narrow screen. -->

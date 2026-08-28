@@ -1,7 +1,5 @@
 # 💻 KOUDO — コウド
 
-**Your code story.**
-
 Koudo is a browser-only educational web app that helps absolute beginners learn programming — not just loops — by keeping a flowchart and real Java code in sync, live, in both directions. Build a flowchart and watch the Java code write itself, or type Java and watch the flowchart build itself, then hit **Run** (or step through it one line at a time) and watch a real interpreter actually execute it, with every variable's value visible as it changes.
 
 > **コウド** — a Japanese-katakana rendering of "Koudo," playing on コード ("code" as a loanword). Direct, simple, easy to say internationally.
