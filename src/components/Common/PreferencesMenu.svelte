@@ -31,11 +31,24 @@
   // Only one submenu flyout open at a time — closed whenever the top-level
   // menu itself closes (see closeMenu below), same as a native OS menu.
   let activeSubmenu = $state<'mode' | 'language' | 'code' | null>(null);
+  // Indentation nests one level deeper still, inside the Code submenu — its
+  // own flag rather than folding into activeSubmenu, since Code and
+  // Indentation are open at the same time (Indentation flies out from
+  // Code's own panel, not from the top-level menu).
+  let codeIndentSubmenuOpen = $state(false);
   let menuEl: HTMLDivElement;
 
   function closeMenu() {
     open = false;
     activeSubmenu = null;
+    codeIndentSubmenuOpen = false;
+  }
+
+  function toggleSubmenu(name: 'mode' | 'language' | 'code') {
+    activeSubmenu = activeSubmenu === name ? null : name;
+    // Leaving Code (or re-entering it fresh) always starts with Indentation
+    // collapsed again — same as any submenu resets shut on close.
+    codeIndentSubmenuOpen = false;
   }
 
   function handleWindowClick(event: MouseEvent) {
@@ -73,7 +86,7 @@
           aria-haspopup="menu"
           aria-expanded={activeSubmenu === 'mode'}
           class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
-          onclick={() => (activeSubmenu = activeSubmenu === 'mode' ? null : 'mode')}
+          onclick={() => toggleSubmenu('mode')}
         >
           <span>{$t('nav.modeHeading')}</span>
           <span style="color: var(--color-text-secondary);">▸</span>
@@ -112,7 +125,7 @@
           aria-haspopup="menu"
           aria-expanded={activeSubmenu === 'language'}
           class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
-          onclick={() => (activeSubmenu = activeSubmenu === 'language' ? null : 'language')}
+          onclick={() => toggleSubmenu('language')}
         >
           <span>{$t('nav.language')}</span>
           <span style="color: var(--color-text-secondary);">▸</span>
@@ -150,7 +163,7 @@
           aria-haspopup="menu"
           aria-expanded={activeSubmenu === 'code'}
           class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
-          onclick={() => (activeSubmenu = activeSubmenu === 'code' ? null : 'code')}
+          onclick={() => toggleSubmenu('code')}
         >
           <span>{$t('nav.codeHeading')}</span>
           <span style="color: var(--color-text-secondary);">▸</span>
@@ -161,26 +174,43 @@
             class="absolute left-full top-0 z-20 ml-1 flex max-h-[80vh] w-60 max-w-[calc(100vw-1.5rem)] flex-col overflow-y-auto rounded-md border text-sm shadow-md"
             style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
           >
-            <div class="px-3 pt-2 pb-1 text-xs font-semibold" style="color: var(--color-text-secondary);">
-              {$t('nav.codeIndentHeading')}
-            </div>
-            {#each codeIndentOptions as option (option.style)}
+            <div class="relative">
               <button
                 type="button"
-                role="menuitemradio"
-                aria-checked={$codeIndentStyle === option.style}
-                class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
-                onclick={() => {
-                  closeMenu();
-                  setCodeIndentStyle(option.style);
-                }}
+                aria-haspopup="menu"
+                aria-expanded={codeIndentSubmenuOpen}
+                class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
+                onclick={() => (codeIndentSubmenuOpen = !codeIndentSubmenuOpen)}
               >
-                <span>{$t(option.labelKey)}</span>
-                {#if $codeIndentStyle === option.style}
-                  <span style="color: var(--color-accent);">✓</span>
-                {/if}
+                <span>{$t('nav.codeIndentHeading')}</span>
+                <span style="color: var(--color-text-secondary);">▸</span>
               </button>
-            {/each}
+              {#if codeIndentSubmenuOpen}
+                <div
+                  role="menu"
+                  class="absolute left-full top-0 z-20 ml-1 flex w-44 max-w-[calc(100vw-1.5rem)] flex-col overflow-y-auto rounded-md border text-sm shadow-md"
+                  style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
+                >
+                  {#each codeIndentOptions as option (option.style)}
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={$codeIndentStyle === option.style}
+                      class="flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:opacity-80"
+                      onclick={() => {
+                        closeMenu();
+                        setCodeIndentStyle(option.style);
+                      }}
+                    >
+                      <span>{$t(option.labelKey)}</span>
+                      {#if $codeIndentStyle === option.style}
+                        <span style="color: var(--color-accent);">✓</span>
+                      {/if}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
 
             <div class="flex flex-col gap-1 px-3 pt-2 pb-2">
               <label class="text-xs font-semibold" style="color: var(--color-text-secondary);" for="code-font-select">

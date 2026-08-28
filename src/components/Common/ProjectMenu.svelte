@@ -1,5 +1,6 @@
 <script lang="ts">
   import { resetFlowchart, loadFlowchart, nodes, edges } from '../../stores/flowchart';
+  import { blockTypeOf } from '../../lib/flowchart/graphWalk';
   import { downloadTextFile, sanitizeFilename } from '../../lib/download';
   import { serializeFlowchart, parseFlowchartFile } from '../../lib/storage/flowchartFile';
   import { wrapAsJavaFile, sanitizeJavaClassName } from '../../lib/flowchart/exportJava';
@@ -71,8 +72,17 @@
     );
   }
 
+  // Nothing worth losing yet — an untouched canvas (no nodes at all) or one
+  // with only the default lone Start block still on it, same starting point
+  // handleNew leaves behind. Skips the confirm prompt in that case; any real
+  // work in progress still gets it.
+  function isCanvasEffectivelyEmpty(): boolean {
+    const current = $nodes;
+    return current.length === 0 || (current.length === 1 && blockTypeOf(current[0]) === 'start');
+  }
+
   function handleOpen() {
-    if (!confirm($t('nav.confirmOpen'))) return;
+    if (!isCanvasEffectivelyEmpty() && !confirm($t('nav.confirmOpen'))) return;
     fileInputEl.click();
   }
 
