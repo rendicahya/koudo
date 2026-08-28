@@ -7,6 +7,8 @@
     { keys: 'Alt+Shift+S', actionKey: 'help.shortcuts.step' },
     { keys: 'Alt+Shift+A', actionKey: 'help.shortcuts.arrange' },
     { keys: 'Alt+Shift+T', actionKey: 'help.shortcuts.theme' },
+    { keys: 'Ctrl+Z', actionKey: 'help.shortcuts.undo' },
+    { keys: 'Ctrl+Shift+Z', actionKey: 'help.shortcuts.redo' },
   ];
 </script>
 
@@ -66,5 +68,8 @@
     <li>{$t('help.tips.rightClick')}</li>
     <li>{$t('help.tips.fullscreen')}</li>
     <li>{$t('help.tips.browserOnly')}</li>
+    <li>{$t('help.tips.autosave')}</li>
+    <li>{$t('help.tips.constAndReorder')}</li>
+    <li>{$t('help.tips.tutorial')}</li>
   </ul>
 </section>

@@ -76,20 +76,25 @@ const en = {
     "The Java tab shows the flowchart translated into a real, compilable Java class, kept up to date automatically as you edit the canvas — it's read-only for now, since the canvas is the only place to edit during this phase. The Pseudocode tab shows the same program in plain structured English, for reading — also generated from the flowchart, not editable.",
   'help.variableModes.heading': 'Variable modes',
   'help.variableModes.body':
-    'Switch modes from the Project menu. Standard Mode (the default) is the traditional way: you pick the type yourself, and a value is optional. Beginner Mode infers a variable\'s type from the value you give it — no type names to learn yet. A value isn\'t required there either; leave it blank and pick Whole number / Text / Decimal number instead.',
+    'Switch modes from the Preferences menu. Standard Mode (the default) is the traditional way: you pick the type yourself, and a value is optional. Beginner Mode infers a variable\'s type from the value you give it — no type names to learn yet. A value isn\'t required there either; leave it blank and pick Whole number / Text / Decimal number instead.',
   'help.menus.heading': 'Menus',
   'help.menus.body':
-    'Project — New, Open/Save Project, Export Java (a compilable .java file named after the project), and Export Pseudocode. Preferences — variable mode and language. Canvas — Arrange (tidy the layout into columns) and Download PNG.',
+    'Project — New, Open/Save Project (a .kdo file), Export Java (a compilable .java file named after the project), and Export Pseudocode. Preferences — variable mode, language, code indent, and code font. Canvas — Arrange (tidy the layout into columns) and Download PNG. Help — this guide, and Tutorial (replay the first-time walkthrough any time). The ☀️/🌙 button, top-right, picks a theme — 4 light, 4 dark, or System.',
   'help.shortcuts.heading': 'Keyboard shortcuts',
   'help.shortcuts.run': 'Run',
   'help.shortcuts.step': 'Step / Next Step',
   'help.shortcuts.arrange': 'Arrange',
   'help.shortcuts.theme': 'Toggle dark / light mode',
+  'help.shortcuts.undo': 'Undo',
+  'help.shortcuts.redo': 'Redo',
   'help.tips.heading': 'Tips',
   'help.tips.merge': 'Dropping a block of the same kind onto an existing one merges them into a single block with multiple lines.',
   'help.tips.rightClick': 'Right-click a block or a connecting line to Duplicate or Delete it.',
   'help.tips.fullscreen': 'The ⛶ button, top-right, toggles fullscreen.',
   'help.tips.browserOnly': 'Everything runs entirely in your browser — nothing you build is ever sent anywhere.',
+  'help.tips.autosave': 'Your work is saved automatically to this browser as you go — Undo/Redo (top-left) covers every edit, including a whole block drag.',
+  'help.tips.constAndReorder': "In a Variable block, drag a row's ⠿ handle to reorder it, and check its box to make it a Java `final` constant.",
+  'help.tips.tutorial': "New here? Reopen the guided tutorial any time from Help → Tutorial.",
 
   // HelpModal — top-level tabs
   'help.tab.koudo': 'Koudo',
@@ -416,20 +421,27 @@ const id: Record<TranslationKey, string> = {
     'Tab Java menampilkan flowchart yang diterjemahkan menjadi kelas Java sungguhan yang siap dikompilasi, selalu diperbarui otomatis saat Anda mengedit kanvas — untuk saat ini sifatnya hanya-baca, karena kanvas adalah satu-satunya tempat untuk mengedit di fase ini. Tab Pseudocode menampilkan program yang sama dalam bahasa Inggris terstruktur biasa, hanya untuk dibaca — juga dihasilkan dari flowchart, tidak bisa diedit.',
   'help.variableModes.heading': 'Mode variabel',
   'help.variableModes.body':
-    'Ganti mode dari menu Project. Mode Standar (default) adalah cara tradisional: Anda memilih tipenya sendiri, dan nilai bersifat opsional. Mode Pemula menyimpulkan tipe variabel dari nilai yang Anda berikan — belum perlu belajar nama-nama tipe. Nilai juga tidak wajib di sana; biarkan kosong dan pilih Bilangan bulat / Teks / Bilangan pecahan sebagai gantinya.',
+    'Ganti mode dari menu Preferences. Mode Standar (default) adalah cara tradisional: Anda memilih tipenya sendiri, dan nilai bersifat opsional. Mode Pemula menyimpulkan tipe variabel dari nilai yang Anda berikan — belum perlu belajar nama-nama tipe. Nilai juga tidak wajib di sana; biarkan kosong dan pilih Bilangan bulat / Teks / Bilangan pecahan sebagai gantinya.',
   'help.menus.heading': 'Menu',
   'help.menus.body':
-    'Project — New, Open/Save Project, Export Java (berkas .java yang siap dikompilasi, dinamai sesuai proyek), dan Export Pseudocode. Preferences — mode variabel dan bahasa. Canvas — Arrange (merapikan tata letak menjadi kolom-kolom) dan Download PNG.',
+    'Project — New, Open/Save Project (berkas .kdo), Export Java (berkas .java yang siap dikompilasi, dinamai sesuai proyek), dan Export Pseudocode. Preferences — mode variabel, bahasa, indentasi kode, dan font kode. Canvas — Arrange (merapikan tata letak menjadi kolom-kolom) dan Download PNG. Help — panduan ini, dan Tutorial (putar ulang panduan awal kapan saja). Tombol ☀️/🌙 di kanan atas memilih tema — 4 terang, 4 gelap, atau System.',
   'help.shortcuts.heading': 'Pintasan keyboard',
   'help.shortcuts.run': 'Run',
   'help.shortcuts.step': 'Step / Step Berikutnya',
   'help.shortcuts.arrange': 'Arrange',
   'help.shortcuts.theme': 'Ganti mode gelap / terang',
+  'help.shortcuts.undo': 'Urungkan',
+  'help.shortcuts.redo': 'Ulangi',
   'help.tips.heading': 'Tips',
   'help.tips.merge': 'Meletakkan blok sejenis di atas blok yang sudah ada akan menggabungkannya menjadi satu blok dengan beberapa baris.',
   'help.tips.rightClick': 'Klik kanan pada blok atau garis penghubung untuk Duplicate atau Delete.',
   'help.tips.fullscreen': 'Tombol ⛶ di kanan atas mengaktifkan/mematikan layar penuh.',
   'help.tips.browserOnly': 'Semuanya berjalan sepenuhnya di browser Anda — apa pun yang Anda buat tidak pernah dikirim ke mana pun.',
+  'help.tips.autosave':
+    'Pekerjaanmu otomatis tersimpan di browser ini seiring berjalannya waktu — Undo/Redo (kiri atas) mencakup setiap perubahan, termasuk menggeser satu blok.',
+  'help.tips.constAndReorder':
+    'Di blok Variable, seret gagang ⠿ pada suatu baris untuk mengubah urutannya, dan centang kotaknya untuk menjadikannya konstanta `final` di Java.',
+  'help.tips.tutorial': 'Baru di sini? Buka lagi tutorial berpemandu kapan saja lewat Help → Tutorial.',
 
   // HelpModal — top-level tabs
   'help.tab.koudo': 'Koudo',
