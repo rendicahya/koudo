@@ -22,11 +22,15 @@
   // handleAction below, so the label can be translated without touching the
   // dispatch logic.
   type ProjectAction = 'new' | 'open' | 'save' | 'exportJava' | 'exportPseudocode';
-  const PROJECT_ACTIONS: { id: ProjectAction; labelKey: TranslationKey }[] = [
+  // dividerBefore separates Save (acts on the .kdo project file itself)
+  // from the Export actions below it (derived output files, not the
+  // project) — same divider pattern PreferencesMenu uses between its own
+  // setting groups.
+  const PROJECT_ACTIONS: { id: ProjectAction; labelKey: TranslationKey; dividerBefore?: boolean }[] = [
     { id: 'new', labelKey: 'nav.new' },
     { id: 'open', labelKey: 'nav.open' },
     { id: 'save', labelKey: 'nav.save' },
-    { id: 'exportJava', labelKey: 'nav.exportJava' },
+    { id: 'exportJava', labelKey: 'nav.exportJava', dividerBefore: true },
     { id: 'exportPseudocode', labelKey: 'nav.exportPseudocode' },
   ];
 
@@ -130,6 +134,9 @@
       style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
     >
       {#each PROJECT_ACTIONS as action (action.id)}
+        {#if action.dividerBefore}
+          <div class="border-t" style="border-color: var(--color-border);"></div>
+        {/if}
         <button
           type="button"
           role="menuitem"

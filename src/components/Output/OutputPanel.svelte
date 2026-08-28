@@ -131,9 +131,11 @@
       {$t('output.clear')}
     </button>
 
-    <!-- Zoom for the output box and Variable Watcher table below — same
-         shared-zoom pattern as CodeEditorPanel's own text-size buttons, just
-         a separate setting (see stores/layout.ts's outputFontSize). -->
+    <!-- Zoom for the Run/Step output box only — not the Variable Watcher
+         table beside it, which stays a fixed size (its own columns are
+         already tight on space). Same shared-zoom pattern as
+         CodeEditorPanel's own text-size buttons, just a separate setting
+         (see stores/layout.ts's outputFontSize). -->
     <div class="flex items-center gap-1 text-xs" style="color: var(--color-text-secondary);">
       <button
         type="button"
@@ -216,7 +218,7 @@
         {$t('output.variables')}
       </p>
       <div class="min-h-0 flex-1 overflow-y-auto">
-        <table class="w-full text-left" style="font-size: {$outputFontSize}px;">
+        <table class="w-full text-left text-xs">
           <tbody>
             {#each displayVariables as v (v.name)}
               <tr style="border-top: 1px solid var(--color-border);">

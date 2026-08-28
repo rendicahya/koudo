@@ -1,16 +1,13 @@
 <script lang="ts">
   import ThemeToggle from './ThemeToggle.svelte';
   import FullscreenToggle from './FullscreenToggle.svelte';
-  import HelpModal from './HelpModal.svelte';
   import ProjectMenu from './ProjectMenu.svelte';
   import CanvasMenu from './CanvasMenu.svelte';
   import PreferencesMenu from './PreferencesMenu.svelte';
+  import HelpMenu from './HelpMenu.svelte';
   import { t } from '../../stores/i18n';
   import { projectName, setProjectName, setProjectNameLive } from '../../stores/project';
   import { undo, redo, canUndo, canRedo } from '../../stores/history';
-  import { reopenTutorial } from '../../stores/tutorial';
-
-  let helpOpen = $state(false);
 </script>
 
 <header
@@ -67,18 +64,7 @@
     <ProjectMenu />
     <CanvasMenu />
     <PreferencesMenu />
-
-    <button
-      type="button"
-      class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
-      onclick={() => (helpOpen = true)}
-    >
-      {$t('nav.help')}
-    </button>
-
-    <button type="button" class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80" onclick={reopenTutorial}>
-      {$t('nav.tutorial')}
-    </button>
+    <HelpMenu />
   </nav>
 
   <div class="flex items-center gap-2">
@@ -86,5 +72,3 @@
     <FullscreenToggle />
   </div>
 </header>
-
-<HelpModal open={helpOpen} onclose={() => (helpOpen = false)} />
