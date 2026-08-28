@@ -106,8 +106,6 @@
         {/if}
       </div>
 
-      <div class="border-t" style="border-color: var(--color-border);"></div>
-
       <div class="relative">
         <button
           type="button"
@@ -145,8 +143,6 @@
           </div>
         {/if}
       </div>
-
-      <div class="border-t" style="border-color: var(--color-border);"></div>
 
       <div class="relative">
         <button
