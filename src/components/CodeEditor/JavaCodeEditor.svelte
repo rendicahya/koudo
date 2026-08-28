@@ -2,7 +2,7 @@
   import { onDestroy, onMount } from 'svelte';
   import * as monaco from 'monaco-editor';
   import { codeContent } from '../../stores/code';
-  import { theme } from '../../stores/theme';
+  import { isDark } from '../../stores/theme';
   import { projectName } from '../../stores/project';
   import { nodes, edges } from '../../stores/flowchart';
   import { codeFontSize, codeIndentStyle, codeFontId, codeFontStackFor } from '../../stores/layout';
@@ -34,7 +34,7 @@
       minimap: { enabled: false },
       fontSize: $codeFontSize,
       fontFamily,
-      theme: $theme === 'dark' ? 'vs-dark' : 'vs',
+      theme: $isDark ? 'vs-dark' : 'vs',
       // Editing is disabled for now — the canvas is the only place a user
       // edits during this phase, code generation is one-way (flowchart ->
       // code only). The default "Cannot edit in read-only editor" bubble
@@ -75,7 +75,7 @@
   }
 
   $effect(() => {
-    monaco.editor.setTheme($theme === 'dark' ? 'vs-dark' : 'vs');
+    monaco.editor.setTheme($isDark ? 'vs-dark' : 'vs');
   });
 
   $effect(() => {

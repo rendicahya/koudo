@@ -1,4 +1,10 @@
-:root[data-theme='light'] {
+/* Each block below is fully self-contained (no shared variables between
+   palettes) so a given theme's colors can be tuned in isolation without
+   accidentally shifting another one. Node shadow alpha is deliberately the
+   same across every light (resp. dark) theme — it's plain translucent
+   black, not a hue, so it doesn't need per-palette tuning. */
+
+:root[data-theme='light-default'] {
   --color-bg: #ffffff;
   --color-canvas: #f5f5f5;
   --color-panel: #fafafa;
@@ -9,26 +15,76 @@
   --color-accent-light: #0080ff;
   --color-border: #d9dce1;
   --color-node-bg: #ffffff;
-  /* Matches xyflow's own default edge stroke color (--xy-edge-stroke-default
-     in its stylesheet) so block outlines and the connecting lines between
-     them read as the same gray, not two different colors. */
   --color-node-border: #b1b1b7;
   --color-error: #c41e3a;
   --color-success: #008000;
   --color-warning: #ff8c00;
   --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   --color-node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.22);
-
-  /* Start/End are xyflow's own built-in node types, which default to
-     xyflow's own gray border (--xy-node-border-default) instead of this
-     theme's node color. Overriding the variable xyflow actually checks
-     first keeps every block's outline the same, without touching the
-     custom Declare/Process/... components (which already reference
-     --color-node-border directly). */
   --xy-node-border: 1px solid var(--color-node-border);
 }
 
-:root[data-theme='dark'] {
+:root[data-theme='light-warm'] {
+  --color-bg: #fffaf0;
+  --color-canvas: #fdf1e0;
+  --color-panel: #fff5e8;
+  --color-editor-bg: #fffaf0;
+  --color-text: #4a3728;
+  --color-text-secondary: #8a7360;
+  --color-accent: #e0651a;
+  --color-accent-light: #f2823c;
+  --color-border: #eaddc7;
+  --color-node-bg: #fffaf0;
+  --color-node-border: #c9b8a0;
+  --color-error: #c41e3a;
+  --color-success: #4a7c2f;
+  --color-warning: #b8860b;
+  --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  --color-node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.22);
+  --xy-node-border: 1px solid var(--color-node-border);
+}
+
+:root[data-theme='light-cool'] {
+  --color-bg: #f8fafc;
+  --color-canvas: #eef2f7;
+  --color-panel: #f1f5f9;
+  --color-editor-bg: #f8fafc;
+  --color-text: #1e293b;
+  --color-text-secondary: #64748b;
+  --color-accent: #6d28d9;
+  --color-accent-light: #8b5cf6;
+  --color-border: #cbd5e1;
+  --color-node-bg: #f8fafc;
+  --color-node-border: #a8b3c4;
+  --color-error: #dc2626;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  --color-node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.22);
+  --xy-node-border: 1px solid var(--color-node-border);
+}
+
+:root[data-theme='light-nature'] {
+  --color-bg: #f5fbf6;
+  --color-canvas: #eaf7ee;
+  --color-panel: #eefaf2;
+  --color-editor-bg: #f5fbf6;
+  --color-text: #1f3d2b;
+  --color-text-secondary: #4f7a63;
+  --color-accent: #059669;
+  --color-accent-light: #10b981;
+  --color-border: #c8e6d3;
+  --color-node-bg: #f5fbf6;
+  --color-node-border: #9dc9ae;
+  --color-error: #c41e3a;
+  --color-success: #2f7a3f;
+  --color-warning: #b8860b;
+  --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  --color-node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.22);
+  --xy-node-border: 1px solid var(--color-node-border);
+}
+
+:root[data-theme='dark-default'] {
   --color-bg: #0a0e27;
   --color-canvas: #1a1f3a;
   --color-panel: #15192e;
@@ -39,20 +95,72 @@
   --color-accent-light: #00e5ff;
   --color-border: #2a3050;
   --color-node-bg: #1a1f3a;
-  /* Matches xyflow's dark-mode edge stroke color (.svelte-flow.dark's
-     --xy-edge-stroke-default). */
   --color-node-border: #3e3e3e;
   --color-error: #ff6b6b;
   --color-success: #51cf66;
   --color-warning: #ffd93d;
-  /* Node background matches the canvas exactly in dark mode (both
-     --color-node-bg and --color-canvas are #1a1f3a) — border alone
-     separates a block from the canvas, so the shadow needs to read clearly
-     against a same-colored background, not just add subtle depth to an
-     already-visible edge. */
   --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   --color-node-shadow-hover: 0 2px 7px rgba(0, 0, 0, 0.6);
+  --xy-node-border: 1px solid var(--color-node-border);
+}
 
+:root[data-theme='dark-warm'] {
+  --color-bg: #241a12;
+  --color-canvas: #2e2116;
+  --color-panel: #291d13;
+  --color-editor-bg: #1c140d;
+  --color-text: #f2e6d8;
+  --color-text-secondary: #b8a48d;
+  --color-accent: #ff9d42;
+  --color-accent-light: #ffb268;
+  --color-border: #4a3626;
+  --color-node-bg: #2e2116;
+  --color-node-border: #5c4632;
+  --color-error: #ff6b6b;
+  --color-success: #9bd977;
+  --color-warning: #ffd93d;
+  --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --color-node-shadow-hover: 0 2px 7px rgba(0, 0, 0, 0.6);
+  --xy-node-border: 1px solid var(--color-node-border);
+}
+
+:root[data-theme='dark-cool'] {
+  --color-bg: #14122b;
+  --color-canvas: #1c1938;
+  --color-panel: #18152f;
+  --color-editor-bg: #0f0d21;
+  --color-text: #e6e2f7;
+  --color-text-secondary: #a89fc9;
+  --color-accent: #a78bfa;
+  --color-accent-light: #c4b5fd;
+  --color-border: #322c57;
+  --color-node-bg: #1c1938;
+  --color-node-border: #453e6e;
+  --color-error: #ff6b6b;
+  --color-success: #51cf66;
+  --color-warning: #ffd93d;
+  --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --color-node-shadow-hover: 0 2px 7px rgba(0, 0, 0, 0.6);
+  --xy-node-border: 1px solid var(--color-node-border);
+}
+
+:root[data-theme='dark-nature'] {
+  --color-bg: #0b1d17;
+  --color-canvas: #102821;
+  --color-panel: #0e231d;
+  --color-editor-bg: #081712;
+  --color-text: #dcece6;
+  --color-text-secondary: #8fb3a4;
+  --color-accent: #34d399;
+  --color-accent-light: #5eead4;
+  --color-border: #1e3a30;
+  --color-node-bg: #102821;
+  --color-node-border: #2c4a3c;
+  --color-error: #ff6b6b;
+  --color-success: #51cf66;
+  --color-warning: #ffd93d;
+  --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --color-node-shadow-hover: 0 2px 7px rgba(0, 0, 0, 0.6);
   --xy-node-border: 1px solid var(--color-node-border);
 }
 

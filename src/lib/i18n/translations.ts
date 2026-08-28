@@ -47,6 +47,14 @@ const en = {
   'nav.codeIndentTab': 'Tab character',
   'nav.codeFontHeading': 'Code Font',
   'nav.codeFontDefault': 'Default',
+  'nav.themeHeading': 'Theme',
+  'nav.themeSystem': 'System',
+  'nav.themeGroupLight': 'Light',
+  'nav.themeGroupDark': 'Dark',
+  'nav.theme.default': 'Default',
+  'nav.theme.warm': 'Warm',
+  'nav.theme.cool': 'Cool',
+  'nav.theme.nature': 'Nature',
 
   // ThemeToggle / FullscreenToggle
   'toggle.themeTitle': 'Toggle dark/light mode (Alt+Shift+T)',
@@ -329,6 +337,14 @@ const id: Record<TranslationKey, string> = {
   'nav.codeIndentTab': 'Karakter tab',
   'nav.codeFontHeading': 'Font Kode',
   'nav.codeFontDefault': 'Bawaan',
+  'nav.themeHeading': 'Tema',
+  'nav.themeSystem': 'Sistem',
+  'nav.themeGroupLight': 'Terang',
+  'nav.themeGroupDark': 'Gelap',
+  'nav.theme.default': 'Default',
+  'nav.theme.warm': 'Hangat',
+  'nav.theme.cool': 'Sejuk',
+  'nav.theme.nature': 'Alam',
 
   // ThemeToggle / FullscreenToggle
   'toggle.themeTitle': 'Ganti mode gelap/terang (Alt+Shift+T)',

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { theme, toggleTheme } from '../../stores/theme';
+  import { isDark, toggleTheme } from '../../stores/theme';
   import { t } from '../../stores/i18n';
 </script>
 
@@ -11,5 +11,5 @@
   aria-label={$t('toggle.themeTitle')}
   title={$t('toggle.themeTitle')}
 >
-  {$theme === 'dark' ? '🌙' : '☀️'}
+  {$isDark ? '🌙' : '☀️'}
 </button>

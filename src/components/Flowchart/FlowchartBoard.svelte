@@ -21,7 +21,7 @@
   import SubroutineEndNode from './SubroutineEndNode.svelte';
   import SubroutineCallNode from './SubroutineCallNode.svelte';
   import CanvasContextMenu from './CanvasContextMenu.svelte';
-  import { theme } from '../../stores/theme';
+  import { isDark } from '../../stores/theme';
   import {
     nodes,
     edges,
@@ -322,7 +322,7 @@
     {nodeTypes}
     {defaultEdgeOptions}
     initialViewport={{ x: 0, y: 0, zoom: 1 }}
-    colorMode={$theme}
+    colorMode={$isDark ? 'dark' : 'light'}
     onconnect={handleConnect}
     onnodecontextmenu={handleNodeContextMenu}
     onedgecontextmenu={handleEdgeContextMenu}
