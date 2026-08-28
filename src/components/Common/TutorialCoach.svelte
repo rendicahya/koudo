@@ -2,19 +2,18 @@
   import { t } from '../../stores/i18n';
   import {
     tutorialActive,
+    tutorialTrack,
     tutorialStepIndex,
-    TUTORIAL_STEPS,
-    STEP_CONTENT_KEYS,
-    STEP_HIGHLIGHT,
+    tutorialTrackSteps,
     nextTutorialStep,
     prevTutorialStep,
     closeTutorial,
   } from '../../stores/tutorial';
 
-  let stepId = $derived(TUTORIAL_STEPS[$tutorialStepIndex]);
-  let content = $derived(STEP_CONTENT_KEYS[stepId]);
+  let steps = $derived(tutorialTrackSteps($tutorialTrack));
+  let step = $derived(steps[$tutorialStepIndex]);
   let isFirst = $derived($tutorialStepIndex === 0);
-  let isLast = $derived($tutorialStepIndex === TUTORIAL_STEPS.length - 1);
+  let isLast = $derived($tutorialStepIndex === steps.length - 1);
 
   let panelEl: HTMLDivElement = $state()!;
   // Null until the user first drags the panel — it renders anchored to the
@@ -36,7 +35,7 @@
   // (see STEP_HIGHLIGHT) by toggling a CSS class on it — re-run on every
   // step change, cleaning up the previous step's highlight first.
   $effect(() => {
-    const selector = $tutorialActive ? STEP_HIGHLIGHT[stepId] : undefined;
+    const selector = $tutorialActive ? step?.highlight : undefined;
     const el = selector ? document.querySelector(selector) : null;
     el?.classList.add('tutorial-highlight');
     return () => el?.classList.remove('tutorial-highlight');
@@ -110,7 +109,7 @@
           ⠿
         </span>
         <span class="text-xs font-semibold tracking-wide uppercase" style="color: var(--color-text-secondary);">
-          {$t('tutorial.stepOf', { index: $tutorialStepIndex + 1, total: TUTORIAL_STEPS.length })}
+          {$t('tutorial.stepOf', { index: $tutorialStepIndex + 1, total: steps.length })}
         </span>
       </div>
       <button
@@ -123,9 +122,9 @@
       </button>
     </div>
 
-    <h3 class="text-sm font-semibold">{$t(content.titleKey)}</h3>
+    <h3 class="text-sm font-semibold">{$t(step.titleKey)}</h3>
     <p class="text-sm" style="color: var(--color-text-secondary);">
-      {#each parseInlineCode($t(content.bodyKey)) as part, index (index)}
+      {#each parseInlineCode($t(step.bodyKey)) as part, index (index)}
         {#if part.code}<code
             class="rounded px-1 py-0.5 font-mono text-xs"
             style="background: var(--color-editor-bg); color: var(--color-text);">{part.text}</code

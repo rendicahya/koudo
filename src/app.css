@@ -59,7 +59,7 @@ button:disabled {
 }
 
 /* TutorialCoach.svelte toggles this on whichever palette chip/button the
-   current step calls for (see stores/tutorial.ts's STEP_HIGHLIGHT) — a
+   current step calls for (see stores/tutorial.ts's per-step `highlight`) — a
    pulsing accent glow draws the eye without a full spotlight/backdrop
    overlay, which would also have to punch a hole through for every
    possible target shape (pill, diamond, hexagon, rectangle).

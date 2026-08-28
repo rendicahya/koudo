@@ -53,7 +53,7 @@ A small hand-written interpreter (`src/lib/execution/interpreter.ts`) actually r
 
 ### A guided first run
 
-A first-time visitor sees a welcome modal (pick English or Bahasa Indonesia, then **Start Tutorial** or **Skip**) before ever touching the canvas. The tutorial is a step-by-step coach panel — drag-to-move, and reachable again any time from **Help → Tutorial** — that walks through declaring a variable, adding a `final` constant, calculating a circle's area with an Assign block, printing it, tidying the layout with Canvas → Arrange, and hitting Run, highlighting whichever palette chip or button each step calls for.
+A first-time visitor sees a welcome modal (pick English or Bahasa Indonesia, then **Start Tutorial** or **Skip**) before ever touching the canvas, which starts the **Basic** guide: declare a variable, print it with Output, tidy the layout with Canvas → Arrange, and hit Run. The tutorial is a step-by-step coach panel — drag-to-move, highlighting whichever palette chip or button each step calls for. Five more guides are reachable any time from **Help → Tutorial**: Variables/Constants/Assignment (a `final` constant and a circle-area calculation), Input & Output, Decision (If), For Loop, and While Loop.
 
 ### Autosave, Undo/Redo, and save/load
 
@@ -147,8 +147,8 @@ src/
 │       ├── TopNavbar.svelte             project name, Undo/Redo, Project/Canvas/Preferences/Help menus
 │       ├── ProjectMenu.svelte           New/Open/Save (.kdo), Export Java/Pseudocode
 │       ├── CanvasMenu.svelte            Arrange, Download PNG
-│       ├── PreferencesMenu.svelte       variable mode, language, code indent, code font
-│       ├── HelpMenu.svelte              Guide + Tutorial dropdown
+│       ├── PreferencesMenu.svelte       Mode/Language/Code flyout submenus
+│       ├── HelpMenu.svelte              Guide + Tutorial (6-guide flyout) menu
 │       ├── HelpModal.svelte             in-app usage guide (tabs in help/)
 │       ├── TutorialWelcomeModal.svelte  first-visit language pick + Start/Skip
 │       ├── TutorialCoach.svelte         draggable step-by-step tutorial panel + palette highlight

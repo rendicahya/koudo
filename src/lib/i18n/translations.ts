@@ -34,6 +34,7 @@ const en = {
   'nav.preferences': 'Preferences',
   'nav.help': 'Help',
   'nav.helpGuide': 'Guide',
+  'nav.modeHeading': 'Mode',
   'nav.variableModeBeginner': 'Beginner Mode',
   'nav.variableModeBeginnerHint': "Declare a variable with just a value — its type is inferred automatically",
   'nav.variableModeStandard': 'Standard Mode',
@@ -313,48 +314,175 @@ const en = {
   // TutorialWelcomeModal — shown once, automatically, on a first visit
   'welcome.title': 'Welcome to KOUDO! 👋',
   'welcome.body':
-    "KOUDO turns a flowchart you build into real, runnable Java code. Pick your language below, then let's build your first program together — calculating the area of a circle.",
+    "KOUDO turns a flowchart you build into real, runnable Java code. Pick your language below, then let's build your first program together — declaring a variable and showing it.",
   'welcome.languageLabel': 'Language',
   'welcome.start': 'Start Tutorial',
   'welcome.skip': 'Skip',
 
-  // TutorialCoach — reopenable any time from the Tutorial nav button (see
-  // TopNavbar.svelte's nav.tutorial)
+  // TutorialCoach — reopenable any time from the Help menu's Tutorial
+  // submenu (see TopNavbar.svelte's nav.tutorial / stores/tutorial.ts)
   'tutorial.dragToMove': 'Drag to move',
   'tutorial.back': 'Back',
   'tutorial.next': 'Next',
   'tutorial.skip': 'Skip tutorial',
   'tutorial.finish': 'Finish',
   'tutorial.stepOf': 'Step {index} of {total}',
-  'tutorial.step.welcome.title': "Let's build something!",
-  'tutorial.step.welcome.body':
-    "On the left is your canvas — build a flowchart by dragging blocks from the palette. On the right, KOUDO turns it into Pseudocode and real Java code automatically. We'll calculate a circle's area: `area = π × radius²`.",
-  'tutorial.step.declareRadius.title': 'Declare a variable',
-  'tutorial.step.declareRadius.body':
-    "Drag the 'Variable' block from the palette onto the canvas. Name it `radius` and give it a value, e.g. `5`.",
-  'tutorial.step.declarePi.title': 'Add a constant',
-  'tutorial.step.declarePi.body':
-    "Inside that same block, click '+ Add variable'. Check the const box, name it `PI`, and set its value to `3.14` — a constant can't be changed later.",
-  'tutorial.step.declareArea.title': 'One more variable',
-  'tutorial.step.declareArea.body':
-    "Click '+ Add variable' once more. Name this one `area`, set its type to `double` (decimal number), and leave its value empty for now — we'll calculate it in the next step.",
-  'tutorial.step.assign.title': 'Calculate the area',
-  'tutorial.step.assign.body': "Drag an 'Assign' block onto the canvas. Set: `area = PI * radius * radius`",
-  'tutorial.step.output.title': 'Show the result',
-  'tutorial.step.output.body': "Drag an 'Output' block onto the canvas, then add `area` as the variable to print.",
-  'tutorial.step.end.title': 'Finish the flow',
-  'tutorial.step.end.body': "Drag an 'End' block onto the canvas to complete your program.",
-  'tutorial.step.arrange.title': 'Tidy the layout',
-  'tutorial.step.arrange.body':
-    "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly in a single column.",
-  'tutorial.step.run.title': 'Run it!',
-  'tutorial.step.run.body':
-    "Click ▶ Run below the canvas to calculate and print the circle's area. With `radius = 5` and `PI = 3.14`, expect to see: `78.5`",
-  'tutorial.step.done.title': '🎉 You did it!',
-  'tutorial.step.done.body':
-    'You just declared variables, used a constant, calculated a value, and ran your first program in KOUDO. Explore the palette to discover If, For, While, and more.',
 
-  // TopNavbar — reopens the tutorial above
+  // Guide picker (Help menu -> Tutorial submenu) — "basic" is the only one
+  // shown automatically to a first-time visitor (see tutorial.ts's
+  // startTutorial); the rest are opt-in.
+  'tutorial.track.basic': 'Basic: Declare & Show',
+  'tutorial.track.variableConstAssignment': 'Variables, Constants & Assignment',
+  'tutorial.track.inputOutput': 'Input & Output',
+  'tutorial.track.decision': 'Decision (If)',
+  'tutorial.track.forLoop': 'For Loop',
+  'tutorial.track.whileLoop': 'While Loop',
+
+  // Basic guide
+  'tutorial.step.basic.welcome.title': "Let's build something!",
+  'tutorial.step.basic.welcome.body':
+    "On the left is your canvas — build a flowchart by dragging blocks from the palette. On the right, KOUDO turns it into Pseudocode and real Java code automatically. We'll declare a variable and show it.",
+  'tutorial.step.basic.declareName.title': 'Declare a variable',
+  'tutorial.step.basic.declareName.body':
+    "Drag the 'Variable' block from the palette onto the canvas. Name it `nama` and give it a value like `\"Andi\"` (with quotes, since it's text).",
+  'tutorial.step.basic.output.title': 'Show it',
+  'tutorial.step.basic.output.body': "Drag an 'Output' block onto the canvas, then add `nama` as the variable to print.",
+  'tutorial.step.basic.end.title': 'Finish the flow',
+  'tutorial.step.basic.end.body': "Drag an 'End' block onto the canvas to complete your program.",
+  'tutorial.step.basic.arrange.title': 'Tidy the layout',
+  'tutorial.step.basic.arrange.body':
+    "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly in a single column.",
+  'tutorial.step.basic.run.title': 'Run it!',
+  'tutorial.step.basic.run.body': 'Click ▶ Run below the canvas. Expect to see: `Andi`',
+  'tutorial.step.basic.done.title': '🎉 You did it!',
+  'tutorial.step.basic.done.body':
+    'You just declared a variable and displayed it with KOUDO. Open Help → Tutorial to try the other guides: constants & calculations, input, decisions, and loops.',
+
+  // Variables, Constants & Assignment guide — the circle-area walkthrough
+  'tutorial.step.vca.welcome.title': "Let's build something!",
+  'tutorial.step.vca.welcome.body':
+    "On the left is your canvas — build a flowchart by dragging blocks from the palette. On the right, KOUDO turns it into Pseudocode and real Java code automatically. We'll calculate a circle's area: `area = π × radius²`.",
+  'tutorial.step.vca.declareRadius.title': 'Declare a variable',
+  'tutorial.step.vca.declareRadius.body':
+    "Drag the 'Variable' block from the palette onto the canvas. Name it `radius` and give it a value, e.g. `5`.",
+  'tutorial.step.vca.declarePi.title': 'Add a constant',
+  'tutorial.step.vca.declarePi.body':
+    "Inside that same block, click '+ Add variable'. Check the const box, name it `PI`, and set its value to `3.14` — a constant can't be changed later.",
+  'tutorial.step.vca.declareArea.title': 'One more variable',
+  'tutorial.step.vca.declareArea.body':
+    "Click '+ Add variable' once more. Name this one `area`, set its type to `double` (decimal number), and leave its value empty for now — we'll calculate it in the next step.",
+  'tutorial.step.vca.assign.title': 'Calculate the area',
+  'tutorial.step.vca.assign.body': "Drag an 'Assign' block onto the canvas. Set: `area = PI * radius * radius`",
+  'tutorial.step.vca.output.title': 'Show the result',
+  'tutorial.step.vca.output.body': "Drag an 'Output' block onto the canvas, then add `area` as the variable to print.",
+  'tutorial.step.vca.end.title': 'Finish the flow',
+  'tutorial.step.vca.end.body': "Drag an 'End' block onto the canvas to complete your program.",
+  'tutorial.step.vca.arrange.title': 'Tidy the layout',
+  'tutorial.step.vca.arrange.body':
+    "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly in a single column.",
+  'tutorial.step.vca.run.title': 'Run it!',
+  'tutorial.step.vca.run.body':
+    "Click ▶ Run below the canvas to calculate and print the circle's area. With `radius = 5` and `PI = 3.14`, expect to see: `78.5`",
+  'tutorial.step.vca.done.title': '🎉 You did it!',
+  'tutorial.step.vca.done.body':
+    'You just declared variables, used a constant, calculated a value, and ran your first program in KOUDO. Open Help → Tutorial to try the other guides: input, decisions, and loops.',
+
+  // Input & Output guide
+  'tutorial.step.io.welcome.title': 'Talk to your program',
+  'tutorial.step.io.welcome.body':
+    "This guide adds an 'Input' block so your flowchart can ask a question while it runs, then show the answer back with 'Output'.",
+  'tutorial.step.io.declareVar.title': 'Declare a variable',
+  'tutorial.step.io.declareVar.body':
+    "Drag the 'Variable' block onto the canvas. Name it `nama`, set its type to `String`, and leave its value empty — Input will fill it in when the program runs.",
+  'tutorial.step.io.input.title': 'Ask for input',
+  'tutorial.step.io.input.body':
+    "Drag an 'Input' block onto the canvas. Pick `nama` from the dropdown, and set its prompt to something like `What's your name?`",
+  'tutorial.step.io.output.title': 'Show it back',
+  'tutorial.step.io.output.body': "Drag an 'Output' block onto the canvas, then add `nama` as the variable to print.",
+  'tutorial.step.io.end.title': 'Finish the flow',
+  'tutorial.step.io.end.body': "Drag an 'End' block onto the canvas to complete your program.",
+  'tutorial.step.io.arrange.title': 'Tidy the layout',
+  'tutorial.step.io.arrange.body':
+    "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly in a single column.",
+  'tutorial.step.io.run.title': 'Run it!',
+  'tutorial.step.io.run.body':
+    "Click ▶ Run below the canvas. When asked, type your name and press Enter — KOUDO prints it right back.",
+  'tutorial.step.io.done.title': '🎉 You did it!',
+  'tutorial.step.io.done.body':
+    'You just read a value while the program was running and displayed it. Open Help → Tutorial to try decisions and loops next.',
+
+  // Decision (If) guide
+  'tutorial.step.decision.welcome.title': 'Make a choice',
+  'tutorial.step.decision.welcome.body':
+    "This guide branches your flow with an 'If' block — we'll check whether a number is even or odd.",
+  'tutorial.step.decision.declareNumber.title': 'Declare a variable',
+  'tutorial.step.decision.declareNumber.body':
+    "Drag the 'Variable' block onto the canvas. Name it `angka`, set its type to `int`, and give it a value, e.g. `7`.",
+  'tutorial.step.decision.decision.title': 'Add the check',
+  'tutorial.step.decision.decision.body': "Drag an 'If' block onto the canvas. Set its condition to `angka % 2 == 0`.",
+  'tutorial.step.decision.outputEven.title': 'Branch: True',
+  'tutorial.step.decision.outputEven.body':
+    "From the 'If' block's True branch, drag an 'Output' block and print the custom text `Even`.",
+  'tutorial.step.decision.outputOdd.title': 'Branch: False',
+  'tutorial.step.decision.outputOdd.body':
+    "From the 'If' block's False branch, drag another 'Output' block and print the custom text `Odd`.",
+  'tutorial.step.decision.end.title': 'Finish the flow',
+  'tutorial.step.decision.end.body': "Drag one 'End' block and connect both Output blocks into it.",
+  'tutorial.step.decision.arrange.title': 'Tidy the layout',
+  'tutorial.step.decision.arrange.body':
+    "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly.",
+  'tutorial.step.decision.run.title': 'Run it!',
+  'tutorial.step.decision.run.body': 'Click ▶ Run below the canvas. With `angka = 7`, expect to see: `Odd`',
+  'tutorial.step.decision.done.title': '🎉 You did it!',
+  'tutorial.step.decision.done.body':
+    "You just branched your program's flow with a condition. Open Help → Tutorial to try For and While loops next.",
+
+  // For Loop guide
+  'tutorial.step.forLoop.welcome.title': 'Repeat yourself',
+  'tutorial.step.forLoop.welcome.body':
+    "This guide uses a 'For' block to repeat a step a fixed number of times — we'll count from 1 to 5.",
+  'tutorial.step.forLoop.forLoop.title': 'Add the loop',
+  'tutorial.step.forLoop.forLoop.body': "Drag a 'For' block onto the canvas. Set: init `int i = 1`, condition `i <= 5`, update `i++`.",
+  'tutorial.step.forLoop.output.title': 'Print each number',
+  'tutorial.step.forLoop.output.body':
+    "Drag an 'Output' block from the loop's bottom handle and print `i`. Then connect its own bottom back up to the 'For' block to close the loop.",
+  'tutorial.step.forLoop.end.title': 'Finish the flow',
+  'tutorial.step.forLoop.end.body': "Drag an 'End' block and connect it to the loop's other branch (the exit, on the right).",
+  'tutorial.step.forLoop.arrange.title': 'Tidy the layout',
+  'tutorial.step.forLoop.arrange.body':
+    "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly.",
+  'tutorial.step.forLoop.run.title': 'Run it!',
+  'tutorial.step.forLoop.run.body': 'Click ▶ Run below the canvas. Expect to see `1` through `5`, one per line.',
+  'tutorial.step.forLoop.done.title': '🎉 You did it!',
+  'tutorial.step.forLoop.done.body':
+    'You just repeated a step with a For loop. Open Help → Tutorial to try a While loop next.',
+
+  // While Loop guide
+  'tutorial.step.whileLoop.welcome.title': 'Repeat with your own counter',
+  'tutorial.step.whileLoop.welcome.body':
+    "This guide uses a 'While' block, which repeats as long as a condition holds — you manage the counter yourself. We'll count from 1 to 5.",
+  'tutorial.step.whileLoop.declareCounter.title': 'Declare a counter',
+  'tutorial.step.whileLoop.declareCounter.body':
+    "Drag the 'Variable' block onto the canvas. Name it `i`, set its type to `int`, and give it a value of `1`.",
+  'tutorial.step.whileLoop.whileLoop.title': 'Add the loop',
+  'tutorial.step.whileLoop.whileLoop.body': "Drag a 'While' block onto the canvas. Set its condition to `i <= 5`.",
+  'tutorial.step.whileLoop.output.title': 'Print the counter',
+  'tutorial.step.whileLoop.output.body': "From the loop's 'loop' branch (bottom), drag an 'Output' block and print `i`.",
+  'tutorial.step.whileLoop.assignIncrement.title': 'Increase the counter',
+  'tutorial.step.whileLoop.assignIncrement.body':
+    "Drag an 'Assign' block after Output. Set: `i = i + 1`. Then connect it back up to the 'While' block to close the loop.",
+  'tutorial.step.whileLoop.end.title': 'Finish the flow',
+  'tutorial.step.whileLoop.end.body': "Drag an 'End' block and connect it to the loop's 'exit' branch (on the right).",
+  'tutorial.step.whileLoop.arrange.title': 'Tidy the layout',
+  'tutorial.step.whileLoop.arrange.body':
+    "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly.",
+  'tutorial.step.whileLoop.run.title': 'Run it!',
+  'tutorial.step.whileLoop.run.body': 'Click ▶ Run below the canvas. Expect to see `1` through `5`, one per line.',
+  'tutorial.step.whileLoop.done.title': '🎉 You did it!',
+  'tutorial.step.whileLoop.done.body':
+    'You just repeated a step with a While loop and managed your own counter. Explore the palette for more.',
+
+  // TopNavbar — opens the Tutorial submenu above (see HelpMenu.svelte)
   'nav.tutorial': 'Tutorial',
 } as const;
 
@@ -380,6 +508,7 @@ const id: Record<TranslationKey, string> = {
   'nav.preferences': 'Preferensi',
   'nav.help': 'Bantuan',
   'nav.helpGuide': 'Panduan',
+  'nav.modeHeading': 'Mode',
   'nav.variableModeBeginner': 'Mode Pemula',
   'nav.variableModeBeginnerHint': 'Deklarasikan variabel hanya dengan nilai — tipenya disimpulkan secara otomatis',
   'nav.variableModeStandard': 'Mode Standar',
@@ -658,45 +787,169 @@ const id: Record<TranslationKey, string> = {
   // TutorialWelcomeModal — shown once, automatically, on a first visit
   'welcome.title': 'Selamat datang di KOUDO! 👋',
   'welcome.body':
-    'KOUDO mengubah flowchart yang kamu buat menjadi kode Java yang benar-benar bisa dijalankan. Pilih bahasa di bawah, lalu mari kita buat program pertamamu bersama — menghitung luas lingkaran.',
+    'KOUDO mengubah flowchart yang kamu buat menjadi kode Java yang benar-benar bisa dijalankan. Pilih bahasa di bawah, lalu mari kita buat program pertamamu bersama — mendeklarasikan variabel dan menampilkannya.',
   'welcome.languageLabel': 'Bahasa',
   'welcome.start': 'Mulai Tutorial',
   'welcome.skip': 'Lewati',
 
-  // TutorialCoach — bisa dibuka lagi kapan saja dari tombol Tutorial (lihat
-  // TopNavbar.svelte's nav.tutorial)
+  // TutorialCoach — bisa dibuka lagi kapan saja dari submenu Tutorial di
+  // menu Bantuan (lihat TopNavbar.svelte's nav.tutorial / stores/tutorial.ts)
   'tutorial.dragToMove': 'Seret untuk memindahkan',
   'tutorial.back': 'Kembali',
   'tutorial.next': 'Lanjut',
   'tutorial.skip': 'Lewati tutorial',
   'tutorial.finish': 'Selesai',
   'tutorial.stepOf': 'Langkah {index} dari {total}',
-  'tutorial.step.welcome.title': 'Mari membuat sesuatu!',
-  'tutorial.step.welcome.body':
+
+  // Pemilih panduan (menu Bantuan -> submenu Tutorial) — "basic" adalah
+  // satu-satunya yang ditampilkan otomatis untuk pengunjung baru (lihat
+  // tutorial.ts's startTutorial); sisanya opsional.
+  'tutorial.track.basic': 'Dasar: Deklarasi & Tampilkan',
+  'tutorial.track.variableConstAssignment': 'Variabel, Konstanta & Assignment',
+  'tutorial.track.inputOutput': 'Input & Output',
+  'tutorial.track.decision': 'Keputusan (If)',
+  'tutorial.track.forLoop': 'Perulangan For',
+  'tutorial.track.whileLoop': 'Perulangan While',
+
+  // Panduan Dasar
+  'tutorial.step.basic.welcome.title': 'Mari membuat sesuatu!',
+  'tutorial.step.basic.welcome.body':
+    'Di sebelah kiri ada kanvasmu — buat flowchart dengan menyeret blok dari palet. Di sebelah kanan, KOUDO otomatis mengubahnya menjadi Pseudocode dan kode Java sungguhan. Kita akan mendeklarasikan sebuah variabel dan menampilkannya.',
+  'tutorial.step.basic.declareName.title': 'Deklarasikan variabel',
+  'tutorial.step.basic.declareName.body':
+    'Seret blok \'Variable\' dari palet ke kanvas. Beri nama `nama` dan isi nilainya seperti `"Andi"` (pakai tanda kutip, karena ini teks).',
+  'tutorial.step.basic.output.title': 'Tampilkan',
+  'tutorial.step.basic.output.body': "Seret blok 'Output' ke kanvas, lalu tambahkan `nama` sebagai variabel yang dicetak.",
+  'tutorial.step.basic.end.title': 'Selesaikan alurnya',
+  'tutorial.step.basic.end.body': "Seret blok 'End' ke kanvas untuk menyelesaikan programmu.",
+  'tutorial.step.basic.arrange.title': 'Rapikan tata letak',
+  'tutorial.step.basic.arrange.body':
+    "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu menjadi satu baris lurus.",
+  'tutorial.step.basic.run.title': 'Jalankan!',
+  'tutorial.step.basic.run.body': 'Klik ▶ Run di bawah kanvas. Hasil yang diharapkan: `Andi`',
+  'tutorial.step.basic.done.title': '🎉 Berhasil!',
+  'tutorial.step.basic.done.body':
+    'Kamu baru saja mendeklarasikan variabel dan menampilkannya dengan KOUDO. Buka Bantuan → Tutorial untuk mencoba panduan lain: konstanta & perhitungan, input, keputusan, dan perulangan.',
+
+  // Panduan Variabel, Konstanta & Assignment — langkah menghitung luas lingkaran
+  'tutorial.step.vca.welcome.title': 'Mari membuat sesuatu!',
+  'tutorial.step.vca.welcome.body':
     'Di sebelah kiri ada kanvasmu — buat flowchart dengan menyeret blok dari palet. Di sebelah kanan, KOUDO otomatis mengubahnya menjadi Pseudocode dan kode Java sungguhan. Kita akan menghitung luas lingkaran: `luas = π × jari-jari²`.',
-  'tutorial.step.declareRadius.title': 'Deklarasikan variabel',
-  'tutorial.step.declareRadius.body':
+  'tutorial.step.vca.declareRadius.title': 'Deklarasikan variabel',
+  'tutorial.step.vca.declareRadius.body':
     "Seret blok 'Variable' dari palet ke kanvas. Beri nama `radius` dan isi nilainya, misalnya `5`.",
-  'tutorial.step.declarePi.title': 'Tambahkan konstanta',
-  'tutorial.step.declarePi.body':
+  'tutorial.step.vca.declarePi.title': 'Tambahkan konstanta',
+  'tutorial.step.vca.declarePi.body':
     "Di blok yang sama, klik '+ Tambah variabel'. Centang kotak const, beri nama `PI`, dan isi nilainya `3.14` — konstanta tidak bisa diubah lagi setelahnya.",
-  'tutorial.step.declareArea.title': 'Satu variabel lagi',
-  'tutorial.step.declareArea.body':
+  'tutorial.step.vca.declareArea.title': 'Satu variabel lagi',
+  'tutorial.step.vca.declareArea.body':
     "Klik '+ Tambah variabel' sekali lagi. Beri nama `area`, atur tipenya ke `double` (bilangan pecahan), dan biarkan nilainya kosong dulu — kita akan menghitungnya di langkah berikutnya.",
-  'tutorial.step.assign.title': 'Hitung luasnya',
-  'tutorial.step.assign.body': "Seret blok 'Assign' ke kanvas. Atur: `area = PI * radius * radius`",
-  'tutorial.step.output.title': 'Tampilkan hasilnya',
-  'tutorial.step.output.body': "Seret blok 'Output' ke kanvas, lalu tambahkan `area` sebagai variabel yang dicetak.",
-  'tutorial.step.end.title': 'Selesaikan alurnya',
-  'tutorial.step.end.body': "Seret blok 'End' ke kanvas untuk menyelesaikan programmu.",
-  'tutorial.step.arrange.title': 'Rapikan tata letak',
-  'tutorial.step.arrange.body': "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu menjadi satu baris lurus.",
-  'tutorial.step.run.title': 'Jalankan!',
-  'tutorial.step.run.body':
+  'tutorial.step.vca.assign.title': 'Hitung luasnya',
+  'tutorial.step.vca.assign.body': "Seret blok 'Assign' ke kanvas. Atur: `area = PI * radius * radius`",
+  'tutorial.step.vca.output.title': 'Tampilkan hasilnya',
+  'tutorial.step.vca.output.body': "Seret blok 'Output' ke kanvas, lalu tambahkan `area` sebagai variabel yang dicetak.",
+  'tutorial.step.vca.end.title': 'Selesaikan alurnya',
+  'tutorial.step.vca.end.body': "Seret blok 'End' ke kanvas untuk menyelesaikan programmu.",
+  'tutorial.step.vca.arrange.title': 'Rapikan tata letak',
+  'tutorial.step.vca.arrange.body': "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu menjadi satu baris lurus.",
+  'tutorial.step.vca.run.title': 'Jalankan!',
+  'tutorial.step.vca.run.body':
     'Klik ▶ Run di bawah kanvas untuk menghitung dan menampilkan luas lingkarannya. Dengan `radius = 5` dan `PI = 3.14`, hasil yang diharapkan: `78.5`',
-  'tutorial.step.done.title': '🎉 Berhasil!',
-  'tutorial.step.done.body':
-    'Kamu baru saja mendeklarasikan variabel, memakai konstanta, menghitung sebuah nilai, dan menjalankan program pertamamu di KOUDO. Jelajahi palet untuk menemukan If, For, While, dan lainnya.',
+  'tutorial.step.vca.done.title': '🎉 Berhasil!',
+  'tutorial.step.vca.done.body':
+    'Kamu baru saja mendeklarasikan variabel, memakai konstanta, menghitung sebuah nilai, dan menjalankan program pertamamu di KOUDO. Buka Bantuan → Tutorial untuk mencoba panduan lain: input, keputusan, dan perulangan.',
+
+  // Panduan Input & Output
+  'tutorial.step.io.welcome.title': 'Ajak programmu bicara',
+  'tutorial.step.io.welcome.body':
+    "Panduan ini menambahkan blok 'Input' sehingga flowchart-mu bisa menanyakan sesuatu saat dijalankan, lalu menampilkan jawabannya lewat 'Output'.",
+  'tutorial.step.io.declareVar.title': 'Deklarasikan variabel',
+  'tutorial.step.io.declareVar.body':
+    "Seret blok 'Variable' ke kanvas. Beri nama `nama`, atur tipenya ke `String`, dan biarkan nilainya kosong — Input akan mengisinya saat program dijalankan.",
+  'tutorial.step.io.input.title': 'Minta input',
+  'tutorial.step.io.input.body':
+    "Seret blok 'Input' ke kanvas. Pilih `nama` dari dropdown, dan atur promptnya seperti `Siapa namamu?`",
+  'tutorial.step.io.output.title': 'Tampilkan kembali',
+  'tutorial.step.io.output.body': "Seret blok 'Output' ke kanvas, lalu tambahkan `nama` sebagai variabel yang dicetak.",
+  'tutorial.step.io.end.title': 'Selesaikan alurnya',
+  'tutorial.step.io.end.body': "Seret blok 'End' ke kanvas untuk menyelesaikan programmu.",
+  'tutorial.step.io.arrange.title': 'Rapikan tata letak',
+  'tutorial.step.io.arrange.body': "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu menjadi satu baris lurus.",
+  'tutorial.step.io.run.title': 'Jalankan!',
+  'tutorial.step.io.run.body':
+    'Klik ▶ Run di bawah kanvas. Saat ditanya, ketik namamu lalu tekan Enter — KOUDO langsung menampilkannya kembali.',
+  'tutorial.step.io.done.title': '🎉 Berhasil!',
+  'tutorial.step.io.done.body':
+    'Kamu baru saja membaca nilai saat program berjalan dan menampilkannya. Buka Bantuan → Tutorial untuk mencoba keputusan dan perulangan selanjutnya.',
+
+  // Panduan Keputusan (If)
+  'tutorial.step.decision.welcome.title': 'Buat sebuah pilihan',
+  'tutorial.step.decision.welcome.body':
+    "Panduan ini mencabangkan alurmu dengan blok 'If' — kita akan memeriksa apakah sebuah angka genap atau ganjil.",
+  'tutorial.step.decision.declareNumber.title': 'Deklarasikan variabel',
+  'tutorial.step.decision.declareNumber.body':
+    "Seret blok 'Variable' ke kanvas. Beri nama `angka`, atur tipenya ke `int`, dan isi nilainya, misalnya `7`.",
+  'tutorial.step.decision.decision.title': 'Tambahkan pemeriksaan',
+  'tutorial.step.decision.decision.body': "Seret blok 'If' ke kanvas. Atur kondisinya ke `angka % 2 == 0`.",
+  'tutorial.step.decision.outputEven.title': 'Cabang: True',
+  'tutorial.step.decision.outputEven.body':
+    "Dari cabang True blok 'If', seret blok 'Output' dan cetak teks kustom `Genap`.",
+  'tutorial.step.decision.outputOdd.title': 'Cabang: False',
+  'tutorial.step.decision.outputOdd.body':
+    "Dari cabang False blok 'If', seret blok 'Output' lagi dan cetak teks kustom `Ganjil`.",
+  'tutorial.step.decision.end.title': 'Selesaikan alurnya',
+  'tutorial.step.decision.end.body': "Seret satu blok 'End' dan hubungkan kedua blok Output ke sana.",
+  'tutorial.step.decision.arrange.title': 'Rapikan tata letak',
+  'tutorial.step.decision.arrange.body': "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu.",
+  'tutorial.step.decision.run.title': 'Jalankan!',
+  'tutorial.step.decision.run.body': 'Klik ▶ Run di bawah kanvas. Dengan `angka = 7`, hasil yang diharapkan: `Ganjil`',
+  'tutorial.step.decision.done.title': '🎉 Berhasil!',
+  'tutorial.step.decision.done.body':
+    'Kamu baru saja mencabangkan alur programmu dengan sebuah kondisi. Buka Bantuan → Tutorial untuk mencoba perulangan For dan While selanjutnya.',
+
+  // Panduan Perulangan For
+  'tutorial.step.forLoop.welcome.title': 'Ulangi dirimu sendiri',
+  'tutorial.step.forLoop.welcome.body':
+    "Panduan ini memakai blok 'For' untuk mengulang sebuah langkah sejumlah kali yang tetap — kita akan menghitung dari 1 sampai 5.",
+  'tutorial.step.forLoop.forLoop.title': 'Tambahkan perulangan',
+  'tutorial.step.forLoop.forLoop.body': "Seret blok 'For' ke kanvas. Atur: init `int i = 1`, kondisi `i <= 5`, update `i++`.",
+  'tutorial.step.forLoop.output.title': 'Cetak setiap angka',
+  'tutorial.step.forLoop.output.body':
+    "Seret blok 'Output' dari handle bawah perulangan dan cetak `i`. Lalu hubungkan bagian bawahnya kembali ke blok 'For' untuk menutup perulangan.",
+  'tutorial.step.forLoop.end.title': 'Selesaikan alurnya',
+  'tutorial.step.forLoop.end.body': "Seret blok 'End' dan hubungkan ke cabang lain perulangan (exit, di sebelah kanan).",
+  'tutorial.step.forLoop.arrange.title': 'Rapikan tata letak',
+  'tutorial.step.forLoop.arrange.body': "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu.",
+  'tutorial.step.forLoop.run.title': 'Jalankan!',
+  'tutorial.step.forLoop.run.body': 'Klik ▶ Run di bawah kanvas. Hasil yang diharapkan: `1` sampai `5`, masing-masing di barisnya sendiri.',
+  'tutorial.step.forLoop.done.title': '🎉 Berhasil!',
+  'tutorial.step.forLoop.done.body':
+    'Kamu baru saja mengulang sebuah langkah dengan perulangan For. Buka Bantuan → Tutorial untuk mencoba perulangan While selanjutnya.',
+
+  // Panduan Perulangan While
+  'tutorial.step.whileLoop.welcome.title': 'Ulangi dengan penghitungmu sendiri',
+  'tutorial.step.whileLoop.welcome.body':
+    "Panduan ini memakai blok 'While', yang berulang selama sebuah kondisi masih benar — kamu mengatur sendiri penghitungnya. Kita akan menghitung dari 1 sampai 5.",
+  'tutorial.step.whileLoop.declareCounter.title': 'Deklarasikan penghitung',
+  'tutorial.step.whileLoop.declareCounter.body':
+    "Seret blok 'Variable' ke kanvas. Beri nama `i`, atur tipenya ke `int`, dan isi nilainya `1`.",
+  'tutorial.step.whileLoop.whileLoop.title': 'Tambahkan perulangan',
+  'tutorial.step.whileLoop.whileLoop.body': "Seret blok 'While' ke kanvas. Atur kondisinya ke `i <= 5`.",
+  'tutorial.step.whileLoop.output.title': 'Cetak penghitungnya',
+  'tutorial.step.whileLoop.output.body': "Dari cabang 'loop' perulangan (bawah), seret blok 'Output' dan cetak `i`.",
+  'tutorial.step.whileLoop.assignIncrement.title': 'Naikkan penghitungnya',
+  'tutorial.step.whileLoop.assignIncrement.body':
+    "Seret blok 'Assign' setelah Output. Atur: `i = i + 1`. Lalu hubungkan kembali ke blok 'While' untuk menutup perulangan.",
+  'tutorial.step.whileLoop.end.title': 'Selesaikan alurnya',
+  'tutorial.step.whileLoop.end.body': "Seret blok 'End' dan hubungkan ke cabang 'exit' perulangan (di sebelah kanan).",
+  'tutorial.step.whileLoop.arrange.title': 'Rapikan tata letak',
+  'tutorial.step.whileLoop.arrange.body': "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu.",
+  'tutorial.step.whileLoop.run.title': 'Jalankan!',
+  'tutorial.step.whileLoop.run.body':
+    'Klik ▶ Run di bawah kanvas. Hasil yang diharapkan: `1` sampai `5`, masing-masing di barisnya sendiri.',
+  'tutorial.step.whileLoop.done.title': '🎉 Berhasil!',
+  'tutorial.step.whileLoop.done.body':
+    'Kamu baru saja mengulang sebuah langkah dengan perulangan While dan mengatur penghitung sendiri. Jelajahi palet untuk lainnya.',
 
   // TopNavbar — membuka tutorial di atas lagi
   'nav.tutorial': 'Tutorial',
