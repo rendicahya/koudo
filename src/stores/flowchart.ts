@@ -226,7 +226,7 @@ export const BLOCK_WIDTH = 260;
 // +40 for the type/name/value fields for a single line (see BLOCK_WIDTH),
 // +40 more for the drag handle and const-checkbox controls added alongside
 // each entry (see DeclareNode.svelte).
-export const DECLARE_WIDTH = BLOCK_WIDTH + 80;
+export const DECLARE_WIDTH = BLOCK_WIDTH + 110;
 export const TERMINAL_WIDTH = 140;
 export const DIAMOND_WIDTH = 200;
 const DIAMOND_HEIGHT = 110;
