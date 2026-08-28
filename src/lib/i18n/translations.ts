@@ -313,6 +313,7 @@ const en = {
 
   // TutorialCoach — reopenable any time from the Tutorial nav button (see
   // TopNavbar.svelte's nav.tutorial)
+  'tutorial.dragToMove': 'Drag to move',
   'tutorial.back': 'Back',
   'tutorial.next': 'Next',
   'tutorial.skip': 'Skip tutorial',
@@ -320,25 +321,28 @@ const en = {
   'tutorial.stepOf': 'Step {index} of {total}',
   'tutorial.step.welcome.title': "Let's build something!",
   'tutorial.step.welcome.body':
-    'On the left is your canvas — build a flowchart by dragging blocks from the palette. On the right, KOUDO turns it into Pseudocode and real Java code automatically. We\'ll calculate a circle\'s area: area = π × radius².',
+    "On the left is your canvas — build a flowchart by dragging blocks from the palette. On the right, KOUDO turns it into Pseudocode and real Java code automatically. We'll calculate a circle's area: `area = π × radius²`.",
   'tutorial.step.declareRadius.title': 'Declare a variable',
   'tutorial.step.declareRadius.body':
-    "Drag the 'Variable' block from the palette onto the canvas. Name it radius and give it a value, e.g. 5.",
+    "Drag the 'Variable' block from the palette onto the canvas. Name it `radius` and give it a value, e.g. `5`.",
   'tutorial.step.declarePi.title': 'Add a constant',
   'tutorial.step.declarePi.body':
-    "Inside that same block, click '+ Add variable'. Check the const box, name it PI, and set its value to 3.14 — a constant can't be changed later.",
+    "Inside that same block, click '+ Add variable'. Check the const box, name it `PI`, and set its value to `3.14` — a constant can't be changed later.",
   'tutorial.step.declareArea.title': 'One more variable',
   'tutorial.step.declareArea.body':
-    "Click '+ Add variable' once more. Name this one area, and leave its value empty for now — we'll calculate it in the next step.",
+    "Click '+ Add variable' once more. Name this one `area`, set its type to `double` (decimal number), and leave its value empty for now — we'll calculate it in the next step.",
   'tutorial.step.assign.title': 'Calculate the area',
-  'tutorial.step.assign.body':
-    "Drag an 'Assign' block onto the canvas. Set: area = PI * radius * radius",
+  'tutorial.step.assign.body': "Drag an 'Assign' block onto the canvas. Set: `area = PI * radius * radius`",
   'tutorial.step.output.title': 'Show the result',
-  'tutorial.step.output.body': "Drag an 'Output' block onto the canvas, then add area as the variable to print.",
+  'tutorial.step.output.body': "Drag an 'Output' block onto the canvas, then add `area` as the variable to print.",
   'tutorial.step.end.title': 'Finish the flow',
   'tutorial.step.end.body': "Drag an 'End' block onto the canvas to complete your program.",
+  'tutorial.step.arrange.title': 'Tidy the layout',
+  'tutorial.step.arrange.body':
+    "Open the 'Canvas' menu at the top and choose 'Arrange' to line your blocks up neatly in a single column.",
   'tutorial.step.run.title': 'Run it!',
-  'tutorial.step.run.body': "Click ▶ Run below the canvas to calculate and print the circle's area.",
+  'tutorial.step.run.body':
+    "Click ▶ Run below the canvas to calculate and print the circle's area. With `radius = 5` and `PI = 3.14`, expect to see: `78.5`",
   'tutorial.step.done.title': '🎉 You did it!',
   'tutorial.step.done.body':
     'You just declared variables, used a constant, calculated a value, and ran your first program in KOUDO. Explore the palette to discover If, For, While, and more.',
@@ -645,6 +649,7 @@ const id: Record<TranslationKey, string> = {
 
   // TutorialCoach — bisa dibuka lagi kapan saja dari tombol Tutorial (lihat
   // TopNavbar.svelte's nav.tutorial)
+  'tutorial.dragToMove': 'Seret untuk memindahkan',
   'tutorial.back': 'Kembali',
   'tutorial.next': 'Lanjut',
   'tutorial.skip': 'Lewati tutorial',
@@ -652,24 +657,27 @@ const id: Record<TranslationKey, string> = {
   'tutorial.stepOf': 'Langkah {index} dari {total}',
   'tutorial.step.welcome.title': 'Mari membuat sesuatu!',
   'tutorial.step.welcome.body':
-    'Di sebelah kiri ada kanvasmu — buat flowchart dengan menyeret blok dari palet. Di sebelah kanan, KOUDO otomatis mengubahnya menjadi Pseudocode dan kode Java sungguhan. Kita akan menghitung luas lingkaran: luas = π × jari-jari².',
+    'Di sebelah kiri ada kanvasmu — buat flowchart dengan menyeret blok dari palet. Di sebelah kanan, KOUDO otomatis mengubahnya menjadi Pseudocode dan kode Java sungguhan. Kita akan menghitung luas lingkaran: `luas = π × jari-jari²`.',
   'tutorial.step.declareRadius.title': 'Deklarasikan variabel',
   'tutorial.step.declareRadius.body':
-    "Seret blok 'Variable' dari palet ke kanvas. Beri nama radius dan isi nilainya, misalnya 5.",
+    "Seret blok 'Variable' dari palet ke kanvas. Beri nama `radius` dan isi nilainya, misalnya `5`.",
   'tutorial.step.declarePi.title': 'Tambahkan konstanta',
   'tutorial.step.declarePi.body':
-    "Di blok yang sama, klik '+ Tambah variabel'. Centang kotak const, beri nama PI, dan isi nilainya 3.14 — konstanta tidak bisa diubah lagi setelahnya.",
+    "Di blok yang sama, klik '+ Tambah variabel'. Centang kotak const, beri nama `PI`, dan isi nilainya `3.14` — konstanta tidak bisa diubah lagi setelahnya.",
   'tutorial.step.declareArea.title': 'Satu variabel lagi',
   'tutorial.step.declareArea.body':
-    "Klik '+ Tambah variabel' sekali lagi. Beri nama area, dan biarkan nilainya kosong dulu — kita akan menghitungnya di langkah berikutnya.",
+    "Klik '+ Tambah variabel' sekali lagi. Beri nama `area`, atur tipenya ke `double` (bilangan pecahan), dan biarkan nilainya kosong dulu — kita akan menghitungnya di langkah berikutnya.",
   'tutorial.step.assign.title': 'Hitung luasnya',
-  'tutorial.step.assign.body': "Seret blok 'Assign' ke kanvas. Atur: area = PI * radius * radius",
+  'tutorial.step.assign.body': "Seret blok 'Assign' ke kanvas. Atur: `area = PI * radius * radius`",
   'tutorial.step.output.title': 'Tampilkan hasilnya',
-  'tutorial.step.output.body': "Seret blok 'Output' ke kanvas, lalu tambahkan area sebagai variabel yang dicetak.",
+  'tutorial.step.output.body': "Seret blok 'Output' ke kanvas, lalu tambahkan `area` sebagai variabel yang dicetak.",
   'tutorial.step.end.title': 'Selesaikan alurnya',
   'tutorial.step.end.body': "Seret blok 'End' ke kanvas untuk menyelesaikan programmu.",
+  'tutorial.step.arrange.title': 'Rapikan tata letak',
+  'tutorial.step.arrange.body': "Buka menu 'Canvas' di atas, lalu pilih 'Atur' untuk merapikan blok-blokmu menjadi satu baris lurus.",
   'tutorial.step.run.title': 'Jalankan!',
-  'tutorial.step.run.body': 'Klik ▶ Run di bawah kanvas untuk menghitung dan menampilkan luas lingkarannya.',
+  'tutorial.step.run.body':
+    'Klik ▶ Run di bawah kanvas untuk menghitung dan menampilkan luas lingkarannya. Dengan `radius = 5` dan `PI = 3.14`, hasil yang diharapkan: `78.5`',
   'tutorial.step.done.title': '🎉 Berhasil!',
   'tutorial.step.done.body':
     'Kamu baru saja mendeklarasikan variabel, memakai konstanta, menghitung sebuah nilai, dan menjalankan program pertamamu di KOUDO. Jelajahi palet untuk menemukan If, For, While, dan lainnya.',

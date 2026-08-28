@@ -60,24 +60,28 @@ button:disabled {
 
 /* TutorialCoach.svelte toggles this on whichever palette chip/button the
    current step calls for (see stores/tutorial.ts's STEP_HIGHLIGHT) — a
-   pulsing accent outline draws the eye without a full spotlight/backdrop
+   pulsing accent glow draws the eye without a full spotlight/backdrop
    overlay, which would also have to punch a hole through for every
-   possible target shape (pill, diamond, hexagon, rectangle). */
+   possible target shape (pill, diamond, hexagon, rectangle).
+   `filter: drop-shadow` rather than `outline`/`box-shadow` — several chips
+   (Output/Input/Decision/For/While) are clipped to a parallelogram/diamond/
+   hexagon via `clip-path`, which also clips away an outline or box-shadow
+   drawn on the same element, leaving nothing visible. drop-shadow instead
+   paints around the element's actual rendered (already-clipped) pixels, so
+   it follows the real silhouette — same reasoning as theme.css's own
+   --color-node-shadow use of drop-shadow for node hover feedback. */
 .tutorial-highlight {
   position: relative;
   z-index: 20;
-  outline: 3px solid var(--color-accent);
-  outline-offset: 3px;
-  border-radius: 6px;
   animation: tutorial-pulse 1.4s ease-in-out infinite;
 }
 
 @keyframes tutorial-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 45%, transparent);
+    filter: drop-shadow(0 0 1px var(--color-accent));
   }
   50% {
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-accent) 0%, transparent);
+    filter: drop-shadow(0 0 8px var(--color-accent));
   }
 }

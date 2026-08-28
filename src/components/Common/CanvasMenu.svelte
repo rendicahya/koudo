@@ -87,6 +87,7 @@
 <div class="relative" bind:this={menuEl}>
   <button
     type="button"
+    data-tutorial-canvas-menu
     class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80"
     aria-haspopup="menu"
     aria-expanded={open}

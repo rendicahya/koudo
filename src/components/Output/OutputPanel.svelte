@@ -134,7 +134,7 @@
     <!-- Zoom for the output box and Variable Watcher table below — same
          shared-zoom pattern as CodeEditorPanel's own text-size buttons, just
          a separate setting (see stores/layout.ts's outputFontSize). -->
-    <div class="ml-auto flex items-center gap-1 text-xs" style="color: var(--color-text-secondary);">
+    <div class="flex items-center gap-1 text-xs" style="color: var(--color-text-secondary);">
       <button
         type="button"
         class="rounded border px-1.5 py-0.5 leading-none hover:opacity-70 disabled:opacity-40"

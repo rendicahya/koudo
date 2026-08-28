@@ -18,7 +18,9 @@ function toSavedNode(node: Node): Node {
 
 export function serializeFlowchart(nodes: Node[], edges: Edge[], name: string): string {
   const payload: FlowchartFile = { version: 1, name, nodes: nodes.map(toSavedNode), edges };
-  return JSON.stringify(payload, null, 2);
+  // No pretty-print indent — a .kdo file is read by this app, not a person,
+  // so the smaller minified size wins over on-disk readability.
+  return JSON.stringify(payload);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

@@ -22,6 +22,15 @@
   --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   --color-node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.22);
   --xy-node-border: 1px solid var(--color-node-border);
+  /* Start/End (xyflow's built-in "input"/"output" node types) otherwise fall
+     back to xyflow's own --xy-node-background-color-default/--xy-node-color-default
+     (plain white / near-black, keyed only off light vs dark colorMode — see
+     FlowchartBoard.svelte's colorMode prop), ignoring this app's own
+     8-palette theming entirely. Overriding the variable xyflow actually
+     checks first (same technique as --xy-node-border above) keeps Start/End
+     matching every other block's background/text color, flavor included. */
+  --xy-node-background-color: var(--color-node-bg);
+  --xy-node-color: var(--color-text);
 }
 
 :root[data-theme='light-warm'] {
@@ -42,6 +51,15 @@
   --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   --color-node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.22);
   --xy-node-border: 1px solid var(--color-node-border);
+  /* Start/End (xyflow's built-in "input"/"output" node types) otherwise fall
+     back to xyflow's own --xy-node-background-color-default/--xy-node-color-default
+     (plain white / near-black, keyed only off light vs dark colorMode — see
+     FlowchartBoard.svelte's colorMode prop), ignoring this app's own
+     8-palette theming entirely. Overriding the variable xyflow actually
+     checks first (same technique as --xy-node-border above) keeps Start/End
+     matching every other block's background/text color, flavor included. */
+  --xy-node-background-color: var(--color-node-bg);
+  --xy-node-color: var(--color-text);
 }
 
 :root[data-theme='light-cool'] {
@@ -62,6 +80,15 @@
   --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   --color-node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.22);
   --xy-node-border: 1px solid var(--color-node-border);
+  /* Start/End (xyflow's built-in "input"/"output" node types) otherwise fall
+     back to xyflow's own --xy-node-background-color-default/--xy-node-color-default
+     (plain white / near-black, keyed only off light vs dark colorMode — see
+     FlowchartBoard.svelte's colorMode prop), ignoring this app's own
+     8-palette theming entirely. Overriding the variable xyflow actually
+     checks first (same technique as --xy-node-border above) keeps Start/End
+     matching every other block's background/text color, flavor included. */
+  --xy-node-background-color: var(--color-node-bg);
+  --xy-node-color: var(--color-text);
 }
 
 :root[data-theme='light-nature'] {
@@ -82,6 +109,15 @@
   --color-node-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   --color-node-shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.22);
   --xy-node-border: 1px solid var(--color-node-border);
+  /* Start/End (xyflow's built-in "input"/"output" node types) otherwise fall
+     back to xyflow's own --xy-node-background-color-default/--xy-node-color-default
+     (plain white / near-black, keyed only off light vs dark colorMode — see
+     FlowchartBoard.svelte's colorMode prop), ignoring this app's own
+     8-palette theming entirely. Overriding the variable xyflow actually
+     checks first (same technique as --xy-node-border above) keeps Start/End
+     matching every other block's background/text color, flavor included. */
+  --xy-node-background-color: var(--color-node-bg);
+  --xy-node-color: var(--color-text);
 }
 
 :root[data-theme='dark-default'] {
@@ -102,6 +138,15 @@
   --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   --color-node-shadow-hover: 0 2px 7px rgba(0, 0, 0, 0.6);
   --xy-node-border: 1px solid var(--color-node-border);
+  /* Start/End (xyflow's built-in "input"/"output" node types) otherwise fall
+     back to xyflow's own --xy-node-background-color-default/--xy-node-color-default
+     (plain white / near-black, keyed only off light vs dark colorMode — see
+     FlowchartBoard.svelte's colorMode prop), ignoring this app's own
+     8-palette theming entirely. Overriding the variable xyflow actually
+     checks first (same technique as --xy-node-border above) keeps Start/End
+     matching every other block's background/text color, flavor included. */
+  --xy-node-background-color: var(--color-node-bg);
+  --xy-node-color: var(--color-text);
 }
 
 :root[data-theme='dark-warm'] {
@@ -122,6 +167,15 @@
   --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   --color-node-shadow-hover: 0 2px 7px rgba(0, 0, 0, 0.6);
   --xy-node-border: 1px solid var(--color-node-border);
+  /* Start/End (xyflow's built-in "input"/"output" node types) otherwise fall
+     back to xyflow's own --xy-node-background-color-default/--xy-node-color-default
+     (plain white / near-black, keyed only off light vs dark colorMode — see
+     FlowchartBoard.svelte's colorMode prop), ignoring this app's own
+     8-palette theming entirely. Overriding the variable xyflow actually
+     checks first (same technique as --xy-node-border above) keeps Start/End
+     matching every other block's background/text color, flavor included. */
+  --xy-node-background-color: var(--color-node-bg);
+  --xy-node-color: var(--color-text);
 }
 
 :root[data-theme='dark-cool'] {
@@ -142,6 +196,15 @@
   --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   --color-node-shadow-hover: 0 2px 7px rgba(0, 0, 0, 0.6);
   --xy-node-border: 1px solid var(--color-node-border);
+  /* Start/End (xyflow's built-in "input"/"output" node types) otherwise fall
+     back to xyflow's own --xy-node-background-color-default/--xy-node-color-default
+     (plain white / near-black, keyed only off light vs dark colorMode — see
+     FlowchartBoard.svelte's colorMode prop), ignoring this app's own
+     8-palette theming entirely. Overriding the variable xyflow actually
+     checks first (same technique as --xy-node-border above) keeps Start/End
+     matching every other block's background/text color, flavor included. */
+  --xy-node-background-color: var(--color-node-bg);
+  --xy-node-color: var(--color-text);
 }
 
 :root[data-theme='dark-nature'] {
@@ -162,6 +225,15 @@
   --color-node-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   --color-node-shadow-hover: 0 2px 7px rgba(0, 0, 0, 0.6);
   --xy-node-border: 1px solid var(--color-node-border);
+  /* Start/End (xyflow's built-in "input"/"output" node types) otherwise fall
+     back to xyflow's own --xy-node-background-color-default/--xy-node-color-default
+     (plain white / near-black, keyed only off light vs dark colorMode — see
+     FlowchartBoard.svelte's colorMode prop), ignoring this app's own
+     8-palette theming entirely. Overriding the variable xyflow actually
+     checks first (same technique as --xy-node-border above) keeps Start/End
+     matching every other block's background/text color, flavor included. */
+  --xy-node-background-color: var(--color-node-bg);
+  --xy-node-color: var(--color-text);
 }
 
 /* Every block — Declare/Assign/Input/Process/Decision/ForLoop/WhileLoop's

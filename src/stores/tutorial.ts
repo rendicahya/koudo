@@ -14,6 +14,7 @@ export const TUTORIAL_STEPS = [
   'assign',
   'output',
   'end',
+  'arrange',
   'run',
   'done',
 ] as const;
@@ -31,6 +32,7 @@ export const STEP_CONTENT_KEYS: Record<TutorialStepId, { titleKey: TranslationKe
   assign: { titleKey: 'tutorial.step.assign.title', bodyKey: 'tutorial.step.assign.body' },
   output: { titleKey: 'tutorial.step.output.title', bodyKey: 'tutorial.step.output.body' },
   end: { titleKey: 'tutorial.step.end.title', bodyKey: 'tutorial.step.end.body' },
+  arrange: { titleKey: 'tutorial.step.arrange.title', bodyKey: 'tutorial.step.arrange.body' },
   run: { titleKey: 'tutorial.step.run.title', bodyKey: 'tutorial.step.run.body' },
   done: { titleKey: 'tutorial.step.done.title', bodyKey: 'tutorial.step.done.body' },
 };
@@ -45,6 +47,7 @@ export const STEP_HIGHLIGHT: Partial<Record<TutorialStepId, string>> = {
   assign: '[data-block-chip="assign"]',
   output: '[data-block-chip="process"]',
   end: '[data-block-chip="end"]',
+  arrange: '[data-tutorial-canvas-menu]',
   run: '[data-tutorial-run-button]',
 };
 
