@@ -43,14 +43,15 @@
   let hasStart = $derived($nodes.some((node) => node.data?.blockType === 'start'));
   let hasEnd = $derived($nodes.some((node) => node.data?.blockType === 'end'));
 
-  // Every block's name except Start/End, which stay whatever BLOCK_DEFINITIONS
-  // says (English) — those two are xyflow's built-in node types, rendered
-  // from a label baked into the node's data at creation time rather than
-  // read reactively, so they can't follow a language switch (see
-  // translations.ts's file header comment). Every other block never shows
-  // its own name on the canvas at all (DeclareNode etc. render their fields,
-  // not a heading), so translating it here doesn't create that mismatch.
+  // Every block's own display name. Start/End are xyflow's built-in node
+  // types with a label baked into node data at creation time rather than
+  // read reactively (see translations.ts's file header comment) — the chip
+  // here still translates fine (this component itself re-renders on a
+  // language switch like any other), it's only the already-placed canvas
+  // node that needs stores/sync.ts's syncStartEndLabels to catch up.
   const BLOCK_TYPE_LABEL_KEY: Partial<Record<BlockType, TranslationKey>> = {
+    start: 'block.type.start',
+    end: 'block.type.end',
     declare: 'block.type.declare',
     assign: 'block.type.assign',
     input: 'block.type.input',

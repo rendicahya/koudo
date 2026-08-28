@@ -24,6 +24,8 @@ import { generateJavaCode } from '../lib/flowchart/generator';
 import { parseDeclarations } from '../lib/flowchart/declarationParser';
 import { unquoteDeclaredValue } from '../lib/flowchart/valueFormat';
 import { parseStatements } from '../lib/flowchart/statementParser';
+import { language, t } from './i18n';
+import { applyWithoutHistory } from './history';
 
 // Guards against the two directions fighting each other: while one side is
 // applying an update it came from, the other side's reactive sync is
@@ -42,6 +44,62 @@ function syncFlowchartToCode() {
 
 nodes.subscribe(syncFlowchartToCode);
 edges.subscribe(syncFlowchartToCode);
+
+// Start/End render via xyflow's own built-in node types (see
+// stores/flowchart.ts's XYFLOW_NODE_TYPE), not a custom component like every
+// other block — deliberately, so they inherit xyflow's own default node
+// styling/hover for free (see theme.css's comment on this). That means their
+// label is a plain string baked into node.data at creation time (see
+// createBlockNode), never read reactively from the i18n store the way every
+// custom block's own template is. Kept in sync here instead: whenever the
+// language changes, or the node list changes (a new Start/End dropped in, a
+// project loaded, ...), every Start/End node's label is rewritten to match.
+//
+// The actual correcting write is deferred to a microtask rather than made
+// straight from this subscriber — nodes.subscribe callbacks can fire nested
+// inside another write already in progress (e.g. undo()/redo() mid-way
+// through their own nodes.set/edges.set pair, still relying on history.ts's
+// `applying` flag staying true across both calls); writing synchronously
+// here would toggle that same flag back to false in between them. Deferring
+// runs this after that write has fully finished instead. Still wrapped in
+// applyWithoutHistory so a same-language-only correction never becomes an
+// Undo-able edit on its own — see that function's own comment for how a
+// correction alongside a genuine pending edit still gets recorded.
+let startEndSyncQueued = false;
+
+function needsStartEndLabelFix(): boolean {
+  const translate = get(t);
+  const startLabel = translate('block.type.start');
+  const endLabel = translate('block.type.end');
+  return get(nodes).some((node) => {
+    const blockType = blockTypeOf(node);
+    if (blockType === 'start') return node.data?.label !== startLabel;
+    if (blockType === 'end') return node.data?.label !== endLabel;
+    return false;
+  });
+}
+
+function syncStartEndLabels() {
+  if (startEndSyncQueued || !needsStartEndLabelFix()) return;
+
+  startEndSyncQueued = true;
+  queueMicrotask(() => {
+    startEndSyncQueued = false;
+    const translate = get(t);
+    const startLabel = translate('block.type.start');
+    const endLabel = translate('block.type.end');
+    const next = get(nodes).map((node) => {
+      const blockType = blockTypeOf(node);
+      const wantLabel = blockType === 'start' ? startLabel : blockType === 'end' ? endLabel : undefined;
+      if (wantLabel === undefined || node.data?.label === wantLabel) return node;
+      return { ...node, data: { ...node.data, label: wantLabel } };
+    });
+    applyWithoutHistory(() => nodes.set(next));
+  });
+}
+
+nodes.subscribe(syncStartEndLabels);
+language.subscribe(syncStartEndLabels);
 
 function blockTypeOf(node: Node): string | undefined {
   return (node.data as { blockType?: string } | undefined)?.blockType;

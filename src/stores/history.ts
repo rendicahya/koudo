@@ -140,6 +140,26 @@ export function redo() {
   updateFlags();
 }
 
+// Runs `mutate` (expected to write to nodes/edges) without recording an Undo
+// step for it — for a programmatic sync that isn't itself a user edit (see
+// stores/sync.ts's Start/End label sync, kept following the current
+// language). Same applying-flag technique undo()/redo() use below to keep
+// their own writes from re-triggering scheduleCheck.
+export function applyWithoutHistory(mutate: () => void) {
+  applying = true;
+  mutate();
+  applying = false;
+  // A real edit already mid-debounce (scheduleTimer pending) has its own
+  // upcoming check that will fold this correction into that same commit —
+  // fast-forwarding last/lastKey here would instead erase that edit's diff
+  // out from under it (comparing the corrected state to itself finds no
+  // difference, so the edit never gets recorded at all). Only safe to treat
+  // this write as the new resting baseline when nothing's pending.
+  if (scheduleTimer) return;
+  last = { nodes: get(nodes), edges: get(edges) };
+  lastKey = keyOf(last);
+}
+
 // Called after New/Open Project (see ProjectMenu.svelte) — those swap in an
 // entirely different flowchart, which undo should treat as a fresh starting
 // point rather than something to undo back out of.

@@ -6,14 +6,15 @@
 // silent English fallback discovered by clicking around.
 //
 // Deliberately NOT translated here: Java type keywords (int/double/String/
-// boolean/...), true/false literals, generated Java/Pseudocode output, and
-// Start/End's own on-canvas text (see stores/flowchart.ts's XYFLOW_NODE_TYPE
-// — they're xyflow's built-in node types, rendered from a label baked into
-// node data at creation time rather than read reactively, so they can't
-// follow a language switch without becoming custom components). For/While/
-// True/False are also left as-is — borrowed CS terms usually kept in
-// English even in Indonesian programming instruction, same reasoning as the
-// type keywords.
+// boolean/...), true/false literals, and generated Java/Pseudocode output.
+// For/While/True/False are also left as-is — borrowed CS terms usually kept
+// in English even in Indonesian programming instruction, same reasoning as
+// the type keywords. Start/End's on-canvas text *is* translated (see
+// 'block.type.start'/'block.type.end' below) even though they're xyflow's
+// built-in node types with a label baked into node data at creation time,
+// not read reactively like every other block's own template — see
+// stores/sync.ts's syncStartEndLabels, which rewrites that baked label
+// in place whenever the language (or the node list) changes.
 const en = {
   // TopNavbar
   'nav.undo': 'Undo',
@@ -227,7 +228,9 @@ const en = {
   'palette.chipDragHint': 'Drag onto the canvas to add {article} {label} block',
   'palette.comingSoonSuffix': ' (soon)',
 
-  // Block type display names (Start/End excluded — see file header comment)
+  // Block type display names
+  'block.type.start': 'Start',
+  'block.type.end': 'End',
   'block.type.declare': 'Variable',
   'block.type.assign': 'Assign',
   'block.type.input': 'Input',
@@ -738,6 +741,8 @@ const id: Record<TranslationKey, string> = {
   'palette.comingSoonSuffix': ' (segera)',
 
   // Block type display names
+  'block.type.start': 'Mulai',
+  'block.type.end': 'Selesai',
   'block.type.declare': 'Variabel',
   'block.type.assign': 'Ubah Nilai',
   'block.type.input': 'Input',
