@@ -89,6 +89,10 @@
     </select>
   </div>
 
+  {#if params.length > 0}
+    <span class="self-start" style="color: var(--color-text-secondary);">{$t('subroutineStart.parametersLabel')}</span>
+  {/if}
+
   {#each params as param, index (index)}
     <div class="flex items-center gap-1">
       <select
