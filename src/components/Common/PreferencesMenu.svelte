@@ -64,7 +64,7 @@
   {#if open}
     <div
       role="menu"
-      class="absolute left-0 top-full z-20 mt-1 flex w-52 max-w-[calc(100vw-1.5rem)] flex-col overflow-y-auto rounded-md border text-sm shadow-md"
+      class="absolute left-0 top-full z-20 mt-1 flex w-52 max-w-[calc(100vw-1.5rem)] flex-col rounded-md border text-sm shadow-md"
       style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
     >
       <div class="relative">
