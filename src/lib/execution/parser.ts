@@ -89,6 +89,15 @@ export class Parser {
   private parseStatement(): Stmt {
     const t = this.peek();
 
+    if (t.type === 'keyword' && t.value === 'final') {
+      // `final` doesn't affect evaluation (this interpreter doesn't enforce
+      // write-once-ness — see DeclarationEntry's isConst comment), so it's
+      // simply skipped rather than modeled on the statement itself.
+      this.next();
+      const stmt = this.parseVarDecl();
+      this.expect('punct', ';');
+      return stmt;
+    }
     if (t.type === 'keyword' && TYPE_KEYWORDS.has(t.value)) {
       const stmt = this.parseVarDecl();
       this.expect('punct', ';');

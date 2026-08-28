@@ -263,6 +263,9 @@ const en = {
   'declare.invalidName': "'{name}' is not a valid Java variable name",
   'declare.remove': 'Remove this variable',
   'declare.add': '+ Add variable',
+  'declare.moveUp': 'Move this variable up',
+  'declare.moveDown': 'Move this variable down',
+  'declare.constTitle': 'Constant (Java final — cannot be reassigned)',
 
   // AssignNode
   'assign.valueOrLiteral': '"text" or 5',
@@ -550,6 +553,9 @@ const id: Record<TranslationKey, string> = {
   'declare.invalidName': "'{name}' bukan nama variabel Java yang valid",
   'declare.remove': 'Hapus variabel ini',
   'declare.add': '+ Tambah variabel',
+  'declare.moveUp': 'Pindahkan variabel ini ke atas',
+  'declare.moveDown': 'Pindahkan variabel ini ke bawah',
+  'declare.constTitle': 'Konstanta (final di Java — tidak bisa diubah ulang)',
 
   // AssignNode
   'assign.valueOrLiteral': '"teks" atau 5',

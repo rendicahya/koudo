@@ -21,6 +21,12 @@ export interface DeclarationEntry {
   varType: string;
   varName: string;
   varValue: string;
+  // Emits Java's `final` modifier (see generator.ts's declare case) and
+  // pseudocode's CONST keyword (see generatorPseudocode.ts) — the app
+  // doesn't otherwise enforce write-once-ness (e.g. an Assign block can
+  // still target a const's name), same "known gap" as its simplified
+  // variable-scope tracking elsewhere (see declaredVariableEntriesUpstreamOf).
+  isConst: boolean;
 }
 
 // A Declare block can hold several variables at once — dropping a new
@@ -217,7 +223,10 @@ export const BLOCK_WIDTH = 260;
 // crowds BLOCK_WIDTH a bit more than Process/Input's single field does. A
 // much smaller bump than Assign's own +100 (see ASSIGN_WIDTH) — Declare's
 // extra content is one compact badge/select, not a whole second editor.
-export const DECLARE_WIDTH = BLOCK_WIDTH + 40;
+// +40 for the type/name/value fields for a single line (see BLOCK_WIDTH),
+// +40 more for the reorder (▲▼) and const-checkbox controls added
+// alongside each entry (see DeclareNode.svelte).
+export const DECLARE_WIDTH = BLOCK_WIDTH + 80;
 export const TERMINAL_WIDTH = 140;
 export const DIAMOND_WIDTH = 200;
 const DIAMOND_HEIGHT = 110;
@@ -413,6 +422,17 @@ function updateListItemAt<T>(config: ListBlockConfig<T>, node: Node, index: numb
 
 function removeListItemAt<T>(config: ListBlockConfig<T>, node: Node, index: number): Node {
   return withList(node, config, listOf<T>(node, config.dataKey).filter((_, i) => i !== index));
+}
+
+// Swaps index with index+direction (direction is -1 or +1) — a no-op if
+// that would go out of bounds, so callers don't each need their own
+// boundary check before wiring up an Up/Down button's disabled state.
+function moveListItemAt<T>(config: ListBlockConfig<T>, node: Node, index: number, direction: -1 | 1): Node {
+  const list = [...listOf<T>(node, config.dataKey)];
+  const target = index + direction;
+  if (target < 0 || target >= list.length) return node;
+  [list[index], list[target]] = [list[target], list[index]];
+  return withList(node, config, list);
 }
 
 export function createBlockNode(type: BlockType, position: { x: number; y: number }): Node {
@@ -697,15 +717,16 @@ export function updateSubroutineCallResultVar(node: Node, resultVar: string, tar
   return { ...node, data: { ...node.data, resultVar, label: subroutineCallLabel(targetName, data.args ?? [], resultVar) } };
 }
 
-export function declareLabel(varType: string, varName: string, varValue: string): string {
+export function declareLabel(varType: string, varName: string, varValue: string, isConst?: boolean): string {
+  const prefix = isConst ? 'final ' : '';
   // Not .trim() — a value that's just a space is a real (String) value the
   // user typed on purpose, not "no value given".
-  if (!varValue) return `${varType} ${varName}`;
-  return `${varType} ${varName} = ${formatDeclaredValue(varType, varValue)}`;
+  if (!varValue) return `${prefix}${varType} ${varName}`;
+  return `${prefix}${varType} ${varName} = ${formatDeclaredValue(varType, varValue)}`;
 }
 
 export function entriesLabel(entries: DeclarationEntry[]): string {
-  return entries.map((e) => declareLabel(e.varType, e.varName, e.varValue)).join('; ');
+  return entries.map((e) => declareLabel(e.varType, e.varName, e.varValue, e.isConst)).join('; ');
 }
 
 const DECLARE_LIST: ListBlockConfig<DeclarationEntry> = {
@@ -715,19 +736,25 @@ const DECLARE_LIST: ListBlockConfig<DeclarationEntry> = {
   style: DECLARE_NODE_STYLE,
 };
 
-function defaultDeclarationEntry(overrides?: { varType?: string; varName?: string; varValue?: string }): DeclarationEntry {
+function defaultDeclarationEntry(overrides?: {
+  varType?: string;
+  varName?: string;
+  varValue?: string;
+  isConst?: boolean;
+}): DeclarationEntry {
   return {
     varType: overrides?.varType ?? 'int',
     varName: overrides?.varName ?? nextDefaultVarName(),
     // Blank, not '0' — a freshly added variable is "declare only" (see
     // generator.ts's declare case) until the user actually types a value.
     varValue: overrides?.varValue ?? '',
+    isConst: overrides?.isConst ?? false,
   };
 }
 
 export function createDeclareNode(
   position: { x: number; y: number },
-  overrides?: { varType?: string; varName?: string; varValue?: string },
+  overrides?: { varType?: string; varName?: string; varValue?: string; isConst?: boolean },
 ): Node {
   return createListNode(DECLARE_LIST, position, defaultDeclarationEntry(overrides));
 }
@@ -736,26 +763,36 @@ export function createDeclareNode(
 // freshly dropped Variable block chains directly onto one (see
 // FlowchartBoard's handleDrop), merging the two instead of stacking a
 // second block.
-export function addDeclarationEntry(node: Node, overrides?: { varType?: string; varName?: string; varValue?: string }): Node {
+export function addDeclarationEntry(
+  node: Node,
+  overrides?: { varType?: string; varName?: string; varValue?: string; isConst?: boolean },
+): Node {
   return addListItem(DECLARE_LIST, node, defaultDeclarationEntry(overrides));
 }
 
 export function updateDeclarationEntryAt(
   node: Node,
   index: number,
-  fields: { varType?: string; varName?: string; varValue?: string },
+  fields: { varType?: string; varName?: string; varValue?: string; isConst?: boolean },
 ): Node {
   const current = listOf<DeclarationEntry>(node, 'entries')[index];
   const updated: DeclarationEntry = {
     varType: fields.varType ?? current?.varType ?? 'int',
     varName: fields.varName ?? current?.varName ?? 'value',
     varValue: fields.varValue ?? current?.varValue ?? '',
+    isConst: fields.isConst ?? current?.isConst ?? false,
   };
   return updateListItemAt(DECLARE_LIST, node, index, updated);
 }
 
 export function removeDeclarationEntryAt(node: Node, index: number): Node {
   return removeListItemAt(DECLARE_LIST, node, index);
+}
+
+// Reorders a Declare block's own variables — direction is -1 (move up) or
+// +1 (move down); a no-op past either end (see moveListItemAt).
+export function moveDeclarationEntryAt(node: Node, index: number, direction: -1 | 1): Node {
+  return moveListItemAt(DECLARE_LIST, node, index, direction);
 }
 
 export function assignmentLabel(entry: AssignmentEntry): string {

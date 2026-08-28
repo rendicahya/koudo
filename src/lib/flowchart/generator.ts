@@ -88,7 +88,8 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
       // FlowchartBoard's handleDrop), each becoming its own line. A blank
       // value field (see DeclareNode.svelte) means "declare only" — no `=
       // ...` at all, not an (invalid) empty initializer.
-      const entries = (node.data?.entries as { varType: string; varName: string; varValue: string }[] | undefined) ?? [];
+      const entries =
+        (node.data?.entries as { varType: string; varName: string; varValue: string; isConst?: boolean }[] | undefined) ?? [];
       return entries
         .map((entry, rowIndex) => ({ entry, rowIndex }))
         .filter(({ entry }) => entry.varName.trim())
@@ -96,9 +97,10 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
           // Not .trim() — a value that's just a space is a real (String)
           // value the user typed on purpose, not "no value given".
           const hasValue = entry.varValue.length > 0;
+          const prefix = entry.isConst ? 'final ' : '';
           const text = hasValue
-            ? `${entry.varType} ${entry.varName} = ${formatDeclaredValue(entry.varType, entry.varValue)};`
-            : `${entry.varType} ${entry.varName};`;
+            ? `${prefix}${entry.varType} ${entry.varName} = ${formatDeclaredValue(entry.varType, entry.varValue)};`
+            : `${prefix}${entry.varType} ${entry.varName};`;
           return { text, rowIndex };
         });
     }

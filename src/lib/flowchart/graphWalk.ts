@@ -128,6 +128,7 @@ export interface UpstreamDeclaration {
   varType: string;
   varName: string;
   varValue: string;
+  isConst?: boolean;
 }
 
 // Declared-variable entries (name, type, value) available to a specific

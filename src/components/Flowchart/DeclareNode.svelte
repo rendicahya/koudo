@@ -6,6 +6,7 @@
     addDeclarationEntry,
     updateDeclarationEntryAt,
     removeDeclarationEntryAt,
+    moveDeclarationEntryAt,
     renameDeclaredVariable,
     pendingFocusNodeId,
     type DeclareNodeData,
@@ -100,6 +101,15 @@
     $nodes = $nodes.map((node) => (node.id === id ? removeDeclarationEntryAt(node, index) : node));
   }
 
+  function handleMove(index: number, direction: -1 | 1) {
+    $nodes = $nodes.map((node) => (node.id === id ? moveDeclarationEntryAt(node, index, direction) : node));
+  }
+
+  function handleConstToggle(index: number, event: Event) {
+    const isConst = (event.currentTarget as HTMLInputElement).checked;
+    $nodes = $nodes.map((node) => (node.id === id ? updateDeclarationEntryAt(node, index, { isConst }) : node));
+  }
+
   // Unlike pendingFocusNodeId's store-driven focus above (which targets the
   // *value* field, for a block just dropped from the palette), clicking
   // "+ Add variable" targets the new row's *name* field instead — there's no
@@ -130,6 +140,44 @@
            stepCurrentRow) — reserved width so other rows don't shift when
            one of them lights up. -->
       <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
+
+      <!-- Reorders this variable within the block — Java executes
+           declarations in source order, so moving one changes what's
+           visible to earlier/later lines, not just cosmetic ordering. -->
+      <div class="nodrag flex flex-col leading-none">
+        <button
+          type="button"
+          class="px-0.5 disabled:opacity-25"
+          style="color: var(--color-text-secondary);"
+          disabled={index === 0}
+          title={$t('declare.moveUp')}
+          aria-label={$t('declare.moveUp')}
+          onclick={() => handleMove(index, -1)}
+        >
+          ▲
+        </button>
+        <button
+          type="button"
+          class="px-0.5 disabled:opacity-25"
+          style="color: var(--color-text-secondary);"
+          disabled={index === entries.length - 1}
+          title={$t('declare.moveDown')}
+          aria-label={$t('declare.moveDown')}
+          onclick={() => handleMove(index, 1)}
+        >
+          ▼
+        </button>
+      </div>
+
+      <input
+        type="checkbox"
+        class="nodrag"
+        checked={entry.isConst}
+        onchange={(event) => handleConstToggle(index, event)}
+        title={$t('declare.constTitle')}
+        aria-label={$t('declare.constTitle')}
+      />
+
       {#if !inferred}
         <select
           value={entry.varType}

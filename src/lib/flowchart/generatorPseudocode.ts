@@ -77,16 +77,18 @@ function statementLinesFor(node: Node, nodesById: Map<string, Node>, edges: Edge
         });
     }
     case 'declare': {
-      const entries = (node.data?.entries as { varType: string; varName: string; varValue: string }[] | undefined) ?? [];
+      const entries =
+        (node.data?.entries as { varType: string; varName: string; varValue: string; isConst?: boolean }[] | undefined) ?? [];
       return entries
         .filter((entry) => entry.varName.trim())
         .map((entry) => {
           // Not .trim() — a value that's just a space is a real (String)
           // value the user typed on purpose, not "no value given".
           const hasValue = entry.varValue.length > 0;
+          const verb = entry.isConst ? 'DECLARE CONST' : 'DECLARE';
           return hasValue
-            ? `DECLARE ${entry.varName} AS ${typeWord(entry.varType)} = ${formatDeclaredValue(entry.varType, entry.varValue)}`
-            : `DECLARE ${entry.varName} AS ${typeWord(entry.varType)}`;
+            ? `${verb} ${entry.varName} AS ${typeWord(entry.varType)} = ${formatDeclaredValue(entry.varType, entry.varValue)}`
+            : `${verb} ${entry.varName} AS ${typeWord(entry.varType)}`;
         });
     }
     case 'assign': {

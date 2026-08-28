@@ -78,7 +78,10 @@ export function syncCodeToFlowchart(code: string) {
         continue;
       }
       if (decl.varType !== entry.varType || decl.varValue !== entry.varValue) changed = true;
-      nextEntries.push({ varType: decl.varType, varName: entry.varName, varValue: decl.varValue });
+      // parseDeclarations doesn't recognize a `final` prefix, so const-ness
+      // carries over from the entry already on the canvas rather than being
+      // re-derived from the (unused-for-now) typed-code path.
+      nextEntries.push({ varType: decl.varType, varName: entry.varName, varValue: decl.varValue, isConst: entry.isConst });
     }
 
     if (nextEntries.length === 0) return null;

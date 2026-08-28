@@ -37,6 +37,7 @@ const KEYWORDS = new Set([
   'false',
   'Scanner',
   'new',
+  'final',
 ]);
 
 // Longest-first so e.g. `<=` isn't tokenized as `<` then `=`.
