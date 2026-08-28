@@ -6,6 +6,10 @@ import type { Token, TokenType } from './tokenizer';
 
 export type VarKind = 'int' | 'long' | 'double' | 'float' | 'boolean' | 'char' | 'String';
 
+// A method's return type additionally allows 'void' — VarKind alone covers
+// every place a *value* is stored (variables, params), which void never is.
+export type ReturnKind = VarKind | 'void';
+
 export type Expr =
   | { kind: 'number'; value: number; isInt: boolean; line: number }
   | { kind: 'string'; value: string; line: number }
@@ -14,7 +18,11 @@ export type Expr =
   | { kind: 'identifier'; name: string; line: number }
   | { kind: 'unary'; op: '-' | '!'; operand: Expr; line: number }
   | { kind: 'binary'; op: string; left: Expr; right: Expr; line: number }
-  | { kind: 'scannerRead'; method: string; line: number };
+  | { kind: 'scannerRead'; method: string; line: number }
+  // A Subroutine Call block's generated `name(args)` (see generator.ts's
+  // 'subroutineCall' case) — args are arbitrary expressions, same as a real
+  // Java call, not just identifiers/literals.
+  | { kind: 'call'; name: string; args: Expr[]; line: number };
 
 export type Stmt =
   // init is null for a declaration with no initializer (`int a;`) — the
@@ -32,7 +40,16 @@ export type Stmt =
   // doesn't model a real Scanner object, so it's parsed just to accept the
   // idiomatic Java and then does nothing; the actual reads happen at each
   // `<ident>.nextInt()`-shaped expression (see scannerRead).
-  | { kind: 'noop'; line: number };
+  | { kind: 'noop'; line: number }
+  // A Subroutine Start/End pair's generated `private static <type> <name>(<params>) { ... }`
+  // (see generator.ts's generateJavaMethods) — hoisted (see interpreter.ts's
+  // registerFunctions) before the rest of the program runs, so call order in
+  // the source text never matters.
+  | { kind: 'funcDecl'; name: string; params: { type: VarKind; name: string }[]; returnType: ReturnKind; body: Stmt[]; line: number }
+  | { kind: 'return'; value: Expr | null; line: number }
+  // A call used for its side effects alone (result discarded) — a bare
+  // `name(args);` line, as opposed to one used inside a larger expression.
+  | { kind: 'exprStmt'; expr: Expr; line: number };
 
 export class ParseError extends Error {}
 
@@ -106,6 +123,12 @@ export class Parser {
     if (t.type === 'keyword' && t.value === 'for') return this.parseFor();
     if (t.type === 'keyword' && t.value === 'while') return this.parseWhile();
     if (t.type === 'keyword' && t.value === 'if') return this.parseIf();
+    if (t.type === 'keyword' && t.value === 'private') return this.parseFuncDecl();
+    if (t.type === 'keyword' && t.value === 'return') {
+      const stmt = this.parseReturn();
+      this.expect('punct', ';');
+      return stmt;
+    }
     if (t.type === 'keyword' && t.value === 'System') {
       const stmt = this.parsePrint();
       this.expect('punct', ';');
@@ -150,8 +173,74 @@ export class Parser {
       const value = this.parseExpression();
       return { kind: 'assign', name: nameTok.value, op: opTok.value as '=' | '+=' | '-=' | '*=' | '/=', value, line: nameTok.line };
     }
+    if (opTok.type === 'punct' && opTok.value === '(') {
+      // A Subroutine Call block whose result is discarded (see
+      // SubroutineCallNodeData's resultVar, blank when "(discard result)" is
+      // chosen) — `name(args);` with nothing on its left.
+      const call = this.parseCallArgs(nameTok.value, nameTok.line);
+      return { kind: 'exprStmt', expr: call, line: nameTok.line };
+    }
 
-    throw new ParseError(`Expected an assignment or ++/-- after '${nameTok.value}' on line ${nameTok.line}`);
+    throw new ParseError(`Expected an assignment, ++/--, or a call after '${nameTok.value}' on line ${nameTok.line}`);
+  }
+
+  // Parses the `(arg1, arg2, ...)` tail of a call once its name is already
+  // consumed — shared by the statement form (parseExprStatement) and the
+  // expression form (parsePrimary), which differ only in what surrounds it.
+  private parseCallArgs(name: string, line: number): Expr {
+    this.expect('punct', '(');
+    const args: Expr[] = [];
+    if (!this.check('punct', ')')) {
+      args.push(this.parseExpression());
+      while (this.check('punct', ',')) {
+        this.next();
+        args.push(this.parseExpression());
+      }
+    }
+    this.expect('punct', ')');
+    return { kind: 'call', name, args, line };
+  }
+
+  // `private static <returnType> <name>(<type> <name>, ...) { ... }` — the
+  // exact shape generateJavaMethods emits for each Subroutine Start/End
+  // pair. Modifiers are fixed (always `private static`, never anything
+  // else), so they're consumed rather than modeled.
+  private parseFuncDecl(): Stmt {
+    const startTok = this.next(); // private
+    this.expect('keyword', 'static');
+    const returnTok = this.next();
+    const nameTok = this.expect('identifier');
+    this.expect('punct', '(');
+    const params: { type: VarKind; name: string }[] = [];
+    if (!this.check('punct', ')')) {
+      params.push(this.parseParam());
+      while (this.check('punct', ',')) {
+        this.next();
+        params.push(this.parseParam());
+      }
+    }
+    this.expect('punct', ')');
+    const bodyStmt = this.parseBlock();
+    return {
+      kind: 'funcDecl',
+      name: nameTok.value,
+      params,
+      returnType: returnTok.value as ReturnKind,
+      body: bodyStmt.kind === 'block' ? bodyStmt.body : [bodyStmt],
+      line: startTok.line,
+    };
+  }
+
+  private parseParam(): { type: VarKind; name: string } {
+    const typeTok = this.next();
+    const nameTok = this.expect('identifier');
+    return { type: typeTok.value as VarKind, name: nameTok.value };
+  }
+
+  private parseReturn(): Stmt {
+    const startTok = this.next(); // return
+    const value = this.check('punct', ';') ? null : this.parseExpression();
+    return { kind: 'return', value, line: startTok.line };
   }
 
   private parsePrint(): Stmt {
@@ -346,6 +435,9 @@ export class Parser {
         this.expect('punct', '(');
         this.expect('punct', ')');
         return { kind: 'scannerRead', method: methodTok.value, line: t.line };
+      }
+      if (this.check('punct', '(')) {
+        return this.parseCallArgs(t.value, t.line);
       }
       return { kind: 'identifier', name: t.value, line: t.line };
     }

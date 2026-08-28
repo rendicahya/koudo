@@ -38,6 +38,10 @@ const KEYWORDS = new Set([
   'Scanner',
   'new',
   'final',
+  'private',
+  'static',
+  'void',
+  'return',
 ]);
 
 // Longest-first so e.g. `<=` isn't tokenized as `<` then `=`.

@@ -12,9 +12,10 @@
     stepOnce,
     stopStepRun,
   } from '../../stores/stepRunner';
-  import { hasConnectedEndBlock, nodes } from '../../stores/flowchart';
+  import { hasConnectedEndBlock, nodes, edges } from '../../stores/flowchart';
   import { blockTypeOf } from '../../lib/flowchart/graphWalk';
   import { codeContent } from '../../stores/code';
+  import { generateJavaMethods } from '../../lib/flowchart/generator';
   import { t } from '../../stores/i18n';
   import { outputFontSize, zoomOutputFontSize, MIN_OUTPUT_FONT_SIZE, MAX_OUTPUT_FONT_SIZE } from '../../stores/layout';
 
@@ -33,7 +34,12 @@
   function handleRun() {
     if (!$hasConnectedEndBlock) return;
     stopStepRun();
-    runCode($codeContent);
+    // Subroutine Start/End pairs aren't part of $codeContent (that's main's
+    // flow alone — see stores/sync.ts) — spliced in here so ▶ Run can
+    // actually call them, same source generateJavaMethods feeds the Java
+    // tab's compilable output (see CodeEditorPanel.svelte).
+    const methods = generateJavaMethods($nodes, $edges);
+    runCode(methods ? `${methods}\n\n${$codeContent}` : $codeContent);
   }
 
   // Starts a step run if none is active yet; otherwise advances the one

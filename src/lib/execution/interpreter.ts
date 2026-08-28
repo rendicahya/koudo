@@ -34,6 +34,15 @@ interface EvalValue {
   value: number | string | boolean;
 }
 
+type FuncDeclStmt = Extract<Stmt, { kind: 'funcDecl' }>;
+
+// Thrown by a `return` statement to unwind out of whatever nested
+// blocks/loops it's inside, back to callFunction — control flow only, never
+// surfaced to the user like RuntimeError is (see runJava's catch).
+class ReturnSignal {
+  constructor(public value: EvalValue | null) {}
+}
+
 // A declared variable's storage slot — `initialized` is false for one
 // declared without a value (see zeroValueFor); `value` still holds a real
 // placeholder even then (so assignment machinery like coerceToKind always
@@ -48,6 +57,12 @@ class RuntimeError extends Error {}
 
 const MAX_STEPS = 200_000;
 const MAX_OUTPUT_LINES = 5_000;
+// A real stack overflow (JS's own call stack, not MAX_STEPS) would hit long
+// before 200,000 ticks for a runaway recursive Subroutine Call, and throws
+// an uncatchable-by-name RangeError instead of this interpreter's own
+// RuntimeError — so recursion depth is checked explicitly, well under where
+// that would happen.
+const MAX_CALL_DEPTH = 300;
 
 // Requests one line of input from the user. Backed by window.prompt() by
 // default — it's synchronous/blocking, which is exactly what this
@@ -68,13 +83,35 @@ class Interpreter {
   // does.
   private pendingLine = '';
   private steps = 0;
+  // Subroutine Start/End pairs, keyed by method name — populated by
+  // registerFunctions before anything runs, so a call earlier in the source
+  // text than its declaration (never actually possible from this app's own
+  // generator, but harmless to support) still resolves.
+  private functions = new Map<string, FuncDeclStmt>();
+  private callDepth = 0;
 
   constructor(private promptFn: PromptFn) {}
 
   run(program: Stmt[]): string[] {
-    this.execBlock(program);
+    const mainStatements = this.registerFunctions(program);
+    this.execBlock(mainStatements);
     this.flushPending();
     return this.output;
+  }
+
+  // Splits top-level function declarations out from the statements that
+  // actually run — see run()'s comment on why declarations are hoisted
+  // rather than executed in place.
+  private registerFunctions(program: Stmt[]): Stmt[] {
+    const rest: Stmt[] = [];
+    for (const stmt of program) {
+      if (stmt.kind === 'funcDecl') {
+        this.functions.set(stmt.name, stmt);
+      } else {
+        rest.push(stmt);
+      }
+    }
+    return rest;
   }
 
   // Whatever printed before a runtime error hit, so a mistake partway
@@ -257,7 +294,71 @@ class Interpreter {
         }
         return;
       }
+      case 'funcDecl':
+        // Already registered by run()'s registerFunctions before execution
+        // began — nothing to do if one is walked into in place.
+        return;
+      case 'return':
+        throw new ReturnSignal(stmt.value ? this.evalExpr(stmt.value) : null);
+      case 'exprStmt': {
+        // Only shape exprStmt's expr ever takes (see parser.ts's
+        // parseExprStatement) — a call whose result is discarded, so it's
+        // run directly rather than through evalExpr (which would reject a
+        // void call as unusable).
+        const call = stmt.expr as Extract<Expr, { kind: 'call' }>;
+        this.callFunction(call.name, call.args, call.line);
+        return;
+      }
     }
+  }
+
+  // Runs a Subroutine Call — a fresh, isolated scope stack (Java's own
+  // static methods can't see the caller's locals either), params bound from
+  // the (already-evaluated-in-the-caller's-scope) argument values, then the
+  // body until it either returns or falls off the end. Returns null for a
+  // void method, an EvalValue of the declared return type otherwise.
+  private callFunction(name: string, argExprs: Expr[], line: number): EvalValue | null {
+    const fn = this.functions.get(name);
+    if (!fn) throw new RuntimeError(`Method '${name}' is not declared (line ${line}).`);
+    if (fn.params.length !== argExprs.length) {
+      throw new RuntimeError(`Method '${name}' expects ${fn.params.length} argument(s) but got ${argExprs.length} (line ${line}).`);
+    }
+    // Evaluated against the *caller's* current scope, before it's swapped
+    // out below for the callee's own.
+    const argValues = argExprs.map((arg) => this.evalExpr(arg));
+
+    this.callDepth++;
+    if (this.callDepth > MAX_CALL_DEPTH) {
+      this.callDepth--;
+      throw new RuntimeError(`Stopped after ${MAX_CALL_DEPTH} nested calls — possible infinite recursion near line ${line}.`);
+    }
+
+    const savedScopes = this.scopes;
+    this.scopes = [new Map()];
+    fn.params.forEach((param, i) => {
+      this.scopes[0].set(param.name, { kind: param.type, value: coerceToKind(argValues[i].value, param.type), initialized: true });
+    });
+
+    let returnValue: EvalValue | null = null;
+    try {
+      this.execBlock(fn.body);
+    } catch (signal) {
+      if (!(signal instanceof ReturnSignal)) {
+        this.scopes = savedScopes;
+        this.callDepth--;
+        throw signal;
+      }
+      returnValue = signal.value;
+    }
+    this.scopes = savedScopes;
+    this.callDepth--;
+
+    const returnType = fn.returnType;
+    if (returnType === 'void') return null;
+    if (!returnValue) {
+      throw new RuntimeError(`Method '${name}' finished without returning a value (line ${line}).`);
+    }
+    return { kind: returnType, value: coerceToKind(returnValue.value, returnType) };
   }
 
   private evalExpr(expr: Expr): EvalValue {
@@ -292,6 +393,13 @@ class Interpreter {
         const message = this.pendingLine || DEFAULT_PROMPT_MESSAGE;
         this.flushPending();
         return readFromUser(this.promptFn, expr.method, expr.line, message);
+      }
+      case 'call': {
+        const result = this.callFunction(expr.name, expr.args, expr.line);
+        if (!result) {
+          throw new RuntimeError(`'${expr.name}' doesn't return a value, so it can't be used here (line ${expr.line}).`);
+        }
+        return result;
       }
     }
   }

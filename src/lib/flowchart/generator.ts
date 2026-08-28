@@ -275,14 +275,19 @@ export function generateJavaCode(nodes: Node[], edges: Edge[]): string {
 // flowchart's Subroutine Start blocks (see SubroutineStartNodeData) each
 // generate — one per Subroutine Start, walked from its own body the same way
 // generateJavaCode walks main's. Deliberately separate from codeContent
-// (generateJavaCode's return value): codeContent also feeds the in-browser
-// Run/Step interpreter (see stores/run.ts, lib/execution/*), which has no
-// notion of a method declaration at all — splicing these method blocks into
-// that same string would break every existing flowchart's Run button, not
-// just ones using a subroutine. Only wrapAsJavaFile (Export Java / the Java
-// tab's real, compilable output) consumes this — Run/Step simply doesn't
-// execute a Subroutine Call yet; it surfaces the interpreter's own parse
-// error if one appears in main's flow, same honest failure as any other
+// (generateJavaCode's return value), which is also parsed for two-way
+// sync (see stores/sync.ts's syncCodeToFlowchart) — that parsing only
+// understands declarations/statements, not method declarations, so mixing
+// the two would break round-tripping edits made directly in the code panel.
+// Two consumers splice this back in themselves instead: wrapAsJavaFile
+// (Export Java / the Java tab's compilable output — see
+// CodeEditorPanel.svelte) and ▶ Run (see OutputPanel.svelte's handleRun,
+// which feeds both into lib/execution/*'s interpreter — it does understand
+// method declarations and calls, just not from codeContent alone). Step
+// Through (stores/stepRunner.ts) still doesn't execute a Subroutine Call —
+// it walks one flowchart node at a time and has no notion of jumping into a
+// separate subroutine's own node chain — surfacing the interpreter's own
+// parse error if one appears mid-step, same honest failure as any other
 // unsupported construct typed into the code panel.
 export function generateJavaMethods(nodes: Node[], edges: Edge[]): string {
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
