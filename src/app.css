@@ -57,3 +57,27 @@ button:disabled {
 .btn:disabled {
   opacity: 0.5;
 }
+
+/* TutorialCoach.svelte toggles this on whichever palette chip/button the
+   current step calls for (see stores/tutorial.ts's STEP_HIGHLIGHT) — a
+   pulsing accent outline draws the eye without a full spotlight/backdrop
+   overlay, which would also have to punch a hole through for every
+   possible target shape (pill, diamond, hexagon, rectangle). */
+.tutorial-highlight {
+  position: relative;
+  z-index: 20;
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+  animation: tutorial-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes tutorial-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+}

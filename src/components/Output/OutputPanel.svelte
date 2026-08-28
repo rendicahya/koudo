@@ -71,6 +71,7 @@
   <div class="flex shrink-0 items-center gap-2">
     <button
       type="button"
+      data-tutorial-run-button
       class="btn btn-accent rounded-md border px-3 py-1.5 text-sm font-medium"
       disabled={!$hasConnectedEndBlock}
       onclick={handleRun}

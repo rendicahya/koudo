@@ -186,6 +186,7 @@
         <div
           role="button"
           tabindex="0"
+          data-block-chip={block.type}
           onpointerdown={(event) => handlePointerDown(event, block)}
           class="cursor-grab touch-none active:cursor-grabbing"
           class:opacity-50={dimmed}
@@ -203,6 +204,7 @@
         <div
           role="button"
           tabindex="0"
+          data-block-chip={block.type}
           onpointerdown={(event) => handlePointerDown(event, block)}
           class="cursor-grab touch-none px-4 py-2 text-center active:cursor-grabbing"
           class:opacity-50={dimmed}
@@ -218,6 +220,7 @@
         <div
           role="button"
           tabindex="0"
+          data-block-chip={block.type}
           onpointerdown={(event) => handlePointerDown(event, block)}
           class="cursor-grab touch-none px-4 py-2 text-center active:cursor-grabbing"
           class:opacity-50={dimmed}
@@ -232,6 +235,7 @@
         <div
           role="button"
           tabindex="0"
+          data-block-chip={block.type}
           onpointerdown={(event) => handlePointerDown(event, block)}
           class="relative cursor-grab touch-none px-4 py-2 text-center active:cursor-grabbing"
           class:opacity-50={dimmed}
@@ -246,6 +250,7 @@
         <div
           role="button"
           tabindex="0"
+          data-block-chip={block.type}
           onpointerdown={(event) => handlePointerDown(event, block)}
           class="cursor-grab touch-none px-4 py-2 text-center active:cursor-grabbing rounded"
           class:opacity-50={dimmed}

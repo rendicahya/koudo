@@ -8,6 +8,7 @@
   import { t } from '../../stores/i18n';
   import { projectName, setProjectName, setProjectNameLive } from '../../stores/project';
   import { undo, redo, canUndo, canRedo } from '../../stores/history';
+  import { reopenTutorial } from '../../stores/tutorial';
 
   let helpOpen = $state(false);
 </script>
@@ -73,6 +74,10 @@
       onclick={() => (helpOpen = true)}
     >
       {$t('nav.help')}
+    </button>
+
+    <button type="button" class="btn-ghost rounded-md px-3 py-1.5 text-sm hover:opacity-80" onclick={reopenTutorial}>
+      {$t('nav.tutorial')}
     </button>
   </nav>
 

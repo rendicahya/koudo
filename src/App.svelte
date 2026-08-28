@@ -3,6 +3,8 @@
   import { SvelteFlowProvider } from '@xyflow/svelte';
   import TopNavbar from './components/Common/TopNavbar.svelte';
   import Toast from './components/Common/Toast.svelte';
+  import TutorialWelcomeModal from './components/Common/TutorialWelcomeModal.svelte';
+  import TutorialCoach from './components/Common/TutorialCoach.svelte';
   import FlowchartCanvas from './components/Flowchart/FlowchartCanvas.svelte';
   import CodeEditorPanel from './components/CodeEditor/CodeEditorPanel.svelte';
   import OutputPanel from './components/Output/OutputPanel.svelte';
@@ -247,6 +249,8 @@
   </main>
 </div>
 <Toast />
+<TutorialWelcomeModal />
+<TutorialCoach />
 </SvelteFlowProvider>
 
 <style>
