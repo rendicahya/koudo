@@ -212,7 +212,7 @@
           style="border: 1px solid var(--color-border); background: var(--color-node-bg); color: var(--color-text); border-radius: 9999px;"
           title={chipTitle(block)}
         >
-          {block.label}{block.comingSoon ? $t('palette.comingSoonSuffix') : ''}
+          {displayLabel(block)}{block.comingSoon ? $t('palette.comingSoonSuffix') : ''}
         </div>
       {:else if block.type === 'subroutineStart' || block.type === 'subroutineEnd'}
         <!-- Same rounded-terminal family as Start/End, but with a translated
