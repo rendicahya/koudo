@@ -130,7 +130,7 @@
   {#if open}
     <div
       role="menu"
-      class="absolute left-0 top-full z-20 mt-1 flex w-52 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-md border text-sm shadow-md sm:left-auto sm:right-0"
+      class="absolute left-0 top-full z-20 mt-1 flex w-52 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-md border text-sm shadow-md"
       style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
     >
       {#each PROJECT_ACTIONS as action (action.id)}
