@@ -22,15 +22,36 @@ export type Expr =
   // A Subroutine Call block's generated `name(args)` (see generator.ts's
   // 'subroutineCall' case) — args are arbitrary expressions, same as a real
   // Java call, not just identifiers/literals.
-  | { kind: 'call'; name: string; args: Expr[]; line: number };
+  | { kind: 'call'; name: string; args: Expr[]; line: number }
+  // `arr[i]` — array is almost always a plain identifier in practice (this
+  // app never emits nested indexing), but kept as a general Expr so the
+  // grammar doesn't need a separate restricted form.
+  | { kind: 'index'; array: Expr; index: Expr; line: number }
+  // `arr.length` — the only "member access" this beginner subset supports;
+  // parsed as its own Expr kind rather than a general `.field` production.
+  | { kind: 'length'; array: Expr; line: number };
+
+// The RHS of an array declaration (`int[] a = {1, 2, 3};` or
+// `int[] a = new int[5];`) — deliberately *not* part of Expr: this shape is
+// only ever reachable from parseArrayInit/evalArrayInit (a Declare block is
+// the only place a whole array is ever created, never a general expression
+// context), so keeping it separate avoids widening evalExpr's switch for a
+// case it would never actually see.
+export type ArrayInit =
+  | { kind: 'arrayLiteral'; elements: Expr[]; line: number }
+  | { kind: 'arrayNew'; size: Expr; line: number };
 
 export type Stmt =
   // init is null for a declaration with no initializer (`int a;`) — the
   // variable still gets its Java-style default value (see interpreter.ts's
-  // zeroValueFor), it's just never evaluated from an expression.
-  | { kind: 'varDecl'; varType: VarKind; name: string; init: Expr | null; line: number }
-  | { kind: 'assign'; name: string; op: '=' | '+=' | '-=' | '*=' | '/='; value: Expr; line: number }
-  | { kind: 'update'; name: string; op: '++' | '--'; line: number }
+  // zeroValueFor), it's just never evaluated from an expression. For an
+  // array declaration (isArray true), init (when present) is an ArrayInit,
+  // not a general Expr — see parseArrayInit.
+  | { kind: 'varDecl'; varType: VarKind; isArray: boolean; name: string; init: Expr | ArrayInit | null; line: number }
+  // index is non-null for `arr[i] = value` / `arr[i] += value` etc. — an
+  // ordinary scalar assignment (the overwhelming majority) leaves it null.
+  | { kind: 'assign'; name: string; index: Expr | null; op: '=' | '+=' | '-=' | '*=' | '/='; value: Expr; line: number }
+  | { kind: 'update'; name: string; index: Expr | null; op: '++' | '--'; line: number }
   | { kind: 'print'; arg: Expr | null; newline: boolean; line: number }
   | { kind: 'for'; init: Stmt | null; test: Expr | null; update: Stmt | null; body: Stmt[]; line: number }
   | { kind: 'while'; test: Expr; body: Stmt[]; line: number }
@@ -151,29 +172,67 @@ export class Parser {
 
   private parseVarDecl(): Stmt {
     const typeTok = this.next();
+    let isArray = false;
+    if (this.check('punct', '[')) {
+      this.next();
+      this.expect('punct', ']');
+      isArray = true;
+    }
     const nameTok = this.expect('identifier');
-    let init: Expr | null = null;
+    let init: Expr | ArrayInit | null = null;
     if (this.check('punct', '=')) {
       this.next();
-      init = this.parseExpression();
+      init = isArray ? this.parseArrayInit() : this.parseExpression();
     }
-    return { kind: 'varDecl', varType: typeTok.value as VarKind, name: nameTok.value, init, line: typeTok.line };
+    return { kind: 'varDecl', varType: typeTok.value as VarKind, isArray, name: nameTok.value, init, line: typeTok.line };
+  }
+
+  // The RHS of an array declaration — either a brace literal (`{1, 2, 3}`)
+  // or a sized `new <type>[<size>]` — see ArrayInit's own comment for why
+  // this isn't just parseExpression.
+  private parseArrayInit(): ArrayInit {
+    const t = this.peek();
+    if (t.type === 'punct' && t.value === '{') {
+      this.next();
+      const elements: Expr[] = [];
+      if (!this.check('punct', '}')) {
+        elements.push(this.parseExpression());
+        while (this.check('punct', ',')) {
+          this.next();
+          elements.push(this.parseExpression());
+        }
+      }
+      this.expect('punct', '}');
+      return { kind: 'arrayLiteral', elements, line: t.line };
+    }
+    this.expect('keyword', 'new');
+    this.next(); // element type keyword, e.g. `int` in `new int[5]` — the declared type already governs coercion, so this isn't re-checked against it
+    this.expect('punct', '[');
+    const size = this.parseExpression();
+    this.expect('punct', ']');
+    return { kind: 'arrayNew', size, line: t.line };
   }
 
   private parseExprStatement(): Stmt {
     const nameTok = this.expect('identifier');
+    let index: Expr | null = null;
+    if (this.check('punct', '[')) {
+      this.next();
+      index = this.parseExpression();
+      this.expect('punct', ']');
+    }
     const opTok = this.peek();
 
     if (opTok.type === 'punct' && (opTok.value === '++' || opTok.value === '--')) {
       this.next();
-      return { kind: 'update', name: nameTok.value, op: opTok.value, line: nameTok.line };
+      return { kind: 'update', name: nameTok.value, index, op: opTok.value, line: nameTok.line };
     }
     if (opTok.type === 'punct' && ['=', '+=', '-=', '*=', '/='].includes(opTok.value)) {
       this.next();
       const value = this.parseExpression();
-      return { kind: 'assign', name: nameTok.value, op: opTok.value as '=' | '+=' | '-=' | '*=' | '/=', value, line: nameTok.line };
+      return { kind: 'assign', name: nameTok.value, index, op: opTok.value as '=' | '+=' | '-=' | '*=' | '/=', value, line: nameTok.line };
     }
-    if (opTok.type === 'punct' && opTok.value === '(') {
+    if (index === null && opTok.type === 'punct' && opTok.value === '(') {
       // A Subroutine Call block whose result is discarded (see
       // SubroutineCallNodeData's resultVar, blank when "(discard result)" is
       // chosen) — `name(args);` with nothing on its left.
@@ -439,7 +498,18 @@ export class Parser {
       if (this.check('punct', '(')) {
         return this.parseCallArgs(t.value, t.line);
       }
-      return { kind: 'identifier', name: t.value, line: t.line };
+      let expr: Expr = { kind: 'identifier', name: t.value, line: t.line };
+      if (this.check('punct', '[')) {
+        this.next();
+        const indexExpr = this.parseExpression();
+        this.expect('punct', ']');
+        expr = { kind: 'index', array: expr, index: indexExpr, line: t.line };
+      } else if (this.check('punct', '.') && this.peek(1).type === 'identifier' && this.peek(1).value === 'length' && this.peek(2).value !== '(') {
+        this.next(); // '.'
+        this.next(); // 'length'
+        expr = { kind: 'length', array: expr, line: t.line };
+      }
+      return expr;
     }
     if (t.type === 'punct' && t.value === '(') {
       this.next();

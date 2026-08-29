@@ -47,7 +47,7 @@ const KEYWORDS = new Set([
 // Longest-first so e.g. `<=` isn't tokenized as `<` then `=`.
 const PUNCTUATORS = [
   '++', '--', '+=', '-=', '*=', '/=', '==', '!=', '<=', '>=', '&&', '||',
-  '+', '-', '*', '/', '%', '=', '<', '>', '!', '(', ')', '{', '}', ';', ',', '.',
+  '+', '-', '*', '/', '%', '=', '<', '>', '!', '(', ')', '{', '}', '[', ']', ';', ',', '.',
 ];
 
 export class TokenizeError extends Error {}

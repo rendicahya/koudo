@@ -1,6 +1,7 @@
 import type { Edge, Node } from '@xyflow/svelte';
 import { blockTypeOf, outgoing, findMergePoint, declaredVariableEntriesUpstreamOf } from './graphWalk';
 import { formatDeclaredValue } from './valueFormat';
+import { arrayBaseType, parseIndexedRef } from './arrayType';
 
 // Free-typed text (an Input block's prompt) embedded into a generated Java
 // string literal needs its own quotes/backslashes escaped, or a `"` typed
@@ -123,7 +124,12 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
         .map((entry, rowIndex) => ({ entry, rowIndex }))
         .filter(({ entry }) => entry.varName.trim() && entry.value.trim())
         .map(({ entry, rowIndex }) => {
-          const isVarRef = declaredNames.has(entry.value);
+          // An indexed reference (`arr[0]`, `arr[i]`) reads a single element
+          // at runtime, same as a plain variable reference — never a literal
+          // to be quoted per the *target's* own type, even though its text
+          // never exact-matches a declared name the way a plain reference
+          // does.
+          const isVarRef = declaredNames.has(entry.value) || parseIndexedRef(entry.value) !== null;
           const targetType = declarations.find((d) => d.varName === entry.varName)?.varType;
           const value = isVarRef || !targetType ? entry.value : formatDeclaredValue(targetType, entry.value);
           return { text: `${entry.varName} ${entry.operator} ${value};`, rowIndex };
@@ -140,7 +146,14 @@ export function statementLinesFor(node: Node, nodesById: Map<string, Node>, edge
       const lines: StatementLine[] = [];
       entries.forEach((entry, rowIndex) => {
         if (!entry.varName.trim()) return;
-        const varType = declarations.find((d) => d.varName === entry.varName)?.varType ?? 'int';
+        // An indexed target (`arr[0]`) reads its element type from the
+        // *array's* own declared type — its own varName never exact-matches
+        // a declared name the way a plain target does.
+        const indexed = parseIndexedRef(entry.varName);
+        const declaredType = indexed
+          ? declarations.find((d) => d.varName === indexed.name)?.varType
+          : declarations.find((d) => d.varName === entry.varName)?.varType;
+        const varType = (indexed && declaredType ? arrayBaseType(declaredType) : declaredType) ?? 'int';
         // Trimmed only to test for "is there a prompt at all" — the actual
         // text keeps any trailing space the user typed on purpose (e.g.
         // "Enter x: " reads better before the input than "Enter x:").

@@ -264,6 +264,11 @@ const en = {
   // Assign's String/char field) — distinct from declare.valueOptional,
   // which also says "(optional)".
   'shared.value': 'Value',
+  // Shared array-element index field (Process/Assign/Input, next to an
+  // "arr[ ]" dropdown pick) — free text, since an index is often an
+  // expression like "i" or "i + 1", not just a literal number.
+  'shared.indexPlaceholder': 'index',
+  'shared.indexTitle': 'Index into the array (a number or an expression like i)',
 
   // DeclareNode
   'declare.name': 'Name',
@@ -277,6 +282,9 @@ const en = {
   'declare.add': '+ Add variable',
   'declare.dragToReorder': 'Drag to reorder',
   'declare.constTitle': 'Constant (Java final — cannot be reassigned)',
+  'declare.arrayLabel': 'Array',
+  'declare.arrayValuePlaceholder': 'size, e.g. 5, or 1,2,3',
+  'declare.arrayValueHint': 'A number sets the size (e.g. 5); a comma-separated list sets the elements (e.g. 1,2,3)',
 
   // AssignNode
   'assign.valueOrLiteral': '"text" or 5',
@@ -773,6 +781,8 @@ const id: Record<TranslationKey, string> = {
   'shared.noVariables': 'Tidak ada variabel',
   'shared.choose': 'Pilih',
   'shared.value': 'Nilai',
+  'shared.indexPlaceholder': 'indeks',
+  'shared.indexTitle': 'Indeks larik (angka atau ekspresi seperti i)',
 
   // DeclareNode
   'declare.name': 'Nama',
@@ -786,6 +796,9 @@ const id: Record<TranslationKey, string> = {
   'declare.add': '+ Tambah variabel',
   'declare.dragToReorder': 'Seret untuk mengubah urutan',
   'declare.constTitle': 'Konstanta (final di Java — tidak bisa diubah ulang)',
+  'declare.arrayLabel': 'Larik',
+  'declare.arrayValuePlaceholder': 'ukuran, mis. 5, atau 1,2,3',
+  'declare.arrayValueHint': 'Angka menentukan ukuran (mis. 5); daftar dipisah koma menentukan isi elemen (mis. 1,2,3)',
 
   // AssignNode
   'assign.valueOrLiteral': '"teks" atau 5',

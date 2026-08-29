@@ -15,6 +15,7 @@
   } from '../../stores/flowchart';
   import { isValidJavaIdentifier } from '../../lib/flowchart/declarationParser';
   import { inferDeclaredType } from '../../lib/flowchart/typeInference';
+  import { arrayBaseType, arrayOfType, isArrayType } from '../../lib/flowchart/arrayType';
   import { variableMode } from '../../stores/settings';
   import { stepCurrentRow } from '../../stores/stepRunner';
   import { t } from '../../stores/i18n';
@@ -84,13 +85,33 @@
     $nodes = $nodes.map((node) => (node.id === id ? updateDeclarationEntryAt(node, index, { [field]: value }) : node));
   }
 
+  // The type <select> only ever edits the base (element) type — whether
+  // this entry is an array is a separate checkbox (see handleArrayToggle) —
+  // so its own edit re-applies the "[]" suffix if this entry currently has
+  // one, rather than accidentally clearing array-ness on a base-type change.
+  function baseTypeOf(varType: string): string {
+    return isArrayType(varType) ? arrayBaseType(varType) : varType;
+  }
+
   // A leftover value from the previous type (e.g. a numeric '0' left over
   // after switching to boolean) isn't valid for the new one, so the type
   // <select> clears it alongside the type rather than leaving a stale
   // mismatch — same "blank until the user fills it in" default a brand new
   // entry starts with (see stores/flowchart.ts's defaultDeclarationEntry).
   function handleTypeChange(index: number, event: Event) {
-    const varType = (event.currentTarget as HTMLSelectElement).value;
+    const base = (event.currentTarget as HTMLSelectElement).value;
+    const varType = isArrayType(entries[index]?.varType ?? '') ? arrayOfType(base) : base;
+    $nodes = $nodes.map((node) => (node.id === id ? updateDeclarationEntryAt(node, index, { varType, varValue: '' }) : node));
+  }
+
+  // Toggling "array" keeps the currently selected base type, just adding or
+  // stripping its "[]" suffix — same value-clearing reasoning as
+  // handleTypeChange, since an array's value field means something entirely
+  // different (size-or-list, see valueFormat.ts) from a scalar's.
+  function handleArrayToggle(index: number, event: Event) {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    const base = baseTypeOf(entries[index]?.varType ?? 'int');
+    const varType = checked ? arrayOfType(base) : base;
     $nodes = $nodes.map((node) => (node.id === id ? updateDeclarationEntryAt(node, index, { varType, varValue: '' }) : node));
   }
 
@@ -241,7 +262,7 @@
 
       {#if !inferred}
         <select
-          value={entry.varType}
+          value={baseTypeOf(entry.varType)}
           onchange={(event) => handleTypeChange(index, event)}
           class="nodrag rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
@@ -254,6 +275,14 @@
           <option value="char">char</option>
           <option value="String">String</option>
         </select>
+
+        <!-- Beginner (inferred) mode has no notion of arrays at all — same
+             restriction it already applies to types generally (see the
+             `inferred` value editor below, limited to int/double/String). -->
+        <label class="nodrag flex items-center gap-0.5 select-none" style="color: var(--color-text-secondary);" title={$t('declare.arrayLabel')}>
+          <input type="checkbox" class="nodrag" checked={isArrayType(entry.varType)} onchange={(event) => handleArrayToggle(index, event)} />
+          <span class="text-[10px]">[]</span>
+        </label>
       {/if}
 
       <input
@@ -300,6 +329,21 @@
             <option value="String">{$t('declare.typeText')}</option>
           </select>
         {/if}
+      {:else if isArrayType(entry.varType)}
+        <!-- Overloaded free text, same convention ForLoop's own fields use
+             (see valueFormat.ts's formatArrayValue): a bare whole number is
+             a size (`new int[5]`), anything else a comma-separated element
+             list (`{1, 2, 3}`). -->
+        <input
+          value={entry.varValue}
+          oninput={(event) => handleInput(index, 'varValue', event)}
+          data-declare-value
+          data-entry-index={index}
+          class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
+          style="border-color: var(--color-border);"
+          placeholder={$t('declare.arrayValuePlaceholder')}
+          title={$t('declare.arrayValueHint')}
+        />
       {:else if entry.varType === 'boolean'}
         <select
           value={entry.varValue}

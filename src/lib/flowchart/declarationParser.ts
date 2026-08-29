@@ -30,9 +30,12 @@ export function isValidJavaIdentifier(name: string): boolean {
 // reliable-subset-over-general-parser tradeoff. The `= value` part is
 // optional (group 3 is undefined without it) — a Declare block's value
 // field can be left blank (see DeclareNode.svelte), generating a bare
-// `int a;` with no initializer.
+// `int a;` with no initializer. The optional `(\[\])?` right after the type
+// (group 2) recognizes an array declaration (`int[] a = {1, 2, 3};`) — see
+// lib/flowchart/arrayType.ts, whose "[]"-suffixed varType convention this
+// folds the capture into.
 const DECLARATION_PATTERN = new RegExp(
-  `^\\s*(${DECLARATION_TYPES.join('|')})\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?:=\\s*(.+?))?;\\s*$`,
+  `^\\s*(${DECLARATION_TYPES.join('|')})(\\[\\])?\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?:=\\s*(.+?))?;\\s*$`,
 );
 
 export function isDeclarationLine(line: string): boolean {
@@ -46,7 +49,8 @@ export function parseDeclarations(code: string): ParsedDeclaration[] {
     const match = line.match(DECLARATION_PATTERN);
     if (!match) continue;
 
-    const [, varType, varName, varValue] = match;
+    const [, baseType, arraySuffix, varName, varValue] = match;
+    const varType = `${baseType}${arraySuffix ?? ''}`;
     const existingIndex = declarations.findIndex((d) => d.varName === varName);
     if (existingIndex !== -1) declarations.splice(existingIndex, 1);
     declarations.push({ varType, varName, varValue: (varValue ?? '').trim() });

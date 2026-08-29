@@ -9,7 +9,7 @@
 // output, by walking it).
 
 import { tokenize, TokenizeError } from './tokenizer';
-import { Parser, ParseError, type Expr, type Stmt, type VarKind } from './parser';
+import { Parser, ParseError, type ArrayInit, type Expr, type Stmt, type VarKind } from './parser';
 
 export interface VariableSnapshot {
   name: string;
@@ -34,6 +34,17 @@ interface EvalValue {
   value: number | string | boolean;
 }
 
+// An array variable's storage — element kind plus its current elements, all
+// of that kind. Never produced by a general expression (see ArrayInit's own
+// comment in parser.ts) — only ever created by a 'varDecl' with isArray set,
+// and read/written only through 'index'/'length' (Expr) and an
+// 'assign'/'update' Stmt with its own index set.
+interface ArraySlot {
+  kind: VarKind;
+  isArray: true;
+  value: (number | string | boolean)[];
+}
+
 type FuncDeclStmt = Extract<Stmt, { kind: 'funcDecl' }>;
 
 // Thrown by a `return` statement to unwind out of whatever nested
@@ -51,7 +62,7 @@ class ReturnSignal {
 // assign/update cases in execStmt) — it's only ever meant to be written to
 // before anything reads it, mirroring Java's own "variable might not have
 // been initialized" compile error.
-type VarSlot = EvalValue & { initialized: boolean };
+type VarSlot = (EvalValue | ArraySlot) & { initialized: boolean };
 
 class RuntimeError extends Error {}
 
@@ -152,7 +163,7 @@ class Interpreter {
     return [...merged.entries()].map(([name, slot]) => ({
       name,
       kind: slot.kind,
-      value: slot.initialized ? formatValue(slot) : '(not initialized)',
+      value: slot.initialized ? formatSlotValue(slot) : '(not initialized)',
     }));
   }
 
@@ -204,6 +215,42 @@ class Interpreter {
     return slot;
   }
 
+  // Resolves `name` as an already-initialized array slot — same
+  // initialized-before-read rule as lookupInitialized, plus a clear error
+  // when `name` turns out not to be an array at all.
+  private lookupInitializedArray(name: string, line: number): ArraySlot & { initialized: boolean } {
+    const slot = this.lookupInitialized(name, line);
+    if (!isArraySlot(slot)) {
+      throw new RuntimeError(`'${name}' is not an array (line ${line}).`);
+    }
+    return slot;
+  }
+
+  // Evaluates and bounds-checks an index expression against `slot`,
+  // mirroring Java's own ArrayIndexOutOfBoundsException in spirit — a
+  // RuntimeError, same "honest failure" as this interpreter's own
+  // division-by-zero check.
+  private evalArrayIndex(slot: ArraySlot, indexExpr: Expr, line: number): number {
+    const i = Math.trunc(Number(this.evalExpr(indexExpr).value));
+    if (i < 0 || i >= slot.value.length) {
+      throw new RuntimeError(`Index ${i} is out of bounds for an array of length ${slot.value.length} (line ${line}).`);
+    }
+    return i;
+  }
+
+  // Builds an array's initial elements from its declaration's RHS — a brace
+  // literal (`{1, 2, 3}`) evaluates and coerces each element; a sized
+  // `new <type>[n]` fills n elements with that type's own Java default (see
+  // zeroValueFor), the same default a scalar declared without a value gets.
+  private evalArrayInit(init: ArrayInit, elementKind: VarKind): (number | string | boolean)[] {
+    if (init.kind === 'arrayLiteral') {
+      return init.elements.map((element) => coerceToKind(this.evalExpr(element).value, elementKind));
+    }
+    const size = Math.trunc(Number(this.evalExpr(init.size).value));
+    if (size < 0) throw new RuntimeError(`Array size can't be negative (line ${init.line}).`);
+    return Array.from({ length: size }, () => zeroValueFor(elementKind));
+  }
+
   private execBlock(statements: Stmt[]) {
     for (const stmt of statements) this.execStmt(stmt);
   }
@@ -213,8 +260,17 @@ class Interpreter {
 
     switch (stmt.kind) {
       case 'varDecl': {
+        if (stmt.isArray) {
+          if (stmt.init) {
+            const value = this.evalArrayInit(stmt.init as ArrayInit, stmt.varType);
+            this.declare(stmt.name, { kind: stmt.varType, isArray: true, value, initialized: true }, stmt.line);
+          } else {
+            this.declare(stmt.name, { kind: stmt.varType, isArray: true, value: [], initialized: false }, stmt.line);
+          }
+          return;
+        }
         if (stmt.init) {
-          const value = coerceToKind(this.evalExpr(stmt.init).value, stmt.varType);
+          const value = coerceToKind(this.evalExpr(stmt.init as Expr).value, stmt.varType);
           this.declare(stmt.name, { kind: stmt.varType, value, initialized: true }, stmt.line);
         } else {
           this.declare(stmt.name, { kind: stmt.varType, value: zeroValueFor(stmt.varType), initialized: false }, stmt.line);
@@ -222,12 +278,22 @@ class Interpreter {
         return;
       }
       case 'assign': {
+        if (stmt.index) {
+          const slot = this.lookupInitializedArray(stmt.name, stmt.line);
+          const i = this.evalArrayIndex(slot, stmt.index, stmt.line);
+          const current: EvalValue = { kind: slot.kind, value: slot.value[i] };
+          const rhs = this.evalExpr(stmt.value);
+          const next = stmt.op === '=' ? rhs : applyBinaryOp(stmt.op[0], current, rhs, stmt.line);
+          slot.value[i] = coerceToKind(next.value, slot.kind);
+          return;
+        }
         // A plain `=` overwrites the slot outright, so it's fine as the
         // *first* real value for one declared without an initializer —
         // only a compound op (+=, -=, ...) actually reads the slot's
         // current value first, so only that path requires it already be
         // initialized.
         const slot = this.lookup(stmt.name, stmt.line);
+        if (isArraySlot(slot)) throw new RuntimeError(`'${stmt.name}' is an array — use ${stmt.name}[index] to assign an element (line ${stmt.line}).`);
         if (stmt.op !== '=' && !slot.initialized) {
           throw new RuntimeError(`Variable '${stmt.name}' might not have been initialized (line ${stmt.line}).`);
         }
@@ -238,8 +304,17 @@ class Interpreter {
         return;
       }
       case 'update': {
+        if (stmt.index) {
+          const slot = this.lookupInitializedArray(stmt.name, stmt.line);
+          const i = this.evalArrayIndex(slot, stmt.index, stmt.line);
+          const current: EvalValue = { kind: slot.kind, value: slot.value[i] };
+          const delta: EvalValue = { kind: 'int', value: stmt.op === '++' ? 1 : -1 };
+          slot.value[i] = coerceToKind(applyBinaryOp('+', current, delta, stmt.line).value, slot.kind);
+          return;
+        }
         // ++/-- always reads the current value before writing the new one.
         const slot = this.lookupInitialized(stmt.name, stmt.line);
+        if (isArraySlot(slot)) throw new RuntimeError(`'${stmt.name}' is an array — use ${stmt.name}[index]++ on an element (line ${stmt.line}).`);
         const delta: EvalValue = { kind: 'int', value: stmt.op === '++' ? 1 : -1 };
         slot.value = coerceToKind(applyBinaryOp('+', slot, delta, stmt.line).value, slot.kind);
         return;
@@ -371,8 +446,24 @@ class Interpreter {
         return { kind: 'char', value: expr.value };
       case 'boolean':
         return { kind: 'boolean', value: expr.value };
-      case 'identifier':
-        return this.lookupInitialized(expr.name, expr.line);
+      case 'identifier': {
+        const slot = this.lookupInitialized(expr.name, expr.line);
+        if (isArraySlot(slot)) {
+          throw new RuntimeError(`'${expr.name}' is an array — use ${expr.name}[index] or ${expr.name}.length instead (line ${expr.line}).`);
+        }
+        return slot;
+      }
+      case 'index': {
+        if (expr.array.kind !== 'identifier') throw new RuntimeError(`Only a plain array variable can be indexed (line ${expr.line}).`);
+        const slot = this.lookupInitializedArray(expr.array.name, expr.line);
+        const i = this.evalArrayIndex(slot, expr.index, expr.line);
+        return { kind: slot.kind, value: slot.value[i] };
+      }
+      case 'length': {
+        if (expr.array.kind !== 'identifier') throw new RuntimeError(`Only a plain array variable has .length (line ${expr.line}).`);
+        const slot = this.lookupInitializedArray(expr.array.name, expr.line);
+        return { kind: 'int', value: slot.value.length };
+      }
       case 'unary': {
         const operand = this.evalExpr(expr.operand);
         if (expr.op === '-') return { kind: operand.kind, value: -Number(operand.value) };
@@ -460,6 +551,18 @@ function zeroValueFor(kind: VarKind): number | string | boolean {
     default:
       return '';
   }
+}
+
+function isArraySlot(slot: EvalValue | ArraySlot): slot is ArraySlot {
+  return (slot as ArraySlot).isArray === true;
+}
+
+// Step Through's Variable Watcher (see getVariables) shows an array's
+// current elements as `[1, 2, 3]` — display text only, not generated Java,
+// so it's fine (and more helpful to a beginner) for this to look nicer than
+// real Java's own array toString().
+function formatSlotValue(slot: EvalValue | ArraySlot): string {
+  return isArraySlot(slot) ? `[${slot.value.join(', ')}]` : formatValue(slot);
 }
 
 function coerceToKind(value: number | string | boolean, kind: VarKind): number | string | boolean {
