@@ -184,9 +184,18 @@
       {#each statements as statement, index (index)}
         {@const info = rowInfo(statement, scalarVariables, arrayNames)}
         {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
+        <!-- A CSS Grid, not flex — a custom value's text field (see the
+             info.kind === 'value' case below) drops to its own second row,
+             left-aligned under the dropdown and stretching out to the
+             newline checkbox's own column, which only a shared column
+             layout across both rows can line up precisely. Columns: 1
+             step-arrow, 2 drag handle, 3 "Print" label (or the raw-statement
+             text, spanning 3-6), 4 dropdown, 5 array index, 6 newline
+             checkbox, 7 remove button. -->
         <div
           data-process-row
-          class="flex items-center gap-1"
+          class="grid items-center gap-1"
+          style="grid-template-columns: auto auto auto auto auto auto auto;"
           style:opacity={dragIndex === index ? 0.4 : 1}
           style:border-top={dragOverIndex === index && dragIndex !== null && dragIndex !== index
             ? '2px solid var(--color-accent)'
@@ -195,7 +204,7 @@
           <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
                stepCurrentRow) — reserved width so other rows don't shift
                when one of them lights up. -->
-          <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
+          <span class="w-3 shrink-0 text-center" style="grid-column: 1; grid-row: 1; color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
 
           <!-- Drag handle — reorders this output line within the block
                (Java executes statements in source order). Pointer events,
@@ -204,7 +213,7 @@
             role="button"
             tabindex="-1"
             class="nodrag shrink-0 cursor-grab touch-none px-0.5 leading-none select-none active:cursor-grabbing"
-            style="color: var(--color-text-secondary);"
+            style="grid-column: 2; grid-row: 1; color: var(--color-text-secondary);"
             title={$t('shared.dragToReorder')}
             aria-label={$t('shared.dragToReorder')}
             onpointerdown={(event) => handleDragHandlePointerDown(event, index)}
@@ -216,16 +225,20 @@
             <!-- A statement typed directly in the code editor that isn't a plain
                  `println(...)` call — shown read-only, since the picker below
                  can't represent arbitrary Java. -->
-            <span class="min-w-0 flex-1 truncate opacity-70" style="color: var(--color-text-secondary);" title={info.statement}>
+            <span
+              class="min-w-0 truncate opacity-70"
+              style="grid-column: 3 / 7; grid-row: 1; color: var(--color-text-secondary);"
+              title={info.statement}
+            >
               {info.statement}
             </span>
           {:else}
-            <span style="color: var(--color-text-secondary);">{$t('process.print')}</span>
+            <span style="grid-column: 3; grid-row: 1; color: var(--color-text-secondary);">{$t('process.print')}</span>
             <select
               value={info.kind === 'variable' ? info.varName : info.kind === 'arrayElement' ? info.arrName : info.kind === 'value' ? CUSTOM_VALUE : ''}
               onchange={(event) => handleSelect(index, event)}
               class="nodrag min-w-[5rem] rounded border bg-transparent px-1 py-0.5"
-              style="border-color: var(--color-border);"
+              style="grid-column: 4; grid-row: 1; border-color: var(--color-border);"
             >
               <option value="" disabled>{scalarVariables.length === 0 && arrayNames.length === 0 ? $t('shared.noVariables') : $t('shared.choose')}</option>
               {#each scalarVariables as varName (varName)}
@@ -242,18 +255,21 @@
                 value={info.index}
                 oninput={(event) => handleIndexInput(index, info.arrName, event)}
                 class="nodrag w-10 rounded border bg-transparent px-1 py-0.5"
-                style="border-color: var(--color-border);"
+                style="grid-column: 5; grid-row: 1; border-color: var(--color-border);"
                 placeholder={$t('shared.indexPlaceholder')}
                 title={$t('shared.indexTitle')}
               />
             {/if}
 
             {#if info.kind === 'value'}
+              <!-- Own row, columns 4-6 — left-aligned under the dropdown
+                   (column 4) and stretching out to the checkbox's own
+                   column (6), not all the way to the remove button. -->
               <input
                 value={inferred ? unquoteDeclaredValue('String', info.value) : info.value}
                 oninput={(event) => handleValueInput(index, event)}
-                class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
-                style="border-color: var(--color-border);"
+                class="nodrag w-full min-w-0 rounded border bg-transparent px-1 py-0.5"
+                style="grid-column: 4 / 7; grid-row: 2; border-color: var(--color-border);"
                 placeholder={inferred ? $t('process.valueOrLiteralInferred') : $t('process.valueOrLiteral')}
               />
             {/if}
@@ -262,7 +278,11 @@
               <!-- println (checked, the default) vs. print — whether this
                    line ends with a new line. Only shown once there's an
                    actual print call to toggle. -->
-              <label class="nodrag flex shrink-0 items-center gap-0.5 select-none" style="color: var(--color-text-secondary);" title={$t('process.newlineTitle')}>
+              <label
+                class="nodrag flex shrink-0 items-center gap-0.5 select-none"
+                style="grid-column: 6; grid-row: 1; color: var(--color-text-secondary);"
+                title={$t('process.newlineTitle')}
+              >
                 <input type="checkbox" class="nodrag" checked={isPrintlnStatement(statement)} onchange={(event) => handleNewlineToggle(index, event)} />
                 <span class="text-[10px]">⏎</span>
               </label>
@@ -273,7 +293,7 @@
             <button
               type="button"
               class="nodrag px-1 leading-none hover:opacity-70"
-              style="color: var(--color-text-secondary);"
+              style="grid-column: 7; grid-row: 1; color: var(--color-text-secondary);"
               title={$t('process.removeLine')}
               onclick={() => handleRemove(index)}
             >
