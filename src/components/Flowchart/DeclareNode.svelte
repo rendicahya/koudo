@@ -37,7 +37,8 @@
 
   // FlowchartBoard's placeBlock points this at whichever Declare node just
   // received a freshly added entry (new block or merged into this one) —
-  // put the cursor straight into that entry's own value field, scoped by
+  // put the cursor straight into that entry's own name field (naming the
+  // variable is the first thing to do with a fresh row), scoped by
   // [data-entry-index] since a merge can land on a node that already has
   // several rows. Cleared immediately so it only ever fires once.
   //
@@ -54,7 +55,7 @@
     const lastIndex = entries.length - 1;
     const node = rootEl;
     setTimeout(() => {
-      const target = node.querySelector<HTMLElement>(`[data-declare-value][data-entry-index="${lastIndex}"]`);
+      const target = node.querySelector<HTMLElement>(`[data-declare-name][data-entry-index="${lastIndex}"]`);
       target?.focus();
     }, 0);
   });
@@ -294,7 +295,7 @@
         style="border-color: {nameIsValid ? 'var(--color-border)' : 'var(--color-error)'};"
         style:outline={nameIsValid ? 'none' : '1px solid var(--color-error)'}
         aria-invalid={!nameIsValid}
-        title={nameIsValid ? undefined : $t('declare.invalidName', { name: entry.varName })}
+        title={nameIsValid ? $t('declare.nameTitle') : $t('declare.invalidName', { name: entry.varName })}
         placeholder={$t('declare.name')}
       />
 
@@ -309,6 +310,7 @@
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
           placeholder={$t('declare.valueOptional')}
+          title={$t('declare.valueTitle')}
         />
         {#if !entry.varValue}
           <!-- No value to infer a type from — declaring without an initial
@@ -352,6 +354,7 @@
           data-entry-index={index}
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
+          title={$t('declare.valueTitle')}
         >
           <!-- A select always has *some* option selected, so "declare only,
                no value yet" (see generator.ts's declare case) needs its own
@@ -373,6 +376,7 @@
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
           placeholder={$t('shared.value')}
+          title={$t('declare.valueTitle')}
         />
         <span class="select-none" style="color: var(--color-text-secondary);">{quote}</span>
       {:else}
@@ -384,6 +388,7 @@
           class="nodrag w-16 rounded border bg-transparent px-1 py-0.5"
           style="border-color: var(--color-border);"
           placeholder={$t('shared.value')}
+          title={$t('declare.valueTitle')}
         />
       {/if}
 

@@ -275,7 +275,9 @@ const en = {
 
   // DeclareNode
   'declare.name': 'Name',
+  'declare.nameTitle': 'Variable name',
   'declare.valueOptional': 'Value',
+  'declare.valueTitle': "Variable's initial value",
   'declare.typeWhole': 'Whole number',
   'declare.typeDecimal': 'Decimal number',
   'declare.typeText': 'Text',
@@ -302,9 +304,9 @@ const en = {
 
   // ProcessNode (Output block)
   'process.print': 'Print',
-  'process.newlineTitle': 'Start a new line after printing (println vs. print)',
+  'process.newlineTitle': 'Start a new line after printing',
   'process.customValue': '✎ Value',
-  'process.valueOrLiteralInferred': 'text or 5',
+  'process.valueOrLiteralInferred': 'Value',
   'process.valueOrLiteral': '"text" or 5',
   'process.removeLine': 'Remove this line',
   'process.add': '+ Add output',
@@ -790,7 +792,9 @@ const id: Record<TranslationKey, string> = {
 
   // DeclareNode
   'declare.name': 'Nama',
+  'declare.nameTitle': 'Nama variabel',
   'declare.valueOptional': 'Nilai',
+  'declare.valueTitle': 'Nilai awal variabel',
   'declare.typeWhole': 'Bilangan bulat',
   'declare.typeDecimal': 'Bilangan pecahan',
   'declare.typeText': 'Teks',
@@ -817,9 +821,9 @@ const id: Record<TranslationKey, string> = {
 
   // ProcessNode (Output block)
   'process.print': 'Cetak',
-  'process.newlineTitle': 'Pindah baris baru setelah mencetak (println vs. print)',
+  'process.newlineTitle': 'Pindah baris baru setelah mencetak',
   'process.customValue': '✎ Nilai',
-  'process.valueOrLiteralInferred': 'teks atau 5',
+  'process.valueOrLiteralInferred': 'Nilai',
   'process.valueOrLiteral': '"teks" atau 5',
   'process.removeLine': 'Hapus baris ini',
   'process.add': '+ Tambah output',
