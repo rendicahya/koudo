@@ -1,6 +1,6 @@
 import type { Edge, Node } from '@xyflow/svelte';
 import { derived, get, writable } from 'svelte/store';
-import { outgoing, findMergePoint, branchHandlesOf, unusedBranchHandle } from '../lib/flowchart/graphWalk';
+import { outgoing, findMergePoint, branchHandlesOf, unusedBranchHandle, allDecisionBranchesReachEnd } from '../lib/flowchart/graphWalk';
 import { formatDeclaredValue } from '../lib/flowchart/valueFormat';
 
 export type BlockType =
@@ -1074,6 +1074,19 @@ export const hasConnectedEndBlock = derived([nodes, edges], ([$nodes, $edges]) =
   if (endIds.size === 0) return false;
   return $edges.some((edge) => endIds.has(edge.target));
 });
+
+// Every if/else on the canvas must have both its branches actually lead
+// somewhere that finishes (see graphWalk.ts's allDecisionBranchesReachEnd) —
+// an if with a dead-end branch would otherwise let ▶ Run silently skip half
+// of what the user drew.
+export const allIfBranchesReachEnd = derived([nodes, edges], ([$nodes, $edges]) => allDecisionBranchesReachEnd($nodes, $edges));
+
+// Gates the Run/Step buttons together — a connected End block alone isn't
+// enough if some if/else on the canvas has a branch that never reaches one.
+export const canRunFlowchart = derived(
+  [hasConnectedEndBlock, allIfBranchesReachEnd],
+  ([$hasConnectedEndBlock, $allIfBranchesReachEnd]) => $hasConnectedEndBlock && $allIfBranchesReachEnd,
+);
 
 // Re-exported from graphWalk.ts (the pure-logic home for this, shared with
 // generator.ts's own type lookups) so existing component imports from

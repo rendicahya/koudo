@@ -12,7 +12,7 @@
     stepOnce,
     stopStepRun,
   } from '../../stores/stepRunner';
-  import { hasConnectedEndBlock, nodes, edges } from '../../stores/flowchart';
+  import { hasConnectedEndBlock, allIfBranchesReachEnd, canRunFlowchart, nodes, edges } from '../../stores/flowchart';
   import { blockTypeOf } from '../../lib/flowchart/graphWalk';
   import { codeContent } from '../../stores/code';
   import { generateJavaMethods } from '../../lib/flowchart/generator';
@@ -32,7 +32,7 @@
   let hasStart = $derived($nodes.some((node) => blockTypeOf(node) === 'start'));
 
   function handleRun() {
-    if (!$hasConnectedEndBlock) return;
+    if (!$canRunFlowchart) return;
     stopStepRun();
     // Subroutine Start/End pairs aren't part of $codeContent (that's main's
     // flow alone — see stores/sync.ts) — spliced in here so ▶ Run can
@@ -48,7 +48,7 @@
   // ⏭ Step / ⏭ Next Step is currently showing.
   function handleStepShortcut() {
     if (!$isStepping) {
-      if (!hasStart || !$hasConnectedEndBlock) return;
+      if (!hasStart || !$canRunFlowchart) return;
       return startStepRun();
     }
     if (!$isStepFinished) stepOnce();
@@ -79,9 +79,13 @@
       type="button"
       data-tutorial-run-button
       class="btn btn-accent rounded-md border px-3 py-1.5 text-sm font-medium"
-      disabled={!$hasConnectedEndBlock}
+      disabled={!$canRunFlowchart}
       onclick={handleRun}
-      title={$hasConnectedEndBlock ? $t('output.runTitleEnabled') : $t('output.runTitleDisabled')}
+      title={$hasConnectedEndBlock
+        ? $allIfBranchesReachEnd
+          ? $t('output.runTitleEnabled')
+          : $t('output.runTitleIfIncomplete')
+        : $t('output.runTitleDisabled')}
     >
       {$t('output.run')}
     </button>
@@ -90,13 +94,15 @@
       <button
         type="button"
         class="btn btn-neutral rounded-md border px-3 py-1.5 text-sm font-medium"
-        disabled={!hasStart || !$hasConnectedEndBlock}
+        disabled={!hasStart || !$canRunFlowchart}
         onclick={startStepRun}
         title={!hasStart
           ? $t('output.stepTitleNoStart')
           : !$hasConnectedEndBlock
             ? $t('output.stepTitleNoEnd')
-            : $t('output.stepTitleReady')}
+            : !$allIfBranchesReachEnd
+              ? $t('output.stepTitleIfIncomplete')
+              : $t('output.stepTitleReady')}
       >
         {$t('output.step')}
       </button>

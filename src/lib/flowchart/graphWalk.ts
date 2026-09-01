@@ -124,6 +124,47 @@ export function findMergePoint(
   return null;
 }
 
+// True only if every Decision block's both branches (true and false) can
+// eventually reach a terminal block — the main flow's own End, or, for a
+// Decision sitting inside a subroutine's body, that subroutine's own End.
+// An if/else where one side dead-ends (runs off the canvas with nothing
+// wired after it, or never had that branch connected in the first place)
+// leaves that path with no way for the program to finish, so callers gate
+// the Run button on this (see stores/flowchart.ts's canRunFlowchart)
+// instead of letting it quietly generate an incomplete `if`.
+export function allDecisionBranchesReachEnd(nodeList: Node[], edgeList: Edge[]): boolean {
+  const nodesById = new Map(nodeList.map((node) => [node.id, node]));
+
+  // Only a Decision actually reachable from a Start or Subroutine Start
+  // counts — one just sitting unconnected on the canvas never runs, same
+  // "connected, not just present" rule hasConnectedEndBlock applies to End.
+  const entryIds = nodeList.filter((node) => {
+    const type = blockTypeOf(node);
+    return type === 'start' || type === 'subroutineStart';
+  });
+  const liveIds = new Set<string>();
+  for (const entry of entryIds) {
+    for (const id of reachableFrom(entry.id, nodesById, edgeList)) liveIds.add(id);
+  }
+
+  const decisions = nodeList.filter((node) => blockTypeOf(node) === 'decision' && liveIds.has(node.id));
+
+  return decisions.every((decision) => {
+    const trueId = outgoing(edgeList, decision.id, 'true');
+    const falseId = outgoing(edgeList, decision.id, 'false');
+    return branchReachesEnd(trueId, nodesById, edgeList) && branchReachesEnd(falseId, nodesById, edgeList);
+  });
+}
+
+function branchReachesEnd(startId: string | null, nodesById: Map<string, Node>, edges: Edge[]): boolean {
+  if (!startId) return false;
+  const reachable = reachableFrom(startId, nodesById, edges);
+  return [...reachable].some((nodeId) => {
+    const type = blockTypeOf(nodesById.get(nodeId));
+    return type === 'end' || type === 'subroutineEnd';
+  });
+}
+
 export interface UpstreamDeclaration {
   varType: string;
   varName: string;
