@@ -269,6 +269,10 @@ const en = {
   // expression like "i" or "i + 1", not just a literal number.
   'shared.indexPlaceholder': 'index',
   'shared.indexTitle': 'Index into the array (a number or an expression like i)',
+  // Shared row drag handle (Declare/Assign/Process/Input) — reorders that
+  // row within its block; Java executes lines in source order, so this
+  // changes what's visible to earlier/later lines, not just cosmetic.
+  'shared.dragToReorder': 'Drag to reorder',
 
   // DeclareNode
   'declare.name': 'Name',
@@ -280,7 +284,6 @@ const en = {
   'declare.invalidName': "'{name}' is not a valid Java variable name",
   'declare.remove': 'Remove this variable',
   'declare.add': '+ Add variable',
-  'declare.dragToReorder': 'Drag to reorder',
   'declare.constTitle': 'Constant (Java final — cannot be reassigned)',
   'declare.arrayLabel': 'Array',
   'declare.arrayValuePlaceholder': 'size, e.g. 5, or 1,2,3',
@@ -783,6 +786,7 @@ const id: Record<TranslationKey, string> = {
   'shared.value': 'Nilai',
   'shared.indexPlaceholder': 'indeks',
   'shared.indexTitle': 'Indeks larik (angka atau ekspresi seperti i)',
+  'shared.dragToReorder': 'Seret untuk mengubah urutan',
 
   // DeclareNode
   'declare.name': 'Nama',
@@ -794,7 +798,6 @@ const id: Record<TranslationKey, string> = {
   'declare.invalidName': "'{name}' bukan nama variabel Java yang valid",
   'declare.remove': 'Hapus variabel ini',
   'declare.add': '+ Tambah variabel',
-  'declare.dragToReorder': 'Seret untuk mengubah urutan',
   'declare.constTitle': 'Konstanta (final di Java — tidak bisa diubah ulang)',
   'declare.arrayLabel': 'Larik',
   'declare.arrayValuePlaceholder': 'ukuran, mis. 5, atau 1,2,3',

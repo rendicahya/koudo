@@ -10,7 +10,7 @@
     renameDeclaredVariable,
     pendingFocusNodeId,
     declareLabel,
-    declareDragGhost,
+    rowDragGhost,
     type DeclareNodeData,
   } from '../../stores/flowchart';
   import { isValidJavaIdentifier } from '../../lib/flowchart/declarationParser';
@@ -30,7 +30,7 @@
 
   // Drag-to-reorder state (see handleDragHandlePointerDown below) — which
   // entry is being dragged, and which row it's currently hovering over. The
-  // floating row-content ghost itself lives in declareDragGhost (a store,
+  // floating row-content ghost itself lives in rowDragGhost (a store,
   // not local state — see that store's own comment for why).
   let dragIndex: number | null = $state(null);
   let dragOverIndex: number | null = $state(null);
@@ -154,7 +154,7 @@
     dragIndex = index;
     dragOverIndex = index;
     const draggedEntry = entries[index];
-    declareDragGhost.set({
+    rowDragGhost.set({
       x: event.clientX,
       y: event.clientY,
       text: declareLabel(draggedEntry.varType, draggedEntry.varName, draggedEntry.varValue, draggedEntry.isConst),
@@ -167,12 +167,12 @@
       handle.removeEventListener('pointercancel', handleCancel);
       dragIndex = null;
       dragOverIndex = null;
-      declareDragGhost.set(null);
+      rowDragGhost.set(null);
     }
     function handleMove(moveEvent: PointerEvent) {
       if (moveEvent.pointerId !== pointerId) return;
       dragOverIndex = rowIndexAtY(moveEvent.clientY);
-      declareDragGhost.update((ghost) => (ghost ? { ...ghost, x: moveEvent.clientX, y: moveEvent.clientY } : ghost));
+      rowDragGhost.update((ghost) => (ghost ? { ...ghost, x: moveEvent.clientX, y: moveEvent.clientY } : ghost));
     }
     function handleUp(upEvent: PointerEvent) {
       if (upEvent.pointerId !== pointerId) return;
@@ -244,8 +244,8 @@
         tabindex="-1"
         class="nodrag shrink-0 cursor-grab touch-none px-0.5 leading-none select-none active:cursor-grabbing"
         style="color: var(--color-text-secondary);"
-        title={$t('declare.dragToReorder')}
-        aria-label={$t('declare.dragToReorder')}
+        title={$t('shared.dragToReorder')}
+        aria-label={$t('shared.dragToReorder')}
         onpointerdown={(event) => handleDragHandlePointerDown(event, index)}
       >
         ⠿

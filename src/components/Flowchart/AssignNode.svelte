@@ -7,6 +7,9 @@
     addAssignmentEntry,
     updateAssignmentEntryAt,
     removeAssignmentEntryAt,
+    reorderAssignmentEntries,
+    assignmentLabel,
+    rowDragGhost,
     type AssignNodeData,
     type AssignmentEntry,
   } from '../../stores/flowchart';
@@ -24,6 +27,14 @@
   let { id, data }: NodeProps = $props();
   let nodeData = $derived(data as AssignNodeData);
   let entries = $derived(nodeData.entries ?? []);
+  let rootEl: HTMLDivElement;
+
+  // Drag-to-reorder state (see handleDragHandlePointerDown below) — mirrors
+  // DeclareNode.svelte's own drag handle, see its comments for the full
+  // reasoning (pointer events over native HTML5 drag-and-drop, the floating
+  // ghost living in rowDragGhost rather than local state).
+  let dragIndex: number | null = $state(null);
+  let dragOverIndex: number | null = $state(null);
   let variableEntries = $derived(declaredVariableEntriesUpstreamOf(id, $nodes, $edges));
   // Whole-array assignment/reference isn't supported (see arrayType.ts's own
   // scope note) — an array only ever appears as its own "arr[ ]" option
@@ -160,11 +171,63 @@
   function handleAdd() {
     $nodes = $nodes.map((node) => (node.id === id ? addAssignmentEntry(node) : node));
   }
+
+  // Which row slot a given pointer Y falls into — see DeclareNode.svelte's
+  // own rowIndexAtY for the full reasoning.
+  function rowIndexAtY(clientY: number): number {
+    const rows = Array.from(rootEl.querySelectorAll<HTMLElement>('[data-assign-row]'));
+    for (let i = 0; i < rows.length; i++) {
+      const rect = rows[i].getBoundingClientRect();
+      if (clientY < rect.top + rect.height / 2) return i;
+    }
+    return rows.length - 1;
+  }
+
+  function handleDragHandlePointerDown(event: PointerEvent, index: number) {
+    event.preventDefault();
+    const handle = event.currentTarget as HTMLElement;
+    const pointerId = event.pointerId;
+    handle.setPointerCapture(pointerId);
+    dragIndex = index;
+    dragOverIndex = index;
+    rowDragGhost.set({ x: event.clientX, y: event.clientY, text: assignmentLabel(entries[index]) });
+
+    function cleanup() {
+      handle.releasePointerCapture(pointerId);
+      handle.removeEventListener('pointermove', handleMove);
+      handle.removeEventListener('pointerup', handleUp);
+      handle.removeEventListener('pointercancel', handleCancel);
+      dragIndex = null;
+      dragOverIndex = null;
+      rowDragGhost.set(null);
+    }
+    function handleMove(moveEvent: PointerEvent) {
+      if (moveEvent.pointerId !== pointerId) return;
+      dragOverIndex = rowIndexAtY(moveEvent.clientY);
+      rowDragGhost.update((ghost) => (ghost ? { ...ghost, x: moveEvent.clientX, y: moveEvent.clientY } : ghost));
+    }
+    function handleUp(upEvent: PointerEvent) {
+      if (upEvent.pointerId !== pointerId) return;
+      const from = dragIndex;
+      const to = dragOverIndex;
+      cleanup();
+      if (from === null || to === null || from === to) return;
+      $nodes = $nodes.map((node) => (node.id === id ? reorderAssignmentEntries(node, from, to) : node));
+    }
+    function handleCancel(cancelEvent: PointerEvent) {
+      if (cancelEvent.pointerId !== pointerId) return;
+      cleanup();
+    }
+    handle.addEventListener('pointermove', handleMove);
+    handle.addEventListener('pointerup', handleUp);
+    handle.addEventListener('pointercancel', handleCancel);
+  }
 </script>
 
 <!-- Standard flowchart Process symbol: a plain rectangle, no rounded
      corners (that's reserved for the Start/End terminal blocks). -->
 <div
+  bind:this={rootEl}
   class="flex flex-col gap-1.5 border px-2 py-1.5 text-xs"
   style="border-color: var(--color-node-border); background: var(--color-node-bg); color: var(--color-text);"
 >
@@ -174,11 +237,34 @@
     {@const kind = editingIndices.has(index) ? 'custom' : refKind(entry.value, scalarVariables, arrayNames)}
     {@const targetIndexed = parseIndexedRef(entry.varName)}
     {@const isCurrentRow = $stepCurrentRow?.nodeId === id && $stepCurrentRow?.rowIndex === index}
-    <div class="flex flex-wrap items-center gap-1">
+    <div
+      data-assign-row
+      class="flex flex-wrap items-center gap-1"
+      style:opacity={dragIndex === index ? 0.4 : 1}
+      style:border-top={dragOverIndex === index && dragIndex !== null && dragIndex !== index
+        ? '2px solid var(--color-accent)'
+        : '2px solid transparent'}
+    >
       <!-- Step Through's per-line arrow (see stores/stepRunner.ts's
            stepCurrentRow) — reserved width so other rows don't shift when
            one of them lights up. -->
       <span class="w-3 shrink-0 text-center" style="color: var(--color-accent);">{isCurrentRow ? '▶' : ''}</span>
+
+      <!-- Drag handle — reorders this assignment within the block (Java
+           executes assignments in source order). Pointer events, see
+           handleDragHandlePointerDown above. -->
+      <span
+        role="button"
+        tabindex="-1"
+        class="nodrag shrink-0 cursor-grab touch-none px-0.5 leading-none select-none active:cursor-grabbing"
+        style="color: var(--color-text-secondary);"
+        title={$t('shared.dragToReorder')}
+        aria-label={$t('shared.dragToReorder')}
+        onpointerdown={(event) => handleDragHandlePointerDown(event, index)}
+      >
+        ⠿
+      </span>
+
       <select
         value={targetIndexed && arrayNames.includes(targetIndexed.name) ? targetIndexed.name : entry.varName}
         onchange={(event) => handleTargetSelect(index, event)}

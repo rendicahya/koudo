@@ -488,6 +488,14 @@ export function removeProcessStatementAt(node: Node, index: number): Node {
   return removeListItemAt(PROCESS_LIST, node, index);
 }
 
+// Reorders a Process block's own output lines via drag-and-drop (see
+// ProcessNode.svelte's drag handle) — Java executes statements in source
+// order, so this changes what's visible to earlier/later lines, not just
+// cosmetic ordering.
+export function reorderProcessStatements(node: Node, fromIndex: number, toIndex: number): Node {
+  return reorderListItemAt(PROCESS_LIST, node, fromIndex, toIndex);
+}
+
 // Matches any `System.out.println(...)` statement, capturing whatever's
 // inside the parens — a variable name, a literal ("Hello", 5), or an
 // expression — so the Process node's row can tell whether it's printing a
@@ -845,7 +853,15 @@ export function removeAssignmentEntryAt(node: Node, index: number): Node {
   return removeListItemAt(ASSIGN_LIST, node, index);
 }
 
-function inputLabel(entry: InputEntry): string {
+// Reorders an Assign block's own assignments via drag-and-drop (see
+// AssignNode.svelte's drag handle) — Java executes assignments in source
+// order, so this changes what's visible to earlier/later lines, not just
+// cosmetic ordering.
+export function reorderAssignmentEntries(node: Node, fromIndex: number, toIndex: number): Node {
+  return reorderListItemAt(ASSIGN_LIST, node, fromIndex, toIndex);
+}
+
+export function inputLabel(entry: InputEntry): string {
   return entry.prompt ? `${entry.varName} <- "${entry.prompt}"` : entry.varName;
 }
 
@@ -896,6 +912,14 @@ export function updateInputEntryAt(node: Node, index: number, fields: Partial<In
 
 export function removeInputEntryAt(node: Node, index: number): Node {
   return removeListItemAt(INPUT_LIST, node, index);
+}
+
+// Reorders an Input block's own reads via drag-and-drop (see
+// InputNode.svelte's drag handle) — Java executes reads in source order, so
+// this changes what's visible to earlier/later lines, not just cosmetic
+// ordering.
+export function reorderInputEntries(node: Node, fromIndex: number, toIndex: number): Node {
+  return reorderListItemAt(INPUT_LIST, node, fromIndex, toIndex);
 }
 
 // Declare's varName field, unlike its type or value, participates in a
@@ -990,15 +1014,17 @@ export const edges = writable<Edge[]>([]);
 // effect sees it, so it never re-fires on an unrelated re-render.
 export const pendingFocusNodeId = writable<string | null>(null);
 
-// The floating "what's actually being moved" ghost for a Declare block's
-// drag-to-reorder (see DeclareNode.svelte's handleDragHandlePointerDown) —
-// rendered by FlowchartBoard.svelte, not DeclareNode itself, because a
-// `position: fixed` element positions relative to the nearest transformed
-// ancestor, and every xyflow node sits inside one (the pane's own pan/zoom
-// transform) — rendered from here instead, a sibling of BlockPalette that
-// isn't nested inside that transform, it follows the raw cursor position
-// like BlockPalette's own drag ghost does.
-export const declareDragGhost = writable<{ x: number; y: number; text: string } | null>(null);
+// The floating "what's actually being moved" ghost for a row's
+// drag-to-reorder, shared by every block with a reorderable row list
+// (Declare, Assign, Process, Input — see each component's own
+// handleDragHandlePointerDown) — rendered by FlowchartBoard.svelte, not the
+// row's own component, because a `position: fixed` element positions
+// relative to the nearest transformed ancestor, and every xyflow node sits
+// inside one (the pane's own pan/zoom transform) — rendered from here
+// instead, a sibling of BlockPalette that isn't nested inside that
+// transform, it follows the raw cursor position like BlockPalette's own
+// drag ghost does.
+export const rowDragGhost = writable<{ x: number; y: number; text: string } | null>(null);
 
 // Powers the "New" button — wipes the canvas back to a single fresh Start
 // block. The code panel clears itself too, since it's just a reactive

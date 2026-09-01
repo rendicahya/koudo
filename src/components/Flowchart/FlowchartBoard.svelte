@@ -44,7 +44,7 @@
     updateInputEntryAt,
     updateProcessStatementAt,
     printlnStatement,
-    declareDragGhost,
+    rowDragGhost,
     type BlockType,
   } from '../../stores/flowchart';
   import { stepCurrentNodeId, stepCurrentLine } from '../../stores/stepRunner';
@@ -345,17 +345,18 @@
     />
   {/if}
 
-  {#if $declareDragGhost}
-    <!-- Follows the cursor while a Declare block's row is being dragged (see
-         DeclareNode.svelte's handleDragHandlePointerDown) — rendered here,
-         not from DeclareNode itself, since this is a sibling of BlockPalette
-         outside SvelteFlow's own pan/zoom transform (see declareDragGhost's
-         own comment for why that placement matters for `position: fixed`). -->
+  {#if $rowDragGhost}
+    <!-- Follows the cursor while a row is being dragged within a Declare,
+         Assign, Process, or Input block (see each component's own
+         handleDragHandlePointerDown) — rendered here, not from that
+         component itself, since this is a sibling of BlockPalette outside
+         SvelteFlow's own pan/zoom transform (see rowDragGhost's own comment
+         for why that placement matters for `position: fixed`). -->
     <div
       class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded border px-2 py-1 font-mono text-xs whitespace-nowrap shadow-md"
-      style="left: {$declareDragGhost.x}px; top: {$declareDragGhost.y}px; background: var(--color-node-bg); border-color: var(--color-accent); color: var(--color-text);"
+      style="left: {$rowDragGhost.x}px; top: {$rowDragGhost.y}px; background: var(--color-node-bg); border-color: var(--color-accent); color: var(--color-text);"
     >
-      {$declareDragGhost.text}
+      {$rowDragGhost.text}
     </div>
   {/if}
 </div>
