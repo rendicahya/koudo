@@ -54,7 +54,7 @@
   {#if open}
     <div
       role="menu"
-      class="absolute right-0 top-full z-20 mt-1 flex w-60 max-w-[calc(100vw-1.5rem)] flex-col overflow-y-auto rounded-md border text-sm shadow-md"
+      class="absolute left-0 top-full z-20 mt-1 flex w-60 max-w-[calc(100vw-1.5rem)] flex-col overflow-y-auto rounded-md border text-sm shadow-md md:left-auto md:right-0"
       style="border-color: var(--color-border); background: var(--color-panel); color: var(--color-text);"
     >
       <div class="px-3 pt-2 pb-1 text-xs font-semibold" style="color: var(--color-text-secondary);">

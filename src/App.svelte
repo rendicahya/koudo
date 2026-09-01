@@ -81,11 +81,13 @@
   // flowchartPercent/outputHeight above) — same "resets on reload" as
   // BlockPalette's own minimized state, since which one someone last looked
   // at isn't meaningful to remember across a session.
-  type MobileTab = 'flowchart' | 'pseudocode' | 'java';
+  type MobileTab = 'flowchart' | 'pseudocode' | 'java' | 'output' | 'variables';
   const MOBILE_TABS: { id: MobileTab; labelKey: TranslationKey; codeTab?: CodeTab }[] = [
     { id: 'flowchart', labelKey: 'help.tab.flowchart' },
     { id: 'pseudocode', labelKey: 'code.pseudocodeTab', codeTab: 'Pseudocode' },
     { id: 'java', labelKey: 'code.javaTab', codeTab: 'Java' },
+    { id: 'output', labelKey: 'output.heading' },
+    { id: 'variables', labelKey: 'output.variables' },
   ];
   let mobileTab = $state<MobileTab>('flowchart');
 
@@ -98,6 +100,18 @@
     const codeTab = MOBILE_TABS.find((entry) => entry.id === tab)?.codeTab;
     if (codeTab) activeCodeTab.set(codeTab);
   }
+
+  // Below md, Output and Variables are now their own mobile tabs instead of
+  // always sharing the code column's footer with whichever of
+  // Pseudocode/Java is showing — these pick which of the code editor /
+  // output footer (and, within the footer, which half of OutputPanel) is on
+  // screen. Unused at md+, where CodeEditorPanel and the OutputPanel footer
+  // are always both visible regardless (see the md: classes below).
+  let showEditorMobile = $derived(mobileTab === 'pseudocode' || mobileTab === 'java');
+  let showOutputMobile = $derived(mobileTab === 'output' || mobileTab === 'variables');
+  let outputMobileSection: 'all' | 'output' | 'variables' = $derived(
+    mobileTab === 'output' ? 'output' : mobileTab === 'variables' ? 'variables' : 'all',
+  );
 
   // Pointer capture keeps move/up events targeted at the resizer itself even
   // once the cursor crosses into the Monaco editor or SvelteFlow canvas,
@@ -225,24 +239,34 @@
         ? 'hidden'
         : 'flex'} h-1/2 flex-1 flex-col overflow-hidden md:h-full {$isCodePanelHidden ? 'md:hidden' : 'md:flex'}"
     >
-      <div class="min-h-0 flex-1" style="background: var(--color-editor-bg);">
+      <!-- Mobile: only for the Pseudocode/Java tabs — Output and Variables
+           are their own full-height mobile tabs now (see the footer below),
+           not shown alongside the editor. Desktop: always shown. -->
+      <div class="min-h-0 flex-1 {showEditorMobile ? 'block' : 'hidden'} md:block" style="background: var(--color-editor-bg);">
         <CodeEditorPanel />
       </div>
 
+      <!-- Mobile: hidden — editor and output are never on screen together
+           there anymore, so there's nothing to drag between. Desktop:
+           always shown, same resizable split as before. -->
       <div
         role="separator"
         aria-orientation="horizontal"
         aria-label={$t('app.resizeRowAriaLabel')}
-        class="resizer resizer-horizontal shrink-0"
+        class="resizer resizer-horizontal shrink-0 hidden md:block"
         onpointerdown={beginRowResize}
       ></div>
 
+      <!-- Mobile: only for the Output/Variables tabs, filling the full
+           height of the tab (output-footer's own CSS below) instead of the
+           fixed, user-resizable height it keeps at md+. mobileSection picks
+           which half of OutputPanel to show — see its own comment. -->
       <footer
-        class="flex shrink-0 flex-col overflow-hidden border-t"
-        style="height: {outputHeight}px; border-color: var(--color-border); background: var(--color-panel);"
+        class="output-footer {showOutputMobile ? 'flex' : 'hidden'} md:flex flex-col overflow-hidden border-t"
+        style="border-color: var(--color-border); background: var(--color-panel); --output-height: {outputHeight}px;"
       >
         <div class="min-h-0 flex-1">
-          <OutputPanel />
+          <OutputPanel mobileSection={outputMobileSection} />
         </div>
       </footer>
     </section>
@@ -268,6 +292,21 @@
       flex: 1 1 auto;
       min-width: 0;
     }
+    .output-footer {
+      /* Desktop keeps the fixed, user-resizable height it always had (see
+         beginRowResize) — overrides the mobile-only fill-the-tab sizing
+         below. */
+      flex: none;
+      height: var(--output-height, 224px);
+    }
+  }
+
+  /* Mobile: the Output/Variables tab fills whatever height the (now hidden)
+     editor and resizer would otherwise have shared with it — see
+     App.svelte's showOutputMobile. */
+  .output-footer {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .resizer {
