@@ -480,10 +480,20 @@ class Interpreter {
         // so whatever's still pending here (not yet flushed to `output`) is
         // that same prompt — shown as the native dialog's own message,
         // instead of the dialog just saying something generic while the
-        // prompt sits unseen in the output panel behind it.
-        const message = this.pendingLine || DEFAULT_PROMPT_MESSAGE;
-        this.flushPending();
-        return readFromUser(this.promptFn, expr.method, expr.line, message);
+        // prompt sits unseen in the output panel behind it. Once the user
+        // answers, the prompt and what they typed are pushed as a single
+        // output line together — mirroring a real console, where typed input
+        // is echoed right after the prompt that asked for it, not on its own
+        // line.
+        const promptText = this.pendingLine;
+        this.pendingLine = '';
+        const message = promptText || DEFAULT_PROMPT_MESSAGE;
+        const { raw, result } = readFromUser(this.promptFn, expr.method, expr.line, message);
+        this.output.push(promptText + raw);
+        if (this.output.length > MAX_OUTPUT_LINES) {
+          throw new RuntimeError(`Stopped after ${MAX_OUTPUT_LINES.toLocaleString()} lines of output.`);
+        }
+        return result;
       }
       case 'call': {
         const result = this.callFunction(expr.name, expr.args, expr.line);
@@ -498,10 +508,13 @@ class Interpreter {
 
 const DEFAULT_PROMPT_MESSAGE = 'Program is waiting for input:';
 
-function readFromUser(promptFn: PromptFn, method: string, line: number, message: string): EvalValue {
+function readFromUser(promptFn: PromptFn, method: string, line: number, message: string): { raw: string; result: EvalValue } {
   const raw = promptFn(message);
   if (raw === null) throw new RuntimeError(`Input was cancelled (line ${line}).`);
+  return { raw, result: parseByMethod(raw, method, line) };
+}
 
+function parseByMethod(raw: string, method: string, line: number): EvalValue {
   switch (method) {
     case 'nextInt': {
       const n = Number(raw.trim());

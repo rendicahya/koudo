@@ -261,8 +261,7 @@ const en = {
   'shared.noVariables': 'No variables',
   'shared.choose': 'Choose',
   // Shared plain "Value" placeholder (Declare's String/char/default fields,
-  // Assign's String/char field) — distinct from declare.valueOptional,
-  // which also says "(optional)".
+  // Assign's String/char field).
   'shared.value': 'Value',
   // Shared array-element index field (Process/Assign/Input, next to an
   // "arr[ ]" dropdown pick) — free text, since an index is often an
@@ -276,7 +275,7 @@ const en = {
 
   // DeclareNode
   'declare.name': 'Name',
-  'declare.valueOptional': 'Value (optional)',
+  'declare.valueOptional': 'Value',
   'declare.typeWhole': 'Whole number',
   'declare.typeDecimal': 'Decimal number',
   'declare.typeText': 'Text',
@@ -297,12 +296,13 @@ const en = {
 
   // InputNode
   'input.label': 'Input',
-  'input.prompt': 'Prompt (optional)',
+  'input.prompt': 'Prompt',
   'input.remove': 'Remove this input',
   'input.add': '+ Add input',
 
   // ProcessNode (Output block)
   'process.print': 'Print',
+  'process.newlineTitle': 'Start a new line after printing (println vs. print)',
   'process.customValue': '✎ Value',
   'process.valueOrLiteralInferred': 'text or 5',
   'process.valueOrLiteral': '"text" or 5',
@@ -790,7 +790,7 @@ const id: Record<TranslationKey, string> = {
 
   // DeclareNode
   'declare.name': 'Nama',
-  'declare.valueOptional': 'Nilai (opsional)',
+  'declare.valueOptional': 'Nilai',
   'declare.typeWhole': 'Bilangan bulat',
   'declare.typeDecimal': 'Bilangan pecahan',
   'declare.typeText': 'Teks',
@@ -811,12 +811,13 @@ const id: Record<TranslationKey, string> = {
 
   // InputNode
   'input.label': 'Input',
-  'input.prompt': 'Prompt (opsional)',
+  'input.prompt': 'Prompt',
   'input.remove': 'Hapus input ini',
   'input.add': '+ Tambah input',
 
   // ProcessNode (Output block)
   'process.print': 'Cetak',
+  'process.newlineTitle': 'Pindah baris baru setelah mencetak (println vs. print)',
   'process.customValue': '✎ Nilai',
   'process.valueOrLiteralInferred': 'teks atau 5',
   'process.valueOrLiteral': '"teks" atau 5',

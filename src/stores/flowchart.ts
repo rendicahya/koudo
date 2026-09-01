@@ -496,22 +496,32 @@ export function reorderProcessStatements(node: Node, fromIndex: number, toIndex:
   return reorderListItemAt(PROCESS_LIST, node, fromIndex, toIndex);
 }
 
-// Matches any `System.out.println(...)` statement, capturing whatever's
-// inside the parens — a variable name, a literal ("Hello", 5), or an
-// expression — so the Process node's row can tell whether it's printing a
-// known variable (show the dropdown) or a literal/expression (show a text
-// field), versus some other statement typed directly in the editor that its
-// picker can't represent at all (shown read-only). Returns null for that
-// last case — anything not shaped like a println call.
-const PRINTLN_PATTERN = /^System\.out\.println\((.*)\)$/;
+// Matches any `System.out.println(...)`/`System.out.print(...)` statement,
+// capturing which of the two it is and whatever's inside the parens — a
+// variable name, a literal ("Hello", 5), or an expression — so the Process
+// node's row can tell whether it's printing a known variable (show the
+// dropdown) or a literal/expression (show a text field), versus some other
+// statement typed directly in the editor that its picker can't represent at
+// all (shown read-only). Returns null for that last case — anything not
+// shaped like a print/println call.
+const PRINT_PATTERN = /^System\.out\.(println|print)\((.*)\)$/;
 
 export function printlnContent(statement: string): string | null {
-  const match = statement.match(PRINTLN_PATTERN);
-  return match ? match[1] : null;
+  const match = statement.match(PRINT_PATTERN);
+  return match ? match[2] : null;
 }
 
-export function printlnStatement(varName: string): string {
-  return `System.out.println(${varName})`;
+// Whether a print/println statement ends its output with a newline — the
+// "print a newline after this" checkbox's own checked state (see
+// ProcessNode.svelte). Defaults true (println) for a statement that isn't
+// shaped like either call yet (e.g. a brand new blank row).
+export function isPrintlnStatement(statement: string): boolean {
+  const match = statement.match(PRINT_PATTERN);
+  return match ? match[1] === 'println' : true;
+}
+
+export function printlnStatement(content: string, newline = true): string {
+  return `System.out.${newline ? 'println' : 'print'}(${content})`;
 }
 
 export function createDecisionNode(position: { x: number; y: number }, condition = ''): Node {
@@ -956,7 +966,7 @@ export function renameDeclaredVariable(nodeList: Node[], declareNodeId: string, 
       const oldStatements = data.statements ?? [];
       const statements = oldStatements.map((statement) => {
         const content = printlnContent(statement);
-        return content === oldName ? printlnStatement(newName) : statement;
+        return content === oldName ? printlnStatement(newName, isPrintlnStatement(statement)) : statement;
       });
       if (statements.every((line, i) => line === oldStatements[i])) return node;
       return { ...node, data: { ...node.data, statements, label: statementsLabel(statements) } };

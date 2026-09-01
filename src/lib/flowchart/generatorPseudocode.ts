@@ -5,10 +5,11 @@ import { formatDeclaredValue } from './valueFormat';
 // Mirrors stores/flowchart.ts's own printlnContent — duplicated rather than
 // imported so this stays a pure lib/flowchart module independent of the
 // stateful stores singleton, same as generator.ts's own local
-// escapeJavaString.
-const PRINTLN_PATTERN = /^System\.out\.println\((.*)\)$/;
+// escapeJavaString. Matches both print and println — pseudocode's OUTPUT
+// doesn't distinguish the trailing newline either way.
+const PRINT_PATTERN = /^System\.out\.(?:println|print)\((.*)\)$/;
 function printlnContent(statement: string): string | null {
-  const match = statement.match(PRINTLN_PATTERN);
+  const match = statement.match(PRINT_PATTERN);
   return match ? match[1] : null;
 }
 

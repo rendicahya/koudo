@@ -7,6 +7,7 @@
     declaredVariableEntriesUpstreamOf,
     printlnContent,
     printlnStatement,
+    isPrintlnStatement,
     addProcessStatement,
     updateProcessStatementAt,
     removeProcessStatementAt,
@@ -69,17 +70,27 @@
 
   function handleSelect(index: number, event: Event) {
     const value = (event.currentTarget as HTMLSelectElement).value;
+    // Switching what this row prints keeps whatever println/print choice it
+    // already had (see handleNewlineToggle) — that's an independent setting,
+    // not tied to which variable/value happens to be selected.
+    const newline = isPrintlnStatement(statements[index]);
     // Custom value starts blank — the user types the literal next. An array
     // name always starts printing its own first element, refined via the
     // adjacent index field (see handleIndexInput).
     const statement =
-      value === CUSTOM_VALUE ? printlnStatement('') : arrayNames.includes(value) ? printlnStatement(indexedRef(value, '0')) : value ? printlnStatement(value) : '';
+      value === CUSTOM_VALUE
+        ? printlnStatement('', newline)
+        : arrayNames.includes(value)
+          ? printlnStatement(indexedRef(value, '0'), newline)
+          : value
+            ? printlnStatement(value, newline)
+            : '';
     $nodes = $nodes.map((node) => (node.id === id ? updateProcessStatementAt(node, index, statement) : node));
   }
 
   function handleIndexInput(index: number, arrName: string, event: Event) {
     const indexText = (event.currentTarget as HTMLInputElement).value;
-    const statement = printlnStatement(indexedRef(arrName, indexText));
+    const statement = printlnStatement(indexedRef(arrName, indexText), isPrintlnStatement(statements[index]));
     $nodes = $nodes.map((node) => (node.id === id ? updateProcessStatementAt(node, index, statement) : node));
   }
 
@@ -89,7 +100,17 @@
     // comment above) — quote it for real Java only now, at storage time,
     // the same split DeclareNode.svelte's own value field uses.
     const value = inferred ? formatDeclaredValue(inferDeclaredType(raw), raw) : raw;
-    $nodes = $nodes.map((node) => (node.id === id ? updateProcessStatementAt(node, index, printlnStatement(value)) : node));
+    const statement = printlnStatement(value, isPrintlnStatement(statements[index]));
+    $nodes = $nodes.map((node) => (node.id === id ? updateProcessStatementAt(node, index, statement) : node));
+  }
+
+  // The "end with a new line" checkbox — println (checked, the default) vs.
+  // print (unchecked). Independent of what this row prints (see handleSelect).
+  function handleNewlineToggle(index: number, event: Event) {
+    const newline = (event.currentTarget as HTMLInputElement).checked;
+    const content = printlnContent(statements[index]) ?? '';
+    const statement = printlnStatement(content, newline);
+    $nodes = $nodes.map((node) => (node.id === id ? updateProcessStatementAt(node, index, statement) : node));
   }
 
   function handleAdd() {
@@ -235,6 +256,16 @@
                 style="border-color: var(--color-border);"
                 placeholder={inferred ? $t('process.valueOrLiteralInferred') : $t('process.valueOrLiteral')}
               />
+            {/if}
+
+            {#if info.kind !== 'empty'}
+              <!-- println (checked, the default) vs. print — whether this
+                   line ends with a new line. Only shown once there's an
+                   actual print call to toggle. -->
+              <label class="nodrag flex shrink-0 items-center gap-0.5 select-none" style="color: var(--color-text-secondary);" title={$t('process.newlineTitle')}>
+                <input type="checkbox" class="nodrag" checked={isPrintlnStatement(statement)} onchange={(event) => handleNewlineToggle(index, event)} />
+                <span class="text-[10px]">⏎</span>
+              </label>
             {/if}
           {/if}
 
