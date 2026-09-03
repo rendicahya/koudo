@@ -11,7 +11,7 @@
 </script>
 
 <header
-  class="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b px-3 py-2 sm:px-4"
+  class="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b px-4 py-2"
   style="border-color: var(--color-border); background: var(--color-panel);"
 >
   <div class="flex min-w-0 items-center gap-2 font-semibold" style="color: var(--color-text);">
@@ -26,12 +26,10 @@
       <ellipse cx="22" cy="41" rx="13" ry="2.5" fill="#b3331c" />
     </svg>
     <span>KOUDO</span>
-    <!-- Dropped below `sm` — the katakana subtitle is decorative, and the
-         project name input needs the room more on a narrow screen. -->
-    <span class="hidden text-sm font-normal sm:inline" style="color: var(--color-text-secondary);">コウド</span>
+    <span class="text-sm font-normal" style="color: var(--color-text-secondary);">コウド</span>
     <input
       type="text"
-      class="ml-1 w-24 min-w-0 truncate rounded border border-transparent bg-transparent px-1.5 py-0.5 text-sm font-normal hover:border-[var(--color-border)] focus:border-[var(--color-border)] focus:outline-none sm:w-auto sm:max-w-[12rem]"
+      class="ml-1 w-auto max-w-[12rem] min-w-0 truncate rounded border border-transparent bg-transparent px-1.5 py-0.5 text-sm font-normal hover:border-[var(--color-border)] focus:border-[var(--color-border)] focus:outline-none"
       style="color: var(--color-text-secondary);"
       aria-label={$t('nav.projectNameLabel')}
       title={$t('nav.projectNameLabel')}

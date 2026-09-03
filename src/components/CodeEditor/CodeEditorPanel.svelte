@@ -58,11 +58,7 @@
     class="flex shrink-0 items-center justify-between border-b"
     style="border-color: var(--color-border); background: var(--color-panel);"
   >
-    <!-- Hidden below md — the outer mobile tab bar (see App.svelte's
-         MOBILE_TABS) already picks Pseudocode vs. Java there, driving this
-         same activeCodeTab store; a second tab switcher here would just be
-         redundant/confusing on a narrow screen. -->
-    <div class="hidden md:flex">
+    <div class="flex">
       {#each TABS as tab (tab)}
         <button
           type="button"
