@@ -19,14 +19,6 @@
   import { t } from '../../stores/i18n';
   import { outputFontSize, zoomOutputFontSize, MIN_OUTPUT_FONT_SIZE, MAX_OUTPUT_FONT_SIZE } from '../../stores/layout';
 
-  // Below md, App.svelte gives Output and Variables their own mobile tabs
-  // (see its MOBILE_TABS) instead of the always-both-at-once layout this
-  // panel uses at md+ — this prop picks which half to show on a narrow
-  // screen; the md: classes below always force both back on at md+
-  // regardless of it, so desktop is unaffected no matter what App.svelte
-  // passes in.
-  let { mobileSection = 'all' }: { mobileSection?: 'all' | 'output' | 'variables' } = $props();
-
   // While a step run is active it takes over the panel — Start/Next/Stop
   // live next to ▶ Run, right here above the panel. Stopping just switches
   // this back; the last full ▶ Run's output/error underneath is untouched.
@@ -82,12 +74,6 @@
 <svelte:window onkeydown={handleGlobalKeydown} />
 
 <div class="flex h-full flex-col gap-3 p-4 text-sm" style="color: var(--color-text);">
-  <!-- Below md, App.svelte's Variables mobile tab shows only the Variable
-       Watcher below — this whole run-controls-and-console group hides then.
-       md:contents unwraps it back into plain direct children of the flex-col
-       above (its own flex/gap only matter while this stays a real box, i.e.
-       below md), so desktop's layout is untouched either way. -->
-  <div class="{mobileSection === 'variables' ? 'hidden' : 'flex'} flex-col gap-3 md:contents">
   <div class="flex shrink-0 items-center gap-2">
     <button
       type="button"
@@ -208,11 +194,10 @@
   {#if $isStepping && $isStepFinished && $stepStatus}
     <p class="shrink-0" style="color: var(--color-text-secondary);">{$stepStatus}</p>
   {/if}
-  </div>
 
   <div class="flex min-h-0 flex-1 flex-col gap-3 sm:flex-row">
     <div
-      class="{mobileSection === 'variables' ? 'hidden' : 'block'} min-h-0 flex-1 overflow-y-auto rounded-md border p-3 font-mono md:block"
+      class="min-h-0 flex-1 overflow-y-auto rounded-md border p-3 font-mono"
       style="border-color: var(--color-border); background: var(--color-editor-bg); font-size: {$outputFontSize}px;"
     >
       {#if !$isStepping && !$hasRun}
@@ -231,15 +216,11 @@
       {/if}
     </div>
 
-    <!-- Variable Watcher — always visible at md+: live values in scope while
-         a step run is active (refreshed by stepRunner.ts on every
-         stepOnce()), otherwise the last ▶ Run's final values. Below md, it's
-         its own mobile tab (see App.svelte) instead of always sharing space
-         with the console above. -->
+    <!-- Variable Watcher — always visible: live values in scope while a
+         step run is active (refreshed by stepRunner.ts on every
+         stepOnce()), otherwise the last ▶ Run's final values. -->
     <div
-      class="{mobileSection === 'output' ? 'hidden' : 'flex'} {mobileSection === 'variables'
-        ? 'h-full max-h-none'
-        : 'max-h-40 sm:max-h-none'} w-full shrink-0 flex-col overflow-hidden rounded-md border sm:w-56 md:flex md:max-h-none md:w-56"
+      class="flex max-h-40 w-full shrink-0 flex-col overflow-hidden rounded-md border sm:max-h-none sm:w-56"
       style="border-color: var(--color-border);"
     >
       <p

@@ -34,9 +34,6 @@ const en = {
   'nav.downloadPngTitle': 'Download the flowchart as a PNG image',
   'nav.preferences': 'Preferences',
   'nav.help': 'Help',
-  // Mobile-only: the single "Menu" button that opens all of the above (see
-  // TopNavbar.svelte's nav-menu) — desktop keeps them as separate buttons.
-  'nav.menu': 'Menu',
   'nav.helpGuide': 'Guide',
   'nav.modeHeading': 'Mode',
   'nav.variableModeBeginner': 'Beginner Mode',
@@ -562,7 +559,6 @@ const id: Record<TranslationKey, string> = {
   'nav.downloadPngTitle': 'Unduh flowchart sebagai gambar PNG',
   'nav.preferences': 'Preferensi',
   'nav.help': 'Bantuan',
-  'nav.menu': 'Menu',
   'nav.helpGuide': 'Panduan',
   'nav.modeHeading': 'Mode',
   'nav.variableModeBeginner': 'Mode Pemula',
