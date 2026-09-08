@@ -2,6 +2,7 @@ import type { Edge, Node } from '@xyflow/svelte';
 import { derived, get, writable } from 'svelte/store';
 import { outgoing, findMergePoint, branchHandlesOf, unusedBranchHandle, allDecisionBranchesReachEnd } from '../lib/flowchart/graphWalk';
 import { formatDeclaredValue } from '../lib/flowchart/valueFormat';
+import { normalizeEdge } from '../lib/flowchart/edgeDefaults';
 
 export type BlockType =
   | 'start'
@@ -1054,7 +1055,7 @@ export function resetFlowchart() {
 export function loadFlowchart(nodeList: Node[], edgeList: Edge[]) {
   resyncCountersAfterLoad(nodeList);
   nodes.set(nodeList);
-  edges.set(edgeList);
+  edges.set(edgeList.map(normalizeEdge));
 }
 
 // True once the canvas differs from the default "just a Start block" state —

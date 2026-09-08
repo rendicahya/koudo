@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import { addEdge, MarkerType, type Connection, type Edge, type Node } from '@xyflow/svelte';
+import { addEdge, type Connection, type Edge, type Node } from '@xyflow/svelte';
 import {
   nodes,
   edges,
@@ -20,6 +20,7 @@ import {
   type DeclarationEntry,
 } from './flowchart';
 import { codeContent } from './code';
+import { EDGE_DEFAULTS } from '../lib/flowchart/edgeDefaults';
 import { generateJavaCode } from '../lib/flowchart/generator';
 import { parseDeclarations } from '../lib/flowchart/declarationParser';
 import { unquoteDeclaredValue } from '../lib/flowchart/valueFormat';
@@ -228,7 +229,7 @@ export function syncCodeToFlowchart(code: string) {
     if (previousId) {
       const connection: Connection = { source: previousId, target: targetId, sourceHandle: null, targetHandle: null };
       workingEdges = addEdge(
-        { ...connection, markerEnd: { type: MarkerType.ArrowClosed } },
+        { ...connection, ...EDGE_DEFAULTS },
         pruneOutgoingEdge(workingEdges, previousId),
       );
     }

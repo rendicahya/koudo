@@ -5,7 +5,6 @@
     Controls,
     useSvelteFlow,
     addEdge,
-    MarkerType,
     type Connection,
     type Edge,
   } from '@xyflow/svelte';
@@ -48,6 +47,7 @@
     type BlockType,
   } from '../../stores/flowchart';
   import { stepCurrentNodeId, stepCurrentLine } from '../../stores/stepRunner';
+  import { EDGE_DEFAULTS } from '../../lib/flowchart/edgeDefaults';
   import { beginBatch, endBatch } from '../../stores/history';
   import { showToast } from '../../stores/toast';
   import { t } from '../../stores/i18n';
@@ -69,7 +69,7 @@
     subroutineEnd: SubroutineEndNode,
     subroutineCall: SubroutineCallNode,
   };
-  const defaultEdgeOptions = { markerEnd: { type: MarkerType.ArrowClosed } };
+  const defaultEdgeOptions = EDGE_DEFAULTS;
 
   const { screenToFlowPosition } = useSvelteFlow();
 
@@ -176,7 +176,7 @@
           target: newNode.id,
           sourceHandle: insertionEdge.sourceHandle ?? null,
           targetHandle: null,
-          markerEnd: { type: MarkerType.ArrowClosed },
+          ...EDGE_DEFAULTS,
         },
         edgesWithoutInsertionPoint,
       );
@@ -186,7 +186,7 @@
           target: insertionEdge.target,
           sourceHandle: null,
           targetHandle: insertionEdge.targetHandle ?? null,
-          markerEnd: { type: MarkerType.ArrowClosed },
+          ...EDGE_DEFAULTS,
         },
         $edges,
       );
@@ -198,7 +198,7 @@
         targetHandle: null,
       };
       $edges = addEdge(
-        { ...connection, markerEnd: { type: MarkerType.ArrowClosed } },
+        { ...connection, ...EDGE_DEFAULTS },
         sourceHandle
           ? pruneOutgoingEdgeForHandle($edges, previousBottomId, sourceHandle)
           : pruneOutgoingEdge($edges, previousBottomId),
@@ -249,7 +249,7 @@
       ? pruneOutgoingEdgeForHandle($edges, connection.source, connection.sourceHandle)
       : pruneOutgoingEdge($edges, connection.source);
 
-    $edges = addEdge({ ...connection, markerEnd: { type: MarkerType.ArrowClosed } }, prunedEdges);
+    $edges = addEdge({ ...connection, ...EDGE_DEFAULTS }, prunedEdges);
   }
 
   function handleNodeContextMenu({ node, event }: { node: { id: string }; event: MouseEvent }) {
@@ -322,6 +322,7 @@
     bind:edges={$edges}
     {nodeTypes}
     {defaultEdgeOptions}
+    connectionLineType="step"
     initialViewport={{ x: 0, y: 0, zoom: 1 }}
     colorMode={$isDark ? 'dark' : 'light'}
     onconnect={handleConnect}
