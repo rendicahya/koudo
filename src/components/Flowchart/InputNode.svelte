@@ -124,7 +124,7 @@
         {@const targetIndexed = parseIndexedRef(entry.varName)}
         <div
           data-input-row
-          class="flex flex-wrap items-center gap-1"
+          class="flex items-start gap-1"
           style:opacity={dragIndex === index ? 0.4 : 1}
           style:border-top={dragOverIndex === index && dragIndex !== null && dragIndex !== index
             ? '2px solid var(--color-accent)'
@@ -150,46 +150,54 @@
             ⠿
           </span>
 
-          <span style="color: var(--color-text-secondary);">{$t('input.label')}</span>
-          <select
-            value={targetIndexed && arrayNames.includes(targetIndexed.name) ? targetIndexed.name : entry.varName}
-            onchange={(event) => handleVarSelect(index, event)}
-            disabled={scalarVariables.length === 0 && arrayNames.length === 0}
-            class="nodrag min-w-[4.5rem] rounded border bg-transparent px-1 py-0.5"
-            style="border-color: var(--color-border);"
-          >
-            <option value="" disabled>{scalarVariables.length === 0 && arrayNames.length === 0 ? $t('shared.noVariables') : $t('shared.choose')}</option>
-            {#each scalarVariables as varName (varName)}
-              <option value={varName}>{varName}</option>
-            {/each}
-            {#each arrayNames as arrName (arrName)}
-              <option value={arrName}>{arrName}[ ]</option>
-            {/each}
-          </select>
+          <span class="pt-0.5" style="color: var(--color-text-secondary);">{$t('input.label')}</span>
 
-          {#if targetIndexed && arrayNames.includes(targetIndexed.name)}
+          <!-- Variable dropdown on top, prompt text field on the line below
+               it, left edges aligned — the shared flex-col column is what
+               keeps the prompt lined up under the <select>. -->
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <div class="flex flex-wrap items-center gap-1">
+              <select
+                value={targetIndexed && arrayNames.includes(targetIndexed.name) ? targetIndexed.name : entry.varName}
+                onchange={(event) => handleVarSelect(index, event)}
+                disabled={scalarVariables.length === 0 && arrayNames.length === 0}
+                class="nodrag min-w-[4.5rem] rounded border bg-transparent px-1 py-0.5"
+                style="border-color: var(--color-border);"
+              >
+                <option value="" disabled>{scalarVariables.length === 0 && arrayNames.length === 0 ? $t('shared.noVariables') : $t('shared.choose')}</option>
+                {#each scalarVariables as varName (varName)}
+                  <option value={varName}>{varName}</option>
+                {/each}
+                {#each arrayNames as arrName (arrName)}
+                  <option value={arrName}>{arrName}[ ]</option>
+                {/each}
+              </select>
+
+              {#if targetIndexed && arrayNames.includes(targetIndexed.name)}
+                <input
+                  value={targetIndexed.index}
+                  oninput={(event) => handleIndexInput(index, targetIndexed.name, event)}
+                  class="nodrag w-10 rounded border bg-transparent px-1 py-0.5"
+                  style="border-color: var(--color-border);"
+                  placeholder={$t('shared.indexPlaceholder')}
+                  title={$t('shared.indexTitle')}
+                />
+              {/if}
+            </div>
+
             <input
-              value={targetIndexed.index}
-              oninput={(event) => handleIndexInput(index, targetIndexed.name, event)}
-              class="nodrag w-10 rounded border bg-transparent px-1 py-0.5"
+              value={entry.prompt}
+              oninput={(event) => handlePromptInput(index, event)}
+              class="nodrag w-full rounded border bg-transparent px-1 py-0.5"
               style="border-color: var(--color-border);"
-              placeholder={$t('shared.indexPlaceholder')}
-              title={$t('shared.indexTitle')}
+              placeholder={$t('input.prompt')}
             />
-          {/if}
-
-          <input
-            value={entry.prompt}
-            oninput={(event) => handlePromptInput(index, event)}
-            class="nodrag min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5"
-            style="border-color: var(--color-border);"
-            placeholder={$t('input.prompt')}
-          />
+          </div>
 
           {#if entries.length > 1}
             <button
               type="button"
-              class="nodrag px-1 leading-none hover:opacity-70"
+              class="nodrag px-1 pt-0.5 leading-none hover:opacity-70"
               style="color: var(--color-text-secondary);"
               title={$t('input.remove')}
               onclick={() => handleRemove(index)}
