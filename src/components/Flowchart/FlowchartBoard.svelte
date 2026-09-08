@@ -20,6 +20,7 @@
   import SubroutineEndNode from './SubroutineEndNode.svelte';
   import SubroutineCallNode from './SubroutineCallNode.svelte';
   import CanvasContextMenu from './CanvasContextMenu.svelte';
+  import OrthogonalEdge from './OrthogonalEdge.svelte';
   import { isDark } from '../../stores/theme';
   import {
     nodes,
@@ -69,6 +70,7 @@
     subroutineEnd: SubroutineEndNode,
     subroutineCall: SubroutineCallNode,
   };
+  const edgeTypes = { orthogonal: OrthogonalEdge };
   const defaultEdgeOptions = EDGE_DEFAULTS;
 
   const { screenToFlowPosition } = useSvelteFlow();
@@ -321,6 +323,7 @@
     bind:nodes={$nodes}
     bind:edges={$edges}
     {nodeTypes}
+    {edgeTypes}
     {defaultEdgeOptions}
     connectionLineType="step"
     initialViewport={{ x: 0, y: 0, zoom: 1 }}
