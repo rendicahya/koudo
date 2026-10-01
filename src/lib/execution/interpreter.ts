@@ -464,6 +464,11 @@ class Interpreter {
         const slot = this.lookupInitializedArray(expr.array.name, expr.line);
         return { kind: 'int', value: slot.value.length };
       }
+      case 'arrayToString': {
+        if (expr.array.kind !== 'identifier') throw new RuntimeError(`Arrays.toString needs a plain array variable (line ${expr.line}).`);
+        const slot = this.lookupInitializedArray(expr.array.name, expr.line);
+        return { kind: 'String', value: formatSlotValue(slot) };
+      }
       case 'unary': {
         const operand = this.evalExpr(expr.operand);
         if (expr.op === '-') return { kind: operand.kind, value: -Number(operand.value) };
@@ -575,7 +580,7 @@ function isArraySlot(slot: EvalValue | ArraySlot): slot is ArraySlot {
 // so it's fine (and more helpful to a beginner) for this to look nicer than
 // real Java's own array toString().
 function formatSlotValue(slot: EvalValue | ArraySlot): string {
-  return isArraySlot(slot) ? `[${slot.value.join(', ')}]` : formatValue(slot);
+  return isArraySlot(slot) ? `[${slot.value.map((value) => formatValue({ kind: slot.kind, value })).join(', ')}]` : formatValue(slot);
 }
 
 function coerceToKind(value: number | string | boolean, kind: VarKind): number | string | boolean {

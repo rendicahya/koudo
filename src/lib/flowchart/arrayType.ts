@@ -26,6 +26,19 @@ export function parseIndexedRef(ref: string): { name: string; index: string } | 
   return match ? { name: match[1], index: match[2] } : null;
 }
 
+const ARRAYS_TO_STRING_PATTERN = /^Arrays\.toString\(\s*([A-Za-z_$][A-Za-z0-9_$]*)\s*\)$/;
+
+// "Arrays.toString(arr)" -> 'arr'; null for anything else. The whole-array
+// counterpart of parseIndexedRef, used by the Process block's print picker.
+export function parseArraysToString(ref: string): string | null {
+  const match = ref.match(ARRAYS_TO_STRING_PATTERN);
+  return match ? match[1] : null;
+}
+
+export function arraysToString(name: string): string {
+  return `Arrays.toString(${name})`;
+}
+
 export function indexedRef(name: string, index: string): string {
   return `${name}[${index}]`;
 }

@@ -3,6 +3,7 @@ import { derived, get, writable } from 'svelte/store';
 import { outgoing, findMergePoint, branchHandlesOf, unusedBranchHandle, allDecisionBranchesReachEnd } from '../lib/flowchart/graphWalk';
 import { formatDeclaredValue } from '../lib/flowchart/valueFormat';
 import { normalizeEdge } from '../lib/flowchart/edgeDefaults';
+import { arraysToString, parseArraysToString } from '../lib/flowchart/arrayType';
 
 export type BlockType =
   | 'start'
@@ -967,7 +968,12 @@ export function renameDeclaredVariable(nodeList: Node[], declareNodeId: string, 
       const oldStatements = data.statements ?? [];
       const statements = oldStatements.map((statement) => {
         const content = printlnContent(statement);
-        return content === oldName ? printlnStatement(newName, isPrintlnStatement(statement)) : statement;
+        if (content === oldName) return printlnStatement(newName, isPrintlnStatement(statement));
+        // Arrays.toString(oldName) — a whole-array print of the renamed array.
+        if (content !== null && parseArraysToString(content) === oldName) {
+          return printlnStatement(arraysToString(newName), isPrintlnStatement(statement));
+        }
+        return statement;
       });
       if (statements.every((line, i) => line === oldStatements[i])) return node;
       return { ...node, data: { ...node.data, statements, label: statementsLabel(statements) } };

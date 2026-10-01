@@ -6,6 +6,7 @@
 // need a real import either. A real, compilable .java file needs both — a
 // class wrapper and, if used, the Scanner import.
 const USES_SCANNER_PATTERN = /\bnew Scanner\(/;
+const USES_ARRAYS_PATTERN = /\bArrays\./;
 const BODY_INDENT = '        ';
 
 // Java requires the public class name to match its filename, and reads
@@ -37,7 +38,9 @@ function indentLines(text: string, prefix: string): string {
 export function wrapAsJavaFile(code: string, className: string, methods = ''): string {
   const body = indentLines(code, BODY_INDENT);
   const usesScanner = USES_SCANNER_PATTERN.test(code) || USES_SCANNER_PATTERN.test(methods);
-  const importLine = usesScanner ? 'import java.util.Scanner;\n\n' : '';
+  const usesArrays = USES_ARRAYS_PATTERN.test(code) || USES_ARRAYS_PATTERN.test(methods);
+  const imports = [usesArrays && 'import java.util.Arrays;', usesScanner && 'import java.util.Scanner;'].filter(Boolean);
+  const importLine = imports.length ? `${imports.join('\n')}\n\n` : '';
   const methodsBlock = methods ? `\n\n${indentLines(methods, '    ')}` : '';
 
   return `${importLine}public class ${className} {\n    public static void main(String[] args) {\n${body}\n    }${methodsBlock}\n}\n`;

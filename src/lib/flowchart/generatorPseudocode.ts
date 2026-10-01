@@ -74,7 +74,9 @@ function statementLinesFor(node: Node, nodesById: Map<string, Node>, edges: Edge
         .filter(Boolean)
         .map((statement) => {
           const content = printlnContent(statement);
-          return `OUTPUT ${content ?? statement}`;
+          // Arrays.toString(arr) reads simply as the array itself in pseudocode.
+          const arrayName = content === null ? null : content.match(/^Arrays\.toString\(\s*(\w+)\s*\)$/)?.[1];
+          return `OUTPUT ${arrayName ?? content ?? statement}`;
         });
     }
     case 'declare': {

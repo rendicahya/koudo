@@ -312,6 +312,7 @@ const en = {
   'process.valueOrLiteral': '"text" or 5',
   'process.removeLine': 'Remove this line',
   'process.add': '+ Add output',
+  'process.wholeArray': 'all',
 
   // DecisionNode / WhileLoopNode / ForLoopNode
   'flow.condition': 'Condition',
@@ -831,6 +832,7 @@ const id: Record<TranslationKey, string> = {
   'process.valueOrLiteral': '"teks" atau 5',
   'process.removeLine': 'Hapus baris ini',
   'process.add': '+ Tambah output',
+  'process.wholeArray': 'semua',
 
   // DecisionNode / WhileLoopNode / ForLoopNode
   'flow.condition': 'Kondisi',

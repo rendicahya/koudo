@@ -29,7 +29,10 @@ export type Expr =
   | { kind: 'index'; array: Expr; index: Expr; line: number }
   // `arr.length` — the only "member access" this beginner subset supports;
   // parsed as its own Expr kind rather than a general `.field` production.
-  | { kind: 'length'; array: Expr; line: number };
+  | { kind: 'length'; array: Expr; line: number }
+  // `Arrays.toString(arr)` — prints a whole array as `[1, 2, 3]`. Like
+  // `length`, the only `Arrays` method this subset supports.
+  | { kind: 'arrayToString'; array: Expr; line: number };
 
 // The RHS of an array declaration (`int[] a = {1, 2, 3};` or
 // `int[] a = new int[5];`) — deliberately *not* part of Expr: this shape is
@@ -494,6 +497,14 @@ export class Parser {
         this.expect('punct', '(');
         this.expect('punct', ')');
         return { kind: 'scannerRead', method: methodTok.value, line: t.line };
+      }
+      if (t.value === 'Arrays' && this.check('punct', '.') && this.peek(1).value === 'toString' && this.peek(2).value === '(') {
+        this.next(); // '.'
+        this.next(); // 'toString'
+        this.next(); // '('
+        const array = this.parseExpression();
+        this.expect('punct', ')');
+        return { kind: 'arrayToString', array, line: t.line };
       }
       if (this.check('punct', '(')) {
         return this.parseCallArgs(t.value, t.line);

@@ -20,7 +20,7 @@
   import { variableMode } from '../../stores/settings';
   import { inferDeclaredType } from '../../lib/flowchart/typeInference';
   import { formatDeclaredValue, unquoteDeclaredValue } from '../../lib/flowchart/valueFormat';
-  import { isArrayType, indexedRef, parseIndexedRef } from '../../lib/flowchart/arrayType';
+  import { isArrayType, indexedRef, parseIndexedRef, arraysToString, parseArraysToString } from '../../lib/flowchart/arrayType';
   import { t } from '../../stores/i18n';
 
   // Sentinel <option> value for "print a literal/expression instead of a
@@ -39,11 +39,11 @@
   let dragIndex: number | null = $state(null);
   let dragOverIndex: number | null = $state(null);
   let variableEntries = $derived(declaredVariableEntriesUpstreamOf(id, $nodes, $edges));
-  // Whole-array printing isn't supported (see arrayType.ts's own scope note
-  // — Java's real Object.toString() on an array is unhelpful garbage
-  // anyway), so an array never appears in the plain-variable list; instead
-  // each gets its own "arr[ ]" option (see the template) that always
-  // targets one element, picked via the adjacent index field.
+  // Printing an array variable directly would give Java's unhelpful
+  // Object.toString() garbage, so an array never appears in the plain-variable
+  // list; instead each gets two options (see the template): "arr[ ]" targets
+  // one element, picked via the adjacent index field, and "arr (all)" prints
+  // the whole array via Arrays.toString(arr).
   let scalarVariables = $derived(variableEntries.filter((entry) => !isArrayType(entry.varType)).map((entry) => entry.varName));
   let arrayNames = $derived(variableEntries.filter((entry) => isArrayType(entry.varType)).map((entry) => entry.varName));
   // Beginner mode (see stores/settings.ts): a custom value is typed bare
@@ -55,6 +55,7 @@
     | { kind: 'empty' }
     | { kind: 'variable'; varName: string }
     | { kind: 'arrayElement'; arrName: string; index: string }
+    | { kind: 'wholeArray'; arrName: string }
     | { kind: 'value'; value: string }
     | { kind: 'raw'; statement: string };
 
@@ -62,6 +63,8 @@
     if (!statement) return { kind: 'empty' };
     const content = printlnContent(statement);
     if (content === null) return { kind: 'raw', statement };
+    const wholeArray = parseArraysToString(content);
+    if (wholeArray && arrays.includes(wholeArray)) return { kind: 'wholeArray', arrName: wholeArray };
     const indexed = parseIndexedRef(content);
     if (indexed && arrays.includes(indexed.name)) return { kind: 'arrayElement', arrName: indexed.name, index: indexed.index };
     if (variables.includes(content)) return { kind: 'variable', varName: content };
@@ -77,10 +80,13 @@
     // Custom value starts blank — the user types the literal next. An array
     // name always starts printing its own first element, refined via the
     // adjacent index field (see handleIndexInput).
+    const wholeArray = parseArraysToString(value);
     const statement =
       value === CUSTOM_VALUE
         ? printlnStatement('', newline)
-        : arrayNames.includes(value)
+        : wholeArray
+          ? printlnStatement(value, newline)
+          : arrayNames.includes(value)
           ? printlnStatement(indexedRef(value, '0'), newline)
           : value
             ? printlnStatement(value, newline)
@@ -235,7 +241,15 @@
           {:else}
             <span style="grid-column: 3; grid-row: 1; color: var(--color-text-secondary);">{$t('process.print')}</span>
             <select
-              value={info.kind === 'variable' ? info.varName : info.kind === 'arrayElement' ? info.arrName : info.kind === 'value' ? CUSTOM_VALUE : ''}
+              value={info.kind === 'variable'
+                ? info.varName
+                : info.kind === 'arrayElement'
+                  ? info.arrName
+                  : info.kind === 'wholeArray'
+                    ? arraysToString(info.arrName)
+                    : info.kind === 'value'
+                      ? CUSTOM_VALUE
+                      : ''}
               onchange={(event) => handleSelect(index, event)}
               class="nodrag min-w-[5rem] rounded border bg-transparent px-1 py-0.5"
               style="grid-column: 4; grid-row: 1; border-color: var(--color-border);"
@@ -246,6 +260,7 @@
               {/each}
               {#each arrayNames as arrName (arrName)}
                 <option value={arrName}>{arrName}[ ]</option>
+                <option value={arraysToString(arrName)}>{arrName} ({$t('process.wholeArray')})</option>
               {/each}
               <option value={CUSTOM_VALUE}>{$t('process.customValue')}</option>
             </select>
